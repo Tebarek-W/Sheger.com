@@ -39,7 +39,9 @@
     "start:clear": "expo start --lan --clear",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "eas:build:preview": "eas build --profile preview --platform android",
+    "eas:build:production": "eas build --profile production --platform android"
   },
   "private": true
 }
