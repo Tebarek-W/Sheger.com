@@ -1,0 +1,9 @@
+# Supabase CLI config — https://supabase.com/docs/guides/cli
+# Link your project locally: supabase link --project-ref YOUR_PROJECT_REF
+# Do not commit project_id here; use `supabase link` per environment.
+
+[db]
+major_version = 15
+
+[api]
+enabled = true

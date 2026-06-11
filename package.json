@@ -1,0 +1,13 @@
+{
+  "name": "sheger",
+  "private": true,
+  "scripts": {
+    "db:link": "supabase link",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:seed": "supabase db execute --file supabase/seed.sql",
+    "ci:mobile": "cd sheger-mobile && npm ci && npx tsc --noEmit",
+    "ci:admin": "cd sheger-admin && npm ci && npm run build",
+    "ci": "npm run ci:mobile && npm run ci:admin"
+  }
+}
