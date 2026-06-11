@@ -97,26 +97,157 @@ export interface Review {
   created_at: string;
 }
 
+type Relationship = {
+  foreignKeyName: string;
+  columns: string[];
+  isOneToOne?: boolean;
+  referencedRelation: string;
+  referencedColumns: string[];
+};
+
+type TableDef<
+  TRow,
+  TInsert = Partial<TRow>,
+  TUpdate = Partial<TRow>,
+  TRelationships extends Relationship[] = [],
+> = {
+  Row: TRow & Record<string, unknown>;
+  Insert: TInsert & Record<string, unknown>;
+  Update: TUpdate & Record<string, unknown>;
+  Relationships: TRelationships;
+};
+
+export type BookingInsert = {
+  customer_id: string;
+  business_id: string;
+  service_id: string;
+  employee_id?: string | null;
+  scheduled_at: string;
+  duration_minutes: number;
+  status?: BookingStatus;
+  payment_method?: string | null;
+  notes?: string | null;
+};
+
 export interface Database {
   public: {
     Tables: {
-      profiles: { Row: Profile; Insert: Partial<Profile>; Update: Partial<Profile> };
-      categories: { Row: Category; Insert: Partial<Category>; Update: Partial<Category> };
-      businesses: { Row: Business; Insert: Partial<Business>; Update: Partial<Business> };
-      services: { Row: Service; Insert: Partial<Service>; Update: Partial<Service> };
-      employees: { Row: Employee; Insert: Partial<Employee>; Update: Partial<Employee> };
-      working_hours: {
-        Row: WorkingHours;
-        Insert: Partial<WorkingHours>;
-        Update: Partial<WorkingHours>;
-      };
-      bookings: { Row: Booking; Insert: Partial<Booking>; Update: Partial<Booking> };
-      reviews: { Row: Review; Insert: Partial<Review>; Update: Partial<Review> };
+      profiles: TableDef<Profile, Partial<Profile> & { id: string }>;
+      categories: TableDef<Category>;
+      businesses: TableDef<
+        Business,
+        Partial<Business> & { owner_id: string; name: string },
+        Partial<Business>,
+        [
+          {
+            foreignKeyName: "businesses_category_id_fkey";
+            columns: ["category_id"];
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "businesses_owner_id_fkey";
+            columns: ["owner_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
+      services: TableDef<
+        Service,
+        Partial<Service> & {
+          business_id: string;
+          name: string;
+          price: number;
+          duration_minutes: number;
+        },
+        Partial<Service>,
+        [
+          {
+            foreignKeyName: "services_business_id_fkey";
+            columns: ["business_id"];
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
+      employees: TableDef<
+        Employee,
+        Partial<Employee> & { business_id: string; full_name: string },
+        Partial<Employee>,
+        [
+          {
+            foreignKeyName: "employees_business_id_fkey";
+            columns: ["business_id"];
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
+      working_hours: TableDef<
+        WorkingHours,
+        Partial<WorkingHours> & {
+          business_id: string;
+          day_of_week: number;
+          open_time: string;
+          close_time: string;
+        },
+        Partial<WorkingHours>,
+        [
+          {
+            foreignKeyName: "working_hours_business_id_fkey";
+            columns: ["business_id"];
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
+      bookings: TableDef<
+        Booking,
+        BookingInsert,
+        Partial<Booking>,
+        [
+          {
+            foreignKeyName: "bookings_customer_id_fkey";
+            columns: ["customer_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookings_business_id_fkey";
+            columns: ["business_id"];
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey";
+            columns: ["service_id"];
+            referencedRelation: "services";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookings_employee_id_fkey";
+            columns: ["employee_id"];
+            referencedRelation: "employees";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
+      reviews: TableDef<Review, Partial<Review> & { booking_id: string; customer_id: string; business_id: string; rating: number }>;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
     };
     Enums: {
       user_role: UserRole;
       booking_status: BookingStatus;
       business_status: BusinessStatus;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }
