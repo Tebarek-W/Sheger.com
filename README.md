@@ -13,14 +13,16 @@ Sheger.com/                 ← monorepo root (single GitHub repo)
 └── sheger-admin/           ← Next.js admin dashboard
 ```
 
-## Branches
+## Branch
 
-| Branch | Environment |
-|--------|-------------|
-| `staging` | Integration / staging Supabase + Vercel preview |
-| `main` | Production |
+Use **`main`** only — all work is committed and pushed to `main`.
 
-Workflow: `feature/*` → PR to `staging` → PR to `main`
+```bash
+git checkout main
+git push -u origin main
+```
+
+Set **main** as the default branch in GitHub repo settings.
 
 ## Quick start (local)
 
@@ -81,19 +83,16 @@ Full guide: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
 
 | Component | Platform | Trigger |
 |-----------|----------|---------|
-| Database | Supabase | Push to `staging`/`main` (migrations) |
-| Admin | Vercel | Push to `staging`/`main` |
+| Database | Supabase | Push to `main` (migrations) |
+| Admin | Vercel | Push to `main` |
 | Mobile | Expo EAS | `eas build` per profile |
 
 ### GitHub setup
 
 ```bash
 git remote add origin https://github.com/YOUR_USER/sheger.git
-git push -u origin staging
 git push -u origin main
 ```
-
-Set default branch to `staging` in GitHub repo settings.
 
 ### Required GitHub secrets
 
