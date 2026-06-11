@@ -1,12 +1,11 @@
+# Manual database deploy only — does not run on every push.
+# Add GitHub secrets before running: SUPABASE_ACCESS_TOKEN, SUPABASE_PRODUCTION_PROJECT_REF
+# Run from: Actions → Deploy Database → Run workflow
+
 name: Deploy Database
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "supabase/migrations/**"
-      - "supabase/seed.sql"
-      - ".github/workflows/deploy-db.yml"
+  workflow_dispatch:
 
 jobs:
   migrate:

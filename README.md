@@ -83,7 +83,7 @@ Full guide: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
 
 | Component | Platform | Trigger |
 |-----------|----------|---------|
-| Database | Supabase | Push to `main` (migrations) |
+| Database | Supabase | Manual: Actions → Deploy Database (after GitHub secrets are set) |
 | Admin | Vercel | Push to `main` |
 | Mobile | Expo EAS | `eas build` per profile |
 
