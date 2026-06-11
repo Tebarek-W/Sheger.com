@@ -3,10 +3,9 @@ import { ActivityIndicator, View } from "react-native";
 
 import { colors } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
-import { getHomeRouteForRole } from "@/lib/routing";
 
-export default function Index() {
-  const { session, profile, loading } = useAuth();
+export function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
 
   if (loading) {
     return (
@@ -16,9 +15,9 @@ export default function Index() {
     );
   }
 
-  if (session) {
-    return <Redirect href={getHomeRouteForRole(profile?.role)} />;
+  if (!session) {
+    return <Redirect href="/(auth)/login" />;
   }
 
-  return <Redirect href="/(app)/home" />;
+  return <>{children}</>;
 }

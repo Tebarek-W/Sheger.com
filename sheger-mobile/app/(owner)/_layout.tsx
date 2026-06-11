@@ -1,11 +1,10 @@
-import { Redirect } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 
 import { colors } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
-import { getHomeRouteForRole } from "@/lib/routing";
 
-export default function Index() {
+export default function OwnerLayout() {
   const { session, profile, loading } = useAuth();
 
   if (loading) {
@@ -16,9 +15,20 @@ export default function Index() {
     );
   }
 
-  if (session) {
-    return <Redirect href={getHomeRouteForRole(profile?.role)} />;
+  if (!session) {
+    return <Redirect href="/(auth)/login" />;
   }
 
-  return <Redirect href="/(app)/home" />;
+  if (profile?.role !== "business_owner") {
+    return <Redirect href="/(app)/home" />;
+  }
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    />
+  );
 }
