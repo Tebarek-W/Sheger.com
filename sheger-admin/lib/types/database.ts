@@ -72,6 +72,16 @@ export interface WorkingHours {
   is_closed: boolean;
 }
 
+export interface AppointmentSlot {
+  id: string;
+  business_id: string;
+  day_of_week: number;
+  start_time: string;
+  max_capacity: number;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface Booking {
   id: string;
   customer_id: string;
@@ -196,6 +206,24 @@ export interface Database {
         [
           {
             foreignKeyName: "working_hours_business_id_fkey";
+            columns: ["business_id"];
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
+      appointment_slots: TableDef<
+        AppointmentSlot,
+        Partial<AppointmentSlot> & {
+          business_id: string;
+          day_of_week: number;
+          start_time: string;
+          max_capacity: number;
+        },
+        Partial<AppointmentSlot>,
+        [
+          {
+            foreignKeyName: "appointment_slots_business_id_fkey";
             columns: ["business_id"];
             referencedRelation: "businesses";
             referencedColumns: ["id"];

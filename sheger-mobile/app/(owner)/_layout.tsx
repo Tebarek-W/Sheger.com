@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 
 import { colors } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { CUSTOMER_HOME } from "@/lib/routing";
 
 export default function OwnerLayout() {
   const { session, profile, loading } = useAuth();
@@ -20,7 +21,7 @@ export default function OwnerLayout() {
   }
 
   if (profile?.role !== "business_owner") {
-    return <Redirect href="/(app)/home" />;
+    return <Redirect href={CUSTOMER_HOME} />;
   }
 
   return (

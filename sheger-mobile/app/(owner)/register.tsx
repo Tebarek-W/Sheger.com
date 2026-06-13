@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { LocationPicker } from "@/components/owner/LocationPicker";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
@@ -12,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { fetchCategories } from "@/lib/api/categories";
 import { createBusiness } from "@/lib/api/owner";
 import { getErrorMessage } from "@/lib/errors";
+import { isWithinEthiopia, type Coordinates } from "@/lib/location";
 
 export default function RegisterBusinessScreen() {
   const { user } = useAuth();
@@ -23,6 +25,7 @@ export default function RegisterBusinessScreen() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [coords, setCoords] = useState<Coordinates | null>(null);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -40,6 +43,8 @@ export default function RegisterBusinessScreen() {
         city,
         phone,
         email,
+        latitude: coords!.latitude,
+        longitude: coords!.longitude,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-businesses"] });
@@ -57,6 +62,13 @@ export default function RegisterBusinessScreen() {
   const onSubmit = () => {
     if (!name || !categoryId) {
       Alert.alert("Missing fields", "Enter a business name and select a category.");
+      return;
+    }
+    if (!isWithinEthiopia(coords)) {
+      Alert.alert(
+        "Location required",
+        "Set your business location so customers can find you in Nearby search.",
+      );
       return;
     }
     mutation.mutate();
@@ -96,7 +108,22 @@ export default function RegisterBusinessScreen() {
             );
           })}
         </View>
-        <Input label="Address" value={address} onChangeText={setAddress} placeholder="Street, area" />
+
+        <View style={styles.locationSection}>
+          <Text style={styles.label}>Business location</Text>
+          <Text style={styles.sectionHint}>
+            Required. This places you on the map for Nearby search.
+          </Text>
+          <LocationPicker
+            value={coords}
+            onChange={setCoords}
+            onResolveAddress={(resolved) => {
+              if (!address.trim()) setAddress(resolved);
+            }}
+          />
+        </View>
+
+        <Input label="Address (area / street)" value={address} onChangeText={setAddress} placeholder="e.g. Bole Road, near Edna Mall" />
         <Input label="City" value={city} onChangeText={setCity} />
         <Input label="Phone" value={phone} onChangeText={setPhone} placeholder="+251..." keyboardType="phone-pad" />
         <Input
@@ -115,6 +142,8 @@ export default function RegisterBusinessScreen() {
 const styles = StyleSheet.create({
   form: { gap: 16 },
   label: { fontSize: 14, fontWeight: "600", color: colors.primaryDarker },
+  sectionHint: { fontSize: 12, color: colors.textSecondary, lineHeight: 16, marginTop: -8 },
+  locationSection: { gap: 8 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     borderWidth: 1,

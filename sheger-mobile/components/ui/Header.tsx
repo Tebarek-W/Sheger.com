@@ -2,7 +2,7 @@ import type { Href } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { colors } from "@/constants/theme";
-import { goBackSafely } from "@/lib/routing";
+import { CUSTOMER_HOME, goBackSafely } from "@/lib/routing";
 
 type HeaderProps = {
   title: string;
@@ -11,7 +11,7 @@ type HeaderProps = {
   backTo?: Href;
 };
 
-export function Header({ title, subtitle, showBack, backTo = "/(app)/home" }: HeaderProps) {
+export function Header({ title, subtitle, showBack, backTo = CUSTOMER_HOME }: HeaderProps) {
   return (
     <View style={styles.wrap}>
       {showBack ? (

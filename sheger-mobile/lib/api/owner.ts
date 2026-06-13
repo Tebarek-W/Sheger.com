@@ -17,6 +17,8 @@ export type CreateBusinessInput = {
   city?: string;
   phone?: string;
   email?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type CreateServiceInput = {
@@ -71,6 +73,8 @@ export async function createBusiness(input: CreateBusinessInput) {
       city: input.city ?? "Addis Ababa",
       phone: input.phone ?? null,
       email: input.email ?? null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
       status: "pending",
     })
     .select("*")
@@ -94,6 +98,8 @@ export async function updateBusiness(
       city: input.city ?? "Addis Ababa",
       phone: input.phone ?? null,
       email: input.email ?? null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
     })
     .eq("id", businessId)
     .select("*")
@@ -229,20 +235,37 @@ export async function saveWorkingHours(businessId: string, hours: WorkingHoursIn
 }
 
 export type OwnerBooking = Booking & {
-  profiles: { full_name: string | null } | null;
+  profiles: { full_name: string | null; phone: string | null } | null;
   services: { name: string; price: number } | null;
 };
 
 export async function fetchMyBookings(businessId: string) {
-  const { data, error } = await supabase
+  const { data: bookings, error } = await supabase
     .from("bookings")
-    .select("*, profiles(full_name), services(name, price)")
+    .select("*, services(name, price)")
     .eq("business_id", businessId)
     .order("scheduled_at", { ascending: false })
     .limit(100);
 
   if (error) throw error;
-  return data as OwnerBooking[];
+  if (!bookings?.length) return [] as OwnerBooking[];
+
+  const customerIds = [...new Set(bookings.map((b) => b.customer_id))];
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, full_name, phone")
+    .in("id", customerIds);
+
+  if (profilesError) throw profilesError;
+
+  const profileById = new Map(
+    (profiles ?? []).map((p) => [p.id, { full_name: p.full_name, phone: p.phone }]),
+  );
+
+  return bookings.map((booking) => ({
+    ...booking,
+    profiles: profileById.get(booking.customer_id) ?? null,
+  })) as OwnerBooking[];
 }
 
 export async function updateOwnerBookingStatus(bookingId: string, status: BookingStatus) {

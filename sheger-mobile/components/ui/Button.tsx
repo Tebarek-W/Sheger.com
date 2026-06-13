@@ -8,7 +8,7 @@ import {
 
 import { colors, radius } from "@/constants/theme";
 
-type Variant = "primary" | "secondary" | "outline" | "ghost";
+type Variant = "primary" | "secondary" | "outline" | "ghost" | "accent";
 
 type ButtonProps = PressableProps & {
   title: string;
@@ -31,8 +31,7 @@ export function Button({
       accessibilityRole="button"
       disabled={isDisabled}
       style={(state) => {
-        const resolved =
-          typeof style === "function" ? style(state) : style;
+        const resolved = typeof style === "function" ? style(state) : style;
         return [
           styles.base,
           styles[variant],
@@ -44,7 +43,9 @@ export function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? colors.white : colors.primary} />
+        <ActivityIndicator
+          color={variant === "accent" ? colors.brandDark : variant === "primary" ? colors.white : colors.primary}
+        />
       ) : (
         <Text style={[styles.text, styles[`${variant}Text` as const]]}>{title}</Text>
       )}
@@ -55,7 +56,7 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     minHeight: 52,
-    borderRadius: radius.md,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
@@ -68,11 +69,13 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   ghost: { backgroundColor: "transparent" },
+  accent: { backgroundColor: colors.accentLime },
   pressed: { opacity: 0.9 },
   disabled: { opacity: 0.5 },
-  text: { fontSize: 16, fontWeight: "600" },
+  text: { fontSize: 15, fontWeight: "500" },
   primaryText: { color: colors.white },
-  secondaryText: { color: colors.primaryDarker },
+  secondaryText: { color: colors.primaryDark },
   outlineText: { color: colors.primary },
   ghostText: { color: colors.primary },
+  accentText: { color: colors.brandDark },
 });

@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { Business, Category, Service } from "@/lib/types/database";
+import type { Business, Category, Employee, Service } from "@/lib/types/database";
 
 export type BusinessWithDetails = Business & {
   categories: Pick<Category, "name" | "slug"> | null;
@@ -36,13 +36,13 @@ export async function fetchBusinessesByCategory(categoryId: string) {
 export async function fetchBusinessById(id: string) {
   const { data, error } = await supabase
     .from("businesses")
-    .select("*")
+    .select("*, categories(name, slug)")
     .eq("id", id)
     .eq("status", "approved")
     .maybeSingle();
 
   if (error) throw error;
-  return data as Business | null;
+  return data as (Business & { categories: Pick<Category, "name" | "slug"> | null }) | null;
 }
 
 export async function fetchBusinessServices(businessId: string) {
@@ -55,6 +55,18 @@ export async function fetchBusinessServices(businessId: string) {
 
   if (error) throw error;
   return data as Service[];
+}
+
+export async function fetchBusinessEmployees(businessId: string) {
+  const { data, error } = await supabase
+    .from("employees")
+    .select("*")
+    .eq("business_id", businessId)
+    .eq("is_active", true)
+    .order("full_name");
+
+  if (error) throw error;
+  return data as Employee[];
 }
 
 export async function fetchCategoryBySlug(slug: string) {

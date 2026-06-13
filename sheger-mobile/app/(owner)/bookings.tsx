@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { DualDateTime } from "@/components/ui/DualDateTime";
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
-import { fetchMyBookings, updateOwnerBookingStatus } from "@/lib/api/owner";
+import { fetchMyBookings, updateOwnerBookingStatus, type OwnerBooking } from "@/lib/api/owner";
 import { getErrorMessage } from "@/lib/errors";
 import type { BookingStatus } from "@/lib/types/database";
 
@@ -15,6 +16,14 @@ const STATUS_COLORS: Record<BookingStatus, string> = {
   cancelled: colors.textMuted,
   completed: colors.primaryDark,
 };
+
+function customerDisplayName(booking: OwnerBooking) {
+  const name = booking.profiles?.full_name?.trim();
+  if (name) return name;
+  const phone = booking.profiles?.phone?.trim();
+  if (phone) return phone;
+  return "Sheger customer";
+}
 
 export default function OwnerBookingsScreen() {
   const { business } = useOwnerBusiness();
@@ -59,9 +68,12 @@ export default function OwnerBookingsScreen() {
         {bookings?.map((booking) => (
           <View key={booking.id} style={styles.card}>
             <View style={styles.cardTop}>
-              <Text style={styles.customer}>
-                {booking.profiles?.full_name ?? "Customer"}
-              </Text>
+              <View style={styles.customerBlock}>
+                <Text style={styles.customer}>{customerDisplayName(booking)}</Text>
+                {booking.profiles?.phone?.trim() && booking.profiles?.full_name?.trim() ? (
+                  <Text style={styles.customerPhone}>{booking.profiles.phone}</Text>
+                ) : null}
+              </View>
               <Text style={[styles.status, { color: STATUS_COLORS[booking.status] }]}>
                 {booking.status}
               </Text>
@@ -70,9 +82,7 @@ export default function OwnerBookingsScreen() {
               {booking.services?.name ?? "Service"} ·{" "}
               {Number(booking.services?.price ?? 0).toFixed(0)} ETB
             </Text>
-            <Text style={styles.when}>
-              {new Date(booking.scheduled_at).toLocaleString()}
-            </Text>
+            <DualDateTime iso={booking.scheduled_at} compact />
 
             <View style={styles.actions}>
               {booking.status === "pending" ? (
@@ -130,11 +140,12 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 8,
   },
-  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
+  customerBlock: { flex: 1, gap: 2 },
   customer: { fontSize: 17, fontWeight: "700", color: colors.primaryDarker },
+  customerPhone: { fontSize: 12, color: colors.textSecondary },
   status: { fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
   service: { fontSize: 14, color: colors.primary, fontWeight: "600" },
-  when: { fontSize: 13, color: colors.textMuted },
   actions: { flexDirection: "row", gap: 10, marginTop: 8 },
   actionBtn: {
     flex: 1,

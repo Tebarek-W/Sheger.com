@@ -45,7 +45,17 @@ module.exports = {
   web: {
     favicon: "./assets/favicon.png",
   },
-  plugins: ["expo-router", "expo-secure-store"],
+  plugins: [
+    "expo-router",
+    "expo-secure-store",
+    [
+      "expo-location",
+      {
+        locationWhenInUsePermission:
+          "Sheger uses your location to show nearby businesses.",
+      },
+    ],
+  ],
   extra: {
     supabaseUrl,
     supabaseAnonKey,

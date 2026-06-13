@@ -23,8 +23,15 @@ export default function AppLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
+        contentStyle: { backgroundColor: colors.screenBg },
       }}
-    />
+    >
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="business/[id]" />
+      <Stack.Screen name="book" />
+      <Stack.Screen name="payment" />
+      <Stack.Screen name="confirmation" />
+      <Stack.Screen name="category/[slug]" />
+    </Stack>
   );
 }

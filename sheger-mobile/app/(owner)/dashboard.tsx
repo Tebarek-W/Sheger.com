@@ -70,6 +70,15 @@ export default function OwnerDashboardScreen() {
 
       <StatusBadge status={business.status} />
 
+      {business.latitude == null || business.longitude == null ? (
+        <Pressable style={styles.locationBanner} onPress={() => router.push("/(owner)/business")}>
+          <Text style={styles.locationBannerTitle}>📍 Add your location</Text>
+          <Text style={styles.locationBannerText}>
+            Set your business location so customers can find you in Nearby search. Tap to add it.
+          </Text>
+        </Pressable>
+      ) : null}
+
       {business.status === "pending" ? (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
@@ -118,8 +127,8 @@ export default function OwnerDashboardScreen() {
         />
         <MenuCard
           icon="🕐"
-          title="Working hours"
-          subtitle="Set weekly availability"
+          title="Hours & slots"
+          subtitle="Opening hours and bookable time slots"
           onPress={() => router.push("/(owner)/hours")}
         />
         <MenuCard
@@ -162,6 +171,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   noticeText: { color: colors.primaryDarker, fontSize: 14, lineHeight: 20 },
+  locationBanner: {
+    marginTop: 16,
+    backgroundColor: "#faeeda",
+    borderRadius: radius.md,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#f0d9b5",
+    gap: 4,
+  },
+  locationBannerTitle: { fontSize: 14, fontWeight: "700", color: "#854f0b" },
+  locationBannerText: { fontSize: 13, color: "#854f0b", lineHeight: 19 },
   statsRow: { flexDirection: "row", gap: 10, marginTop: 20 },
   statCard: {
     flex: 1,

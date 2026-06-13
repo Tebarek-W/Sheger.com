@@ -2,10 +2,11 @@ import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
+import { DualDateTime } from "@/components/ui/DualDateTime";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { RequireAuth } from "@/hooks/useRequireAuth";
-import { formatSlotDate, formatSlotLabel } from "@/lib/booking/slots";
+import { CUSTOMER_HOME } from "@/lib/routing";
 import { useBookingStore } from "@/stores/bookingStore";
 
 export default function ConfirmationScreen() {
@@ -26,37 +27,40 @@ function ConfirmationScreenContent() {
 
   const done = () => {
     reset();
-    router.replace("/(app)/home");
+    router.replace(CUSTOMER_HOME);
   };
 
   return (
-    <Screen>
+    <Screen backgroundColor={colors.brandDark}>
       <View style={styles.center}>
         <View style={styles.check}>
           <Text style={styles.checkMark}>✓</Text>
         </View>
         <Text style={styles.title}>Booking confirmed!</Text>
         <Text style={styles.subtitle}>
-          Your appointment is pending confirmation from the business.
+          Your appointment is pending confirmation from the business. You&apos;ll receive a
+          notification once it&apos;s approved.
         </Text>
 
         <View style={styles.card}>
           <Row label="Service" value={service?.name ?? "—"} />
           <Row label="Business" value={business?.name ?? "—"} />
-          <Row
-            label="When"
-            value={
-              scheduledAt
-                ? `${formatSlotDate(scheduledAt)} · ${formatSlotLabel(scheduledAt)}`
-                : "—"
-            }
-          />
+          {scheduledAt ? (
+            <View style={styles.whenBlock}>
+              <Text style={styles.rowLabel}>When</Text>
+              <DualDateTime iso={scheduledAt} variant="dark" compact />
+            </View>
+          ) : (
+            <Row label="When" value="—" />
+          )}
           <Row label="Payment" value={paymentMethod ?? "—"} />
           <Row label="Status" value="Pending" />
-          {bookingId ? <Row label="Reference" value={bookingId.slice(0, 8).toUpperCase()} /> : null}
+          {bookingId ? (
+            <Row label="Reference" value={bookingId.slice(0, 8).toUpperCase()} />
+          ) : null}
         </View>
 
-        <Button title="Back to Home" onPress={done} />
+        <Button title="Back to home" variant="accent" onPress={done} />
       </View>
     </Screen>
   );
@@ -72,34 +76,59 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", gap: 16 },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    gap: 16,
+  },
   check: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.primary,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(110,232,110,0.2)",
+    borderWidth: 2,
+    borderColor: colors.accentLime,
     alignItems: "center",
     justifyContent: "center",
-    alignSelf: "center",
   },
-  checkMark: { color: colors.white, fontSize: 36, fontWeight: "700" },
+  checkMark: { color: colors.accentLime, fontSize: 36, fontWeight: "500" },
   title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: colors.primaryDarker,
+    fontSize: 22,
+    fontWeight: "500",
+    color: colors.white,
     textAlign: "center",
   },
-  subtitle: { textAlign: "center", color: colors.textMuted, lineHeight: 22, marginBottom: 8 },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 12,
-    width: "100%",
+  subtitle: {
+    textAlign: "center",
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 8,
+    paddingHorizontal: 8,
   },
-  row: { gap: 2 },
-  rowLabel: { fontSize: 12, color: colors.textMuted, fontWeight: "600" },
-  rowValue: { fontSize: 16, color: colors.primaryDarker, fontWeight: "600" },
+  card: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: radius.lg,
+    padding: 16,
+    width: "100%",
+    gap: 4,
+    marginBottom: 8,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    gap: 12,
+  },
+  whenBlock: { paddingVertical: 6, gap: 6 },
+  rowLabel: { fontSize: 12, color: "rgba(255,255,255,0.5)", flex: 1 },
+  rowValue: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "500",
+    textAlign: "right",
+    flex: 1,
+  },
 });

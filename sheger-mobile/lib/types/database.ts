@@ -72,6 +72,16 @@ export interface WorkingHours {
   is_closed: boolean;
 }
 
+export interface AppointmentSlot {
+  id: string;
+  business_id: string;
+  day_of_week: number;
+  start_time: string;
+  max_capacity: number;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface Booking {
   id: string;
   customer_id: string;
@@ -202,6 +212,24 @@ export interface Database {
           },
         ]
       >;
+      appointment_slots: TableDef<
+        AppointmentSlot,
+        Partial<AppointmentSlot> & {
+          business_id: string;
+          day_of_week: number;
+          start_time: string;
+          max_capacity: number;
+        },
+        Partial<AppointmentSlot>,
+        [
+          {
+            foreignKeyName: "appointment_slots_business_id_fkey";
+            columns: ["business_id"];
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
       bookings: TableDef<
         Booking,
         BookingInsert,
@@ -239,7 +267,17 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      get_slot_booking_counts: {
+        Args: {
+          p_business_id: string;
+          p_range_start: string;
+          p_range_end: string;
+        };
+        Returns: {
+          scheduled_at: string;
+          booking_count: number;
+        }[];
+      };
     };
     Enums: {
       user_role: UserRole;

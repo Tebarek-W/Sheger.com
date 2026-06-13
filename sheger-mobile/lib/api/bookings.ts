@@ -73,3 +73,19 @@ export async function fetchBookingById(id: string) {
   if (error) throw error;
   return data;
 }
+
+export type CustomerBooking = Booking & {
+  businesses: { name: string; address: string | null; city: string | null } | null;
+  services: { name: string; price: number } | null;
+};
+
+export async function fetchCustomerBookings(customerId: string) {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*, businesses(name, address, city), services(name, price)")
+    .eq("customer_id", customerId)
+    .order("scheduled_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as CustomerBooking[];
+}

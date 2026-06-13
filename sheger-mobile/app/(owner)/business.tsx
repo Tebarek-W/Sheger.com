@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-
-import { goBackSafely } from "@/lib/routing";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { LocationPicker } from "@/components/owner/LocationPicker";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
@@ -14,6 +13,8 @@ import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchCategories } from "@/lib/api/categories";
 import { updateBusiness } from "@/lib/api/owner";
 import { getErrorMessage } from "@/lib/errors";
+import { isWithinEthiopia, type Coordinates } from "@/lib/location";
+import { goBackSafely } from "@/lib/routing";
 
 export default function EditBusinessScreen() {
   const { business } = useOwnerBusiness();
@@ -25,6 +26,7 @@ export default function EditBusinessScreen() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [coords, setCoords] = useState<Coordinates | null>(null);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -40,6 +42,9 @@ export default function EditBusinessScreen() {
     setPhone(business.phone ?? "");
     setEmail(business.email ?? "");
     setCategoryId(business.category_id);
+    if (business.latitude != null && business.longitude != null) {
+      setCoords({ latitude: business.latitude, longitude: business.longitude });
+    }
   }, [business]);
 
   const mutation = useMutation({
@@ -52,6 +57,8 @@ export default function EditBusinessScreen() {
         city,
         phone,
         email,
+        latitude: coords?.latitude ?? null,
+        longitude: coords?.longitude ?? null,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-businesses"] });
@@ -61,6 +68,17 @@ export default function EditBusinessScreen() {
     },
     onError: (error) => Alert.alert("Error", getErrorMessage(error)),
   });
+
+  const onSave = () => {
+    if (!isWithinEthiopia(coords)) {
+      Alert.alert(
+        "Location required",
+        "Set your business location so customers can find you in Nearby search.",
+      );
+      return;
+    }
+    mutation.mutate();
+  };
 
   if (!business) {
     return (
@@ -93,11 +111,26 @@ export default function EditBusinessScreen() {
             );
           })}
         </View>
-        <Input label="Address" value={address} onChangeText={setAddress} />
+
+        <View style={styles.locationSection}>
+          <Text style={styles.label}>Business location</Text>
+          <Text style={styles.sectionHint}>
+            Required. Keep this accurate so you rank correctly in Nearby search.
+          </Text>
+          <LocationPicker
+            value={coords}
+            onChange={setCoords}
+            onResolveAddress={(resolved) => {
+              if (!address.trim()) setAddress(resolved);
+            }}
+          />
+        </View>
+
+        <Input label="Address (area / street)" value={address} onChangeText={setAddress} />
         <Input label="City" value={city} onChangeText={setCity} />
         <Input label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
         <Input label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" />
-        <Button title="Save changes" onPress={() => mutation.mutate()} loading={mutation.isPending} />
+        <Button title="Save changes" onPress={onSave} loading={mutation.isPending} />
       </View>
     </Screen>
   );
@@ -106,6 +139,8 @@ export default function EditBusinessScreen() {
 const styles = StyleSheet.create({
   form: { gap: 16 },
   label: { fontSize: 14, fontWeight: "600", color: colors.primaryDarker },
+  sectionHint: { fontSize: 12, color: colors.textSecondary, lineHeight: 16, marginTop: -8 },
+  locationSection: { gap: 8 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     borderWidth: 1,

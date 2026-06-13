@@ -1,18 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Button } from "@/components/ui/Button";
-import { Header } from "@/components/ui/Header";
-import { Screen } from "@/components/ui/Screen";
+import { BusinessPhotosTab } from "@/components/customer/BusinessPhotosTab";
+import { BusinessReviewsTab } from "@/components/customer/BusinessReviewsTab";
+import { BusinessStaffTab } from "@/components/customer/BusinessStaffTab";
+import { formatRating, StarRating } from "@/components/customer/StarRating";
+import { getCategoryIcon, getCategoryTheme } from "@/constants/categories";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchBusinessById, fetchBusinessServices } from "@/lib/api/businesses";
+import { fetchBusinessReviewSummary } from "@/lib/api/reviews";
 import { promptLoginToBook, setBookingDraft } from "@/lib/auth-booking";
+import { CUSTOMER_HOME, goBackSafely } from "@/lib/routing";
+
+const TABS = ["Services", "Staff", "Reviews", "Photos"] as const;
 
 export default function BusinessProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useAuth();
+  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("Services");
 
   const { data: business, isLoading } = useQuery({
     queryKey: ["business", id],
@@ -23,6 +32,12 @@ export default function BusinessProfileScreen() {
   const { data: services } = useQuery({
     queryKey: ["services", id],
     queryFn: () => fetchBusinessServices(id!),
+    enabled: Boolean(id),
+  });
+
+  const { data: reviewSummary } = useQuery({
+    queryKey: ["business-review-summary", id],
+    queryFn: () => fetchBusinessReviewSummary(id!),
     enabled: Boolean(id),
   });
 
@@ -39,87 +54,204 @@ export default function BusinessProfileScreen() {
 
   if (isLoading) {
     return (
-      <Screen>
+      <SafeAreaView style={styles.loader}>
         <ActivityIndicator color={colors.primary} size="large" />
-      </Screen>
+      </SafeAreaView>
     );
   }
 
   if (!business) {
     return (
-      <Screen>
-        <Header title="Not found" showBack />
+      <SafeAreaView style={styles.loader}>
+        <Pressable onPress={() => goBackSafely(CUSTOMER_HOME)} style={styles.backFab}>
+          <Text style={styles.backFabText}>←</Text>
+        </Pressable>
         <Text style={styles.muted}>This business is unavailable.</Text>
-      </Screen>
+      </SafeAreaView>
     );
   }
 
+  const slug = business.categories?.slug;
+  const icon = getCategoryIcon(slug);
+  const theme = getCategoryTheme(0);
+  const ratingLabel = formatRating(reviewSummary?.average ?? null, reviewSummary?.count ?? 0);
+
   return (
-    <Screen scroll>
-      <Header title={business.name} subtitle={business.description ?? "Book a service"} showBack />
-
-      <View style={styles.hero}>
-        <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>Verified on Sheger</Text>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <View style={styles.hero}>
+          <Pressable onPress={() => goBackSafely(CUSTOMER_HOME)} style={[styles.heroBtn, styles.heroBtnLeft]}>
+            <Text style={styles.heroBtnText}>←</Text>
+          </Pressable>
+          <Text style={[styles.heroIcon, { color: theme.icon }]}>{icon}</Text>
+          <Pressable style={[styles.heroBtn, styles.heroBtnRight]}>
+            <Text style={styles.heroBtnText}>♡</Text>
+          </Pressable>
         </View>
-        <Text style={styles.address}>{business.address ?? business.city}</Text>
-        {business.phone ? <Text style={styles.phone}>{business.phone}</Text> : null}
-      </View>
 
-      <Text style={styles.sectionTitle}>Services</Text>
-      <View style={styles.list}>
-        {services?.map((service) => (
-          <View key={service.id} style={styles.serviceCard}>
-            <View style={styles.serviceInfo}>
-              <Text style={styles.serviceName}>{service.name}</Text>
-              <Text style={styles.serviceMeta}>
-                {service.duration_minutes} min · {Number(service.price).toFixed(0)} ETB
-              </Text>
-              {service.description ? (
-                <Text style={styles.serviceDesc}>{service.description}</Text>
+        <View style={styles.card}>
+          <Text style={styles.name}>{business.name}</Text>
+          <View style={styles.stats}>
+            <View style={styles.ratingRow}>
+              {reviewSummary?.count ? (
+                <StarRating value={Math.round(reviewSummary.average ?? 0)} size={14} />
               ) : null}
+              <Text style={styles.stat}>★ {ratingLabel}</Text>
             </View>
-            <Button title="Book" onPress={() => onBook(service.id)} />
+            <Text style={styles.stat}>📍 {business.address ?? business.city ?? "Addis"}</Text>
+            <View style={styles.openBadge}>
+              <Text style={styles.openText}>Open today</Text>
+            </View>
           </View>
-        ))}
-      </View>
-    </Screen>
+
+          <View style={styles.tabs}>
+            {TABS.map((tab) => {
+              const active = activeTab === tab;
+              return (
+                <Pressable key={tab} onPress={() => setActiveTab(tab)} style={styles.tab}>
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab}</Text>
+                  {active ? <View style={styles.tabLine} /> : null}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {activeTab === "Services" ? (
+            <View style={styles.serviceList}>
+              {services?.map((service) => (
+                <View key={service.id} style={styles.serviceRow}>
+                  <View style={styles.serviceInfo}>
+                    <Text style={styles.serviceName}>{service.name}</Text>
+                    <Text style={styles.serviceDur}>{service.duration_minutes} min</Text>
+                    <Text style={styles.servicePrice}>{Number(service.price).toFixed(0)} ETB</Text>
+                  </View>
+                  <Pressable style={styles.addBtn} onPress={() => onBook(service.id)}>
+                    <Text style={styles.addBtnText}>+</Text>
+                  </Pressable>
+                </View>
+              ))}
+              {!services?.length ? <Text style={styles.muted}>No services listed yet.</Text> : null}
+            </View>
+          ) : null}
+
+          {activeTab === "Staff" ? <BusinessStaffTab businessId={business.id} /> : null}
+          {activeTab === "Reviews" ? <BusinessReviewsTab businessId={business.id} /> : null}
+          {activeTab === "Photos" ? <BusinessPhotosTab business={business} /> : null}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+  safe: { flex: 1, backgroundColor: colors.screenBg },
+  scroll: { flexGrow: 1 },
+  loader: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.screenBg,
     padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 8,
-    marginBottom: 24,
   },
-  heroBadge: {
-    alignSelf: "flex-start",
+  hero: {
+    height: 160,
+    backgroundColor: colors.brandDark,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroIcon: { fontSize: 60, opacity: 0.25 },
+  heroBtn: {
+    position: "absolute",
+    top: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroBtnLeft: { left: 12 },
+  heroBtnRight: { right: 12 },
+  heroBtnText: { color: colors.white, fontSize: 16 },
+  backFab: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backFabText: { fontSize: 16, color: colors.primary },
+  card: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    marginTop: -24,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 32,
+    minHeight: 420,
+  },
+  name: { fontSize: 18, fontWeight: "500", color: colors.text, marginBottom: 6 },
+  stats: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14,
+  },
+  ratingRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  stat: { fontSize: 12, color: colors.textSecondary },
+  openBadge: {
     backgroundColor: colors.primaryLight,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
-  heroBadgeText: { color: colors.primaryDarker, fontWeight: "600", fontSize: 12 },
-  address: { fontSize: 15, color: colors.textMuted },
-  phone: { fontSize: 15, color: colors.primary, fontWeight: "600" },
-  sectionTitle: { fontSize: 20, fontWeight: "700", color: colors.primaryDarker, marginBottom: 12 },
-  list: { gap: 12 },
-  serviceCard: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 14,
+  openText: { fontSize: 11, fontWeight: "500", color: colors.primaryDark },
+  tabs: {
+    flexDirection: "row",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    marginBottom: 16,
   },
-  serviceInfo: { gap: 4 },
-  serviceName: { fontSize: 17, fontWeight: "700", color: colors.primaryDarker },
-  serviceMeta: { fontSize: 14, color: colors.primary, fontWeight: "600" },
-  serviceDesc: { fontSize: 13, color: colors.textMuted, lineHeight: 20 },
-  muted: { color: colors.textMuted },
+  tab: { marginRight: 20, paddingBottom: 8 },
+  tabText: { fontSize: 13, color: colors.textSecondary },
+  tabTextActive: { color: colors.primary, fontWeight: "500" },
+  tabLine: {
+    position: "absolute",
+    bottom: -1,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: colors.primary,
+  },
+  serviceList: { gap: 10 },
+  serviceRow: {
+    backgroundColor: colors.screenBg,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  serviceInfo: { flex: 1, gap: 2 },
+  serviceName: { fontSize: 13, fontWeight: "500", color: colors.text },
+  serviceDur: { fontSize: 11, color: colors.textSecondary },
+  servicePrice: { fontSize: 14, fontWeight: "500", color: colors.primary },
+  addBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 10,
+  },
+  addBtnText: { color: colors.white, fontSize: 18, fontWeight: "500", marginTop: -1 },
+  muted: { color: colors.textMuted, fontSize: 14 },
 });

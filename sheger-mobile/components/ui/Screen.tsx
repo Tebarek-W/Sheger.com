@@ -6,12 +6,14 @@ import { colors } from "@/constants/theme";
 type ScreenProps = ViewProps & {
   scroll?: boolean;
   padded?: boolean;
+  backgroundColor?: string;
 };
 
 export function Screen({
   children,
   scroll,
   padded = true,
+  backgroundColor = colors.background,
   style,
   ...props
 }: ScreenProps) {
@@ -22,7 +24,7 @@ export function Screen({
   );
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor }]}>
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -39,7 +41,7 @@ export function Screen({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1 },
   scroll: { flexGrow: 1 },
   padded: { flex: 1, padding: 20 },
 });
