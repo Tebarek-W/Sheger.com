@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { BusinessProfilePhoto } from "@/components/owner/BusinessProfilePhoto";
 import { LocationPicker } from "@/components/owner/LocationPicker";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
@@ -94,6 +95,7 @@ export default function EditBusinessScreen() {
     <Screen scroll>
       <Header title="Business profile" subtitle="Update your public listing" showBack />
       <View style={styles.form}>
+        <BusinessProfilePhoto business={business} />
         <Input label="Business name" value={name} onChangeText={setName} />
         <Input label="Description" value={description} onChangeText={setDescription} multiline />
         <Text style={styles.label}>Category</Text>

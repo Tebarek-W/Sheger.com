@@ -248,7 +248,7 @@ export async function fetchMyBookings(businessId: string) {
     .from("bookings")
     .select("*, services(name, price)")
     .eq("business_id", businessId)
-    .order("scheduled_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(100);
 
   if (error) throw error;

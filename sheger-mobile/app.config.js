@@ -61,6 +61,13 @@ module.exports = {
           "Sheger uses your location to show nearby businesses.",
       },
     ],
+    [
+      "expo-image-picker",
+      {
+        photosPermission:
+          "Sheger needs access to your photos so you can add a business profile picture.",
+      },
+    ],
   ],
   extra: {
     supabaseUrl,

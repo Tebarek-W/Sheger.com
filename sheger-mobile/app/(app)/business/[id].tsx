@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BusinessPhotosTab } from "@/components/customer/BusinessPhotosTab";
@@ -22,12 +22,32 @@ export default function BusinessProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useAuth();
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("Services");
+  const [heroAspect, setHeroAspect] = useState(4 / 3);
 
   const { data: business, isLoading } = useQuery({
     queryKey: ["business", id],
     queryFn: () => fetchBusinessById(id!),
     enabled: Boolean(id),
   });
+
+  const coverImageUrl = business?.cover_image_url ?? null;
+
+  useEffect(() => {
+    if (!coverImageUrl) {
+      setHeroAspect(4 / 3);
+      return;
+    }
+
+    Image.getSize(
+      coverImageUrl,
+      (width, height) => {
+        if (width > 0 && height > 0) {
+          setHeroAspect(width / height);
+        }
+      },
+      () => setHeroAspect(4 / 3),
+    );
+  }, [coverImageUrl]);
 
   const { data: services } = useQuery({
     queryKey: ["services", id],
@@ -79,11 +99,19 @@ export default function BusinessProfileScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <View style={styles.hero}>
+        <View style={[styles.hero, coverImageUrl ? styles.heroWithPhoto : styles.heroFallback]}>
+          {coverImageUrl ? (
+            <Image
+              source={{ uri: coverImageUrl }}
+              style={[styles.heroImage, { aspectRatio: heroAspect }]}
+              resizeMode="contain"
+            />
+          ) : (
+            <Text style={[styles.heroIcon, { color: theme.icon }]}>{icon}</Text>
+          )}
           <Pressable onPress={() => goBackSafely(CUSTOMER_HOME)} style={[styles.heroBtn, styles.heroBtnLeft]}>
             <Text style={styles.heroBtnText}>←</Text>
           </Pressable>
-          <Text style={[styles.heroIcon, { color: theme.icon }]}>{icon}</Text>
           <Pressable style={[styles.heroBtn, styles.heroBtnRight]}>
             <Text style={styles.heroBtnText}>♡</Text>
           </Pressable>
@@ -154,10 +182,21 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   hero: {
-    height: 160,
     backgroundColor: colors.brandDark,
+    position: "relative",
+  },
+  heroWithPhoto: {
+    width: "100%",
+  },
+  heroFallback: {
+    height: 160,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  heroImage: {
+    width: "100%",
+    backgroundColor: colors.brandDark,
   },
   heroIcon: { fontSize: 60, opacity: 0.25 },
   heroBtn: {
@@ -169,6 +208,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 2,
   },
   heroBtnLeft: { left: 12 },
   heroBtnRight: { right: 12 },

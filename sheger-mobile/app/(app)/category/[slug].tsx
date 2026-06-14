@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { BusinessThumbnail } from "@/components/business/BusinessThumbnail";
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
@@ -43,9 +44,13 @@ export default function BusinessListScreen() {
               style={styles.card}
               onPress={() => router.push(`/(app)/business/${biz.id}`)}
             >
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{biz.name.charAt(0)}</Text>
-              </View>
+              <BusinessThumbnail
+                name={biz.name}
+                coverImageUrl={biz.cover_image_url}
+                categorySlug={slug}
+                size={48}
+                rounded
+              />
               <View style={styles.info}>
                 <Text style={styles.name}>{biz.name}</Text>
                 <Text style={styles.meta}>{biz.address ?? biz.city ?? "Addis Ababa"}</Text>
@@ -72,15 +77,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: { fontSize: 20, fontWeight: "700", color: colors.primaryDarker },
   info: { flex: 1, gap: 2 },
   name: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
   meta: { fontSize: 13, color: colors.textMuted },

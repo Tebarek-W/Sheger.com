@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { BusinessThumbnail } from "@/components/business/BusinessThumbnail";
 import { formatRating } from "@/components/customer/StarRating";
-import { getCategoryIcon, getCategoryTheme } from "@/constants/categories";
+import { getCategoryTheme } from "@/constants/categories";
 import { colors, radius } from "@/constants/theme";
 import type { BusinessWithDetails } from "@/lib/api/businesses";
 import type { RatingSummary } from "@/lib/api/reviews";
@@ -25,15 +26,18 @@ export function BusinessCard({
 }: BusinessCardProps) {
   const slug = business.categories?.slug ?? "";
   const theme = getCategoryTheme(themeIndex);
-  const icon = getCategoryIcon(slug);
   const location = business.address ?? business.city ?? "Addis Ababa";
   const ratingLabel = formatRating(rating?.average ?? null, rating?.count ?? 0);
 
   return (
     <Pressable onPress={onPress} style={styles.card}>
-      <View style={[styles.thumb, { backgroundColor: theme.bg }]}>
-        <Text style={[styles.thumbIcon, { color: theme.icon }]}>{icon}</Text>
-      </View>
+      <BusinessThumbnail
+        name={business.name}
+        coverImageUrl={business.cover_image_url}
+        categorySlug={slug}
+        themeIndex={themeIndex}
+        size={80}
+      />
       <View style={styles.info}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>
@@ -74,14 +78,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     overflow: "hidden",
     marginBottom: 12,
+    gap: 0,
   },
-  thumb: {
-    width: 80,
-    minHeight: 80,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  thumbIcon: { fontSize: 30 },
   info: {
     flex: 1,
     paddingVertical: 12,
