@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 
 import { colors } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { ADMIN_BLOCKED_ROUTE, isPlatformAdmin } from "@/lib/routing";
 
 export default function AppLayout() {
   const { session, profile, loading } = useAuth();
@@ -13,6 +14,10 @@ export default function AppLayout() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (session && isPlatformAdmin(profile?.role)) {
+    return <Redirect href={ADMIN_BLOCKED_ROUTE} />;
   }
 
   if (session && profile?.role === "business_owner") {

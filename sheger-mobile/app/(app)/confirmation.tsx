@@ -7,6 +7,7 @@ import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import { CUSTOMER_HOME } from "@/lib/routing";
+import { DEFAULT_CANCELLATION_HOURS, getCancellationPolicyText } from "@/lib/booking/cancellation";
 import { useBookingStore } from "@/stores/bookingStore";
 
 export default function ConfirmationScreen() {
@@ -40,6 +41,12 @@ function ConfirmationScreenContent() {
         <Text style={styles.subtitle}>
           Your appointment is pending confirmation from the business. You&apos;ll receive a
           notification once it&apos;s approved.
+        </Text>
+        <Text style={styles.policy}>
+          {getCancellationPolicyText(
+            business?.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS,
+          )}{" "}
+          Manage cancellations from My bookings.
         </Text>
 
         <View style={styles.card}>
@@ -105,8 +112,15 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.6)",
     fontSize: 13,
     lineHeight: 20,
-    marginBottom: 8,
     paddingHorizontal: 8,
+  },
+  policy: {
+    textAlign: "center",
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 12,
+    lineHeight: 18,
+    paddingHorizontal: 12,
+    marginBottom: 8,
   },
   card: {
     backgroundColor: "rgba(255,255,255,0.08)",

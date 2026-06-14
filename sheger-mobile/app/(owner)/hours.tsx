@@ -18,6 +18,10 @@ import {
 } from "@/lib/api/slots";
 import { fetchMyWorkingHours, saveWorkingHours, type WorkingHoursInput } from "@/lib/api/owner";
 import {
+  buildDefaultWorkingHours,
+  DEFAULT_OPEN_TIME_GC,
+} from "@/lib/business/default-working-hours";
+import {
   formatEthiopianWallLabel,
   gc24ToEthiopianWall,
 } from "@/lib/calendar/ethiopian-clock";
@@ -27,19 +31,14 @@ import type { AppointmentSlot } from "@/lib/types/database";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-const DEFAULT_HOURS: WorkingHoursInput[] = Array.from({ length: 7 }, (_, day) => ({
-  day_of_week: day,
-  open_time: "09:00",
-  close_time: "18:00",
-  is_closed: day === 0,
-}));
+const DEFAULT_HOURS = buildDefaultWorkingHours();
 
 export default function OwnerHoursScreen() {
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
   const [hours, setHours] = useState<WorkingHoursInput[]>(DEFAULT_HOURS);
   const [activeDay, setActiveDay] = useState(1);
-  const [newSlotTime, setNewSlotTime] = useState("09:00");
+  const [newSlotTime, setNewSlotTime] = useState(DEFAULT_OPEN_TIME_GC);
   const [newSlotCapacity, setNewSlotCapacity] = useState("1");
 
   const { data: saved } = useQuery({
@@ -92,7 +91,7 @@ export default function OwnerHoursScreen() {
     mutationFn: (input: AppointmentSlotInput) => createAppointmentSlot(business!.id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-slots", business?.id] });
-      setNewSlotTime("09:00");
+      setNewSlotTime(DEFAULT_OPEN_TIME_GC);
       setNewSlotCapacity("1");
     },
     onError: (e) => Alert.alert("Could not add slot", getErrorMessage(e)),

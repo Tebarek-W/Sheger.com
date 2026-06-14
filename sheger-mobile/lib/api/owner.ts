@@ -1,3 +1,4 @@
+import { buildDefaultWorkingHours } from "@/lib/business/default-working-hours";
 import { supabase } from "@/lib/supabase";
 import type {
   Booking,
@@ -81,7 +82,10 @@ export async function createBusiness(input: CreateBusinessInput) {
     .single();
 
   if (error) throw error;
-  return data as Business;
+
+  const business = data as Business;
+  await saveWorkingHours(business.id, buildDefaultWorkingHours());
+  return business;
 }
 
 export async function updateBusiness(

@@ -48,18 +48,3 @@ export async function updateBookingStatus(
   revalidatePath("/dashboard/bookings");
   revalidatePath("/dashboard");
 }
-
-export async function updateUserRole(
-  userId: string,
-  role: "customer" | "business_owner" | "admin",
-) {
-  await requireAdmin();
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("profiles")
-    .update({ role })
-    .eq("id", userId);
-
-  if (error) throw error;
-  revalidatePath("/dashboard/users");
-}

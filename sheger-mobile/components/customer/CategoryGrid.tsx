@@ -13,11 +13,9 @@ type CategoryGridProps = {
 };
 
 export function CategoryGrid({ categories, selectedId, onSelect }: CategoryGridProps) {
-  const items = categories.slice(0, 8);
-
   return (
     <View style={styles.grid}>
-      {items.map((cat, index) => {
+      {categories.map((cat, index) => {
         const theme = getCategoryTheme(index);
         const active = selectedId === cat.id;
         return (

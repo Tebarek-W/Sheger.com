@@ -23,7 +23,7 @@ if (!supabaseAnonKey || supabaseAnonKey.includes("your-")) {
 
 /** @type {import('expo/config').ExpoConfig} */
 module.exports = {
-  name: "sheger-mobile",
+  name: "Sheger",
   slug: "sheger-mobile",
   scheme: "sheger",
   version: "1.0.0",
@@ -32,10 +32,16 @@ module.exports = {
   userInterfaceStyle: "light",
   ios: {
     supportsTablet: true,
+    bundleIdentifier: "com.sheger.app",
+    infoPlist: {
+      NSLocationWhenInUseUsageDescription:
+        "Sheger uses your location to show nearby businesses.",
+    },
   },
   android: {
+    package: "com.sheger.app",
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      backgroundColor: "#0d4d0d",
       foregroundImage: "./assets/android-icon-foreground.png",
       backgroundImage: "./assets/android-icon-background.png",
       monochromeImage: "./assets/android-icon-monochrome.png",

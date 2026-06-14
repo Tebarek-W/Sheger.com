@@ -117,16 +117,16 @@ SELECT b.id, 'Hair Styling', 'Full styling session', 400.00, 45
 FROM public.businesses b WHERE b.name = 'Sheger Beauty Studio'
 AND NOT EXISTS (SELECT 1 FROM public.services s WHERE s.business_id = b.id AND s.name = 'Hair Styling');
 
--- Working hours Mon-Sat 9-18
+-- Working hours: 2 ጠዋት–4 ማታ (08:00–22:00 GC), Mon–Sat open, Sunday closed
 INSERT INTO public.working_hours (business_id, day_of_week, open_time, close_time, is_closed)
-SELECT b.id, d.day, '09:00', '18:00', false
+SELECT b.id, d.day, '08:00', '22:00', false
 FROM public.businesses b
 CROSS JOIN (VALUES (1),(2),(3),(4),(5),(6)) AS d(day)
 WHERE b.name IN ('Bole Premium Barbers', 'Sheger Beauty Studio')
 ON CONFLICT (business_id, day_of_week) DO NOTHING;
 
 INSERT INTO public.working_hours (business_id, day_of_week, open_time, close_time, is_closed)
-SELECT b.id, 0, '09:00', '18:00', true
+SELECT b.id, 0, '08:00', '22:00', true
 FROM public.businesses b
 WHERE b.name IN ('Bole Premium Barbers', 'Sheger Beauty Studio')
 ON CONFLICT (business_id, day_of_week) DO NOTHING;
@@ -146,19 +146,19 @@ AND NOT EXISTS (
   SELECT 1 FROM public.employees e WHERE e.business_id = b.id AND e.full_name = 'Meron Assefa'
 );
 
--- Demo appointment slots (Mon–Sat, within 09:00–18:00 working hours)
+-- Demo appointment slots (Mon–Sat, within 08:00–22:00 working hours)
 INSERT INTO public.appointment_slots (business_id, day_of_week, start_time, max_capacity)
 SELECT b.id, d.day, t.slot_time::time, t.capacity
 FROM public.businesses b
 CROSS JOIN (VALUES (1),(2),(3),(4),(5),(6)) AS d(day)
 CROSS JOIN (
   VALUES
-    ('09:00', 3),
+    ('08:00', 3),
     ('10:00', 2),
-    ('11:00', 2),
+    ('12:00', 2),
     ('14:00', 2),
-    ('15:00', 2),
-    ('16:00', 1)
+    ('16:00', 2),
+    ('20:00', 1)
 ) AS t(slot_time, capacity)
 WHERE b.name = 'Bole Premium Barbers'
 AND NOT EXISTS (
@@ -172,11 +172,11 @@ FROM public.businesses b
 CROSS JOIN (VALUES (1),(2),(3),(4),(5),(6)) AS d(day)
 CROSS JOIN (
   VALUES
-    ('09:00', 1),
+    ('08:00', 1),
     ('10:30', 2),
     ('12:00', 1),
     ('14:00', 2),
-    ('16:00', 1)
+    ('18:00', 1)
 ) AS t(slot_time, capacity)
 WHERE b.name = 'Sheger Beauty Studio'
 AND NOT EXISTS (

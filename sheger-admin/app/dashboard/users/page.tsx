@@ -1,5 +1,6 @@
-import { UserRoleSelect } from "@/components/admin/UserRoleSelect";
+import { UserRoleBadge } from "@/components/admin/UserRoleBadge";
 import { createClient } from "@/lib/supabase/server";
+import type { UserRole } from "@/lib/types/database";
 
 export default async function UsersPage() {
   const supabase = await createClient();
@@ -12,7 +13,7 @@ export default async function UsersPage() {
     <div>
       <h1 className="text-3xl font-bold text-[var(--primary-dark)]">Users</h1>
       <p className="mt-2 text-[var(--muted)]">
-        Manage customer, business owner, and admin roles.
+        Registered customers, business owners, and admins.
       </p>
 
       <div className="mt-8 overflow-hidden rounded-2xl border border-[var(--border)]">
@@ -35,7 +36,7 @@ export default async function UsersPage() {
                   {user.phone || "—"}
                 </td>
                 <td className="px-4 py-3">
-                  <UserRoleSelect userId={user.id} role={user.role} />
+                  <UserRoleBadge role={user.role as UserRole} />
                 </td>
                 <td className="px-4 py-3 text-[var(--muted)]">
                   {new Date(user.created_at).toLocaleDateString()}

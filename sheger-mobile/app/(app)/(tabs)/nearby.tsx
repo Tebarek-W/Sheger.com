@@ -8,6 +8,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
+import { fetchAllBusinessRatings } from "@/lib/api/reviews";
 import { distanceKm, formatDistance, useUserLocation } from "@/lib/location";
 
 type Business = Awaited<ReturnType<typeof fetchApprovedBusinessesWithDetails>>[number];
@@ -26,6 +27,11 @@ export default function NearbyScreen() {
   const { data: businesses, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["home-businesses"],
     queryFn: fetchApprovedBusinessesWithDetails,
+  });
+
+  const { data: ratings } = useQuery({
+    queryKey: ["business-ratings"],
+    queryFn: fetchAllBusinessRatings,
   });
 
   const { located, missingLocation } = useMemo(() => {
@@ -125,6 +131,7 @@ export default function NearbyScreen() {
               key={business.id}
               business={business}
               themeIndex={index}
+              rating={ratings?.[business.id]}
               distanceLabel={km != null ? formatDistance(km) : undefined}
               onPress={() => router.push(`/(app)/business/${business.id}`)}
             />
@@ -140,6 +147,7 @@ export default function NearbyScreen() {
                 key={business.id}
                 business={business}
                 themeIndex={index}
+                rating={ratings?.[business.id]}
                 onPress={() => router.push(`/(app)/business/${business.id}`)}
               />
             ))}

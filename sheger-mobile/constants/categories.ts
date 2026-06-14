@@ -14,18 +14,21 @@ export const CATEGORY_THEMES: CategoryTheme[] = [
   { bg: "#eeedfe", icon: "#534ab7", badgeBg: "#eeedfe", badgeText: "#534ab7" },
   { bg: "#faece7", icon: "#993c1d", badgeBg: "#faece7", badgeText: "#993c1d" },
   { bg: "#f1efe8", icon: "#5f5e5a", badgeBg: "#f1efe8", badgeText: "#5f5e5a" },
+  { bg: "#fde8f3", icon: "#9d174d", badgeBg: "#fde8f3", badgeText: "#9d174d" },
+  { bg: "#e8f4fd", icon: "#0369a1", badgeBg: "#e8f4fd", badgeText: "#0369a1" },
 ];
 
 export const CATEGORY_ICONS: Record<string, string> = {
   barbershops: "✂️",
   "hair-salons": "💇",
   "nail-services": "💅",
+  "makeup-artists": "💄",
   dentists: "🦷",
   clinics: "🏥",
   "massage-spa": "🧖",
   photographers: "📷",
+  "wedding-planners": "💍",
   "gyms-trainers": "💪",
-  "events-decor": "🎉",
 };
 
 export function getCategoryIcon(slug?: string | null) {

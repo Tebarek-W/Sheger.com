@@ -49,6 +49,36 @@ export async function fetchBusinessReviewSummary(businessId: string) {
   return { average: sum / ratings.length, count: ratings.length };
 }
 
+export type RatingSummary = { average: number | null; count: number };
+export type RatingMap = Record<string, RatingSummary>;
+
+/**
+ * One query that returns rating summaries for every business, keyed by
+ * business id. Used by discovery (search / nearby / home) so we don't fire one
+ * request per card. Aggregation happens client-side to avoid extra RPCs.
+ */
+export async function fetchAllBusinessRatings(): Promise<RatingMap> {
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("business_id, rating");
+
+  if (error) throw error;
+
+  const totals = new Map<string, { sum: number; count: number }>();
+  for (const row of data ?? []) {
+    const current = totals.get(row.business_id) ?? { sum: 0, count: 0 };
+    current.sum += row.rating;
+    current.count += 1;
+    totals.set(row.business_id, current);
+  }
+
+  const map: RatingMap = {};
+  for (const [businessId, { sum, count }] of totals) {
+    map[businessId] = { average: count ? sum / count : null, count };
+  }
+  return map;
+}
+
 export async function fetchReviewableBookings(
   customerId: string,
   businessId: string,

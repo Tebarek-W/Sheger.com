@@ -1,21 +1,33 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { formatRating } from "@/components/customer/StarRating";
 import { getCategoryIcon, getCategoryTheme } from "@/constants/categories";
 import { colors, radius } from "@/constants/theme";
 import type { BusinessWithDetails } from "@/lib/api/businesses";
+import type { RatingSummary } from "@/lib/api/reviews";
 
 type BusinessCardProps = {
   business: BusinessWithDetails;
   themeIndex?: number;
   distanceLabel?: string;
+  rating?: RatingSummary;
+  fromPrice?: number | null;
   onPress: () => void;
 };
 
-export function BusinessCard({ business, themeIndex = 0, distanceLabel, onPress }: BusinessCardProps) {
+export function BusinessCard({
+  business,
+  themeIndex = 0,
+  distanceLabel,
+  rating,
+  fromPrice,
+  onPress,
+}: BusinessCardProps) {
   const slug = business.categories?.slug ?? "";
   const theme = getCategoryTheme(themeIndex);
   const icon = getCategoryIcon(slug);
   const location = business.address ?? business.city ?? "Addis Ababa";
+  const ratingLabel = formatRating(rating?.average ?? null, rating?.count ?? 0);
 
   return (
     <Pressable onPress={onPress} style={styles.card}>
@@ -23,9 +35,14 @@ export function BusinessCard({ business, themeIndex = 0, distanceLabel, onPress 
         <Text style={[styles.thumbIcon, { color: theme.icon }]}>{icon}</Text>
       </View>
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>
-          {business.name}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {business.name}
+          </Text>
+          {fromPrice != null ? (
+            <Text style={styles.price}>from {fromPrice.toFixed(0)} ETB</Text>
+          ) : null}
+        </View>
         <View style={styles.meta}>
           {business.categories?.name ? (
             <View style={[styles.badge, { backgroundColor: theme.badgeBg }]}>
@@ -36,7 +53,7 @@ export function BusinessCard({ business, themeIndex = 0, distanceLabel, onPress 
           ) : null}
           <View style={styles.stars}>
             <Text style={styles.starIcon}>★</Text>
-            <Text style={styles.starText}>New</Text>
+            <Text style={styles.starText}>{ratingLabel}</Text>
           </View>
         </View>
         <Text style={styles.location} numberOfLines={1}>
@@ -71,7 +88,9 @@ const styles = StyleSheet.create({
     paddingRight: 12,
     gap: 3,
   },
-  name: { fontSize: 14, fontWeight: "500", color: colors.text },
+  nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  name: { flex: 1, fontSize: 14, fontWeight: "500", color: colors.text },
+  price: { fontSize: 11, fontWeight: "600", color: colors.primary },
   meta: {
     flexDirection: "row",
     alignItems: "center",

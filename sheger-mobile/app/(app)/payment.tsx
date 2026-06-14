@@ -11,6 +11,7 @@ import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import { createBooking } from "@/lib/api/bookings";
+import { DEFAULT_CANCELLATION_HOURS, getCancellationPolicyText } from "@/lib/booking/cancellation";
 import { getErrorMessage } from "@/lib/errors";
 import { useBookingStore } from "@/stores/bookingStore";
 
@@ -109,6 +110,15 @@ function PaymentScreenContent() {
           </View>
         </View>
 
+        <View style={styles.policyBox}>
+          <Text style={styles.policyTitle}>Cancellation policy</Text>
+          <Text style={styles.policyText}>
+            {getCancellationPolicyText(
+              business.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS,
+            )}
+          </Text>
+        </View>
+
         <Text style={styles.sectionLabel}>Payment method</Text>
         <View style={styles.methods}>
           {PAYMENT_METHODS.map((item) => {
@@ -169,6 +179,15 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontSize: 14, fontWeight: "500", color: colors.text },
   totalValue: { fontSize: 16, fontWeight: "500", color: colors.primary },
+  policyBox: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.md,
+    padding: 12,
+    marginBottom: 20,
+    gap: 4,
+  },
+  policyTitle: { fontSize: 12, fontWeight: "600", color: colors.primaryDark },
+  policyText: { fontSize: 12, color: colors.primaryDark, lineHeight: 17 },
   sectionLabel: {
     fontSize: 12,
     fontWeight: "500",

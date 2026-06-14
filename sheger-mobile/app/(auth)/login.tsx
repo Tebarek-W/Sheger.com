@@ -36,6 +36,10 @@ export default function LoginScreen() {
       .eq("id", data.user.id)
       .maybeSingle();
     const role = profile?.role as UserRole | undefined;
+    if (role === "admin") {
+      router.replace("/(auth)/admin-blocked");
+      return;
+    }
     const pendingBook = getPendingBookingRoute();
     if (pendingBook && role === "customer") {
       router.replace(pendingBook);

@@ -17,6 +17,7 @@ import { colors, getTimeGreeting, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
+import { fetchAllBusinessRatings } from "@/lib/api/reviews";
 
 export default function HomeScreen() {
   const { session, profile } = useAuth();
@@ -31,6 +32,11 @@ export default function HomeScreen() {
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,
+  });
+
+  const { data: ratings } = useQuery({
+    queryKey: ["business-ratings"],
+    queryFn: fetchAllBusinessRatings,
   });
 
   const filtered = useMemo(() => {
@@ -122,6 +128,7 @@ export default function HomeScreen() {
               key={business.id}
               business={business}
               themeIndex={index}
+              rating={ratings?.[business.id]}
               onPress={() => router.push(`/(app)/business/${business.id}`)}
             />
           ))

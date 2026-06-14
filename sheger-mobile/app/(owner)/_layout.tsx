@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 
 import { colors } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
-import { CUSTOMER_HOME } from "@/lib/routing";
+import { ADMIN_BLOCKED_ROUTE, CUSTOMER_HOME, isPlatformAdmin } from "@/lib/routing";
 
 export default function OwnerLayout() {
   const { session, profile, loading } = useAuth();
@@ -18,6 +18,10 @@ export default function OwnerLayout() {
 
   if (!session) {
     return <Redirect href="/(auth)/login" />;
+  }
+
+  if (isPlatformAdmin(profile?.role)) {
+    return <Redirect href={ADMIN_BLOCKED_ROUTE} />;
   }
 
   if (profile?.role !== "business_owner") {

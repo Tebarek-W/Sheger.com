@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { ReviewForm } from "@/components/customer/ReviewForm";
+import { BookingCancelAction } from "@/components/customer/BookingCancelAction";
 import { Button } from "@/components/ui/Button";
 import { DualDateTime } from "@/components/ui/DualDateTime";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -11,6 +12,7 @@ import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchCustomerBookings } from "@/lib/api/bookings";
+import { DEFAULT_CANCELLATION_HOURS } from "@/lib/booking/cancellation";
 import { fetchReviewedBookingIds } from "@/lib/api/reviews";
 import type { BookingStatus } from "@/lib/types/database";
 
@@ -141,6 +143,21 @@ export default function BookingsScreen() {
                     style={styles.reviewBtn}
                   />
                 ) : null}
+
+                <BookingCancelAction
+                  bookingId={booking.id}
+                  scheduledAt={booking.scheduled_at}
+                  status={booking.status}
+                  businessName={booking.businesses?.name ?? "Business"}
+                  cancellationHours={
+                    booking.businesses?.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS
+                  }
+                  onCancelled={() => {
+                    queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
+                    queryClient.invalidateQueries({ queryKey: ["available-slots"] });
+                    refetch();
+                  }}
+                />
               </View>
             );
           })
