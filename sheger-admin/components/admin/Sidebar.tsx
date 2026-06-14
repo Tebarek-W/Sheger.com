@@ -9,6 +9,7 @@ const links = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/users", label: "Users" },
   { href: "/dashboard/businesses", label: "Businesses" },
+  { href: "/dashboard/categories", label: "Categories" },
   { href: "/dashboard/bookings", label: "Bookings" },
   { href: "/dashboard/payments", label: "Payments" },
   { href: "/dashboard/reports", label: "Reports" },
@@ -26,7 +27,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-[var(--border)] bg-[var(--surface)] p-6">
+    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)] p-6">
       <div className="mb-10">
         <p className="text-2xl font-extrabold text-[var(--primary-dark)]">Sheger</p>
         <p className="text-sm text-[var(--muted)]">Admin Panel</p>

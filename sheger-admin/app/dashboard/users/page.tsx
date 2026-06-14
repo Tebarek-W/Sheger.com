@@ -1,13 +1,31 @@
 import { UserRoleBadge } from "@/components/admin/UserRoleBadge";
+import {
+  countUsersByRole,
+  emptyUsersMessage,
+  filterUsersByRole,
+  parseUserRoleFilter,
+  UserRoleTabs,
+} from "@/components/admin/UserRoleTabs";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/types/database";
 
-export default async function UsersPage() {
+type UsersPageProps = {
+  searchParams: Promise<{ role?: string }>;
+};
+
+export default async function UsersPage({ searchParams }: UsersPageProps) {
+  const { role: roleParam } = await searchParams;
+  const activeFilter = parseUserRoleFilter(roleParam);
+
   const supabase = await createClient();
   const { data: users } = await supabase
     .from("profiles")
     .select("*")
     .order("created_at", { ascending: false });
+
+  const allUsers = users ?? [];
+  const counts = countUsersByRole(allUsers);
+  const filteredUsers = filterUsersByRole(allUsers, activeFilter);
 
   return (
     <div>
@@ -16,7 +34,9 @@ export default async function UsersPage() {
         Registered customers, business owners, and admins.
       </p>
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-[var(--border)]">
+      <UserRoleTabs active={activeFilter} counts={counts} />
+
+      <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border)]">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--surface)] text-[var(--primary-dark)]">
             <tr>
@@ -27,7 +47,7 @@ export default async function UsersPage() {
             </tr>
           </thead>
           <tbody>
-            {(users ?? []).map((user) => (
+            {filteredUsers.map((user) => (
               <tr key={user.id} className="border-t border-[var(--border)]">
                 <td className="px-4 py-3 font-medium">
                   {user.full_name || "—"}
@@ -45,8 +65,10 @@ export default async function UsersPage() {
             ))}
           </tbody>
         </table>
-        {!users?.length ? (
-          <p className="p-8 text-center text-[var(--muted)]">No users yet.</p>
+        {!filteredUsers.length ? (
+          <p className="p-8 text-center text-[var(--muted)]">
+            {emptyUsersMessage(activeFilter)}
+          </p>
         ) : null}
       </div>
     </div>
