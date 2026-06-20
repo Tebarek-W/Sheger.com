@@ -22,7 +22,8 @@ export function getCancellationEligibility(
   const start = new Date(scheduledAt);
   const msUntil = start.getTime() - now.getTime();
   const hoursUntil = msUntil / (1000 * 60 * 60);
-  const hoursRequired = Math.max(1, cancellationHours);
+  // Matches the database (COALESCE(cancellation_hours, 2)); 0 means "anytime".
+  const hoursRequired = Math.max(0, cancellationHours);
 
   if (hoursUntil <= 0) {
     return {

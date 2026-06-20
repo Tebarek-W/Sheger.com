@@ -83,16 +83,29 @@ function buildHtml(
       iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -26]
     });
 
+    // Escape any business-supplied text before injecting into popup HTML.
+    function esc(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
     var bounds = [];
     var markers = ${JSON.stringify(markers)};
 
     markers.forEach(function (m) {
       var marker = L.marker([m.lat, m.lng], { icon: bizIcon }).addTo(map);
-      var meta = m.meta ? '<div class="popup-meta">' + m.meta + '</div>' : '';
-      marker.bindPopup(
-        '<div class="popup-name">' + m.name + '</div>' + meta +
-        '<a class="popup-btn" href="#" onclick="post({ type: \\'open\\', id: \\'' + m.id + '\\' }); return false;">View business</a>'
-      );
+      var meta = m.meta ? '<div class="popup-meta">' + esc(m.meta) + '</div>' : '';
+      var container = document.createElement('div');
+      container.innerHTML =
+        '<div class="popup-name">' + esc(m.name) + '</div>' + meta +
+        '<a class="popup-btn" href="#">View business</a>';
+      var btn = container.querySelector('.popup-btn');
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        post({ type: 'open', id: m.id });
+      });
+      marker.bindPopup(container);
       bounds.push([m.lat, m.lng]);
     });
 

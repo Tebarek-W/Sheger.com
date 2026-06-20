@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BusinessPhotosTab } from "@/components/customer/BusinessPhotosTab";
 import { BusinessReviewsTab } from "@/components/customer/BusinessReviewsTab";
 import { BusinessStaffTab } from "@/components/customer/BusinessStaffTab";
+import { ServiceCard } from "@/components/customer/ServiceCard";
 import { formatRating, StarRating } from "@/components/customer/StarRating";
 import { getCategoryIcon, getCategoryTheme } from "@/constants/categories";
 import { colors, radius } from "@/constants/theme";
@@ -147,16 +148,14 @@ export default function BusinessProfileScreen() {
           {activeTab === "Services" ? (
             <View style={styles.serviceList}>
               {services?.map((service) => (
-                <View key={service.id} style={styles.serviceRow}>
-                  <View style={styles.serviceInfo}>
-                    <Text style={styles.serviceName}>{service.name}</Text>
-                    <Text style={styles.serviceDur}>{service.duration_minutes} min</Text>
-                    <Text style={styles.servicePrice}>{Number(service.price).toFixed(0)} ETB</Text>
-                  </View>
-                  <Pressable style={styles.addBtn} onPress={() => onBook(service.id)}>
-                    <Text style={styles.addBtnText}>+</Text>
-                  </Pressable>
-                </View>
+                <ServiceCard
+                  key={service.id}
+                  name={service.name}
+                  description={service.description}
+                  price={service.price}
+                  durationMinutes={service.duration_minutes}
+                  onPress={() => onBook(service.id)}
+                />
               ))}
               {!services?.length ? <Text style={styles.muted}>No services listed yet.</Text> : null}
             </View>
@@ -269,29 +268,6 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: colors.primary,
   },
-  serviceList: { gap: 10 },
-  serviceRow: {
-    backgroundColor: colors.screenBg,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  serviceInfo: { flex: 1, gap: 2 },
-  serviceName: { fontSize: 13, fontWeight: "500", color: colors.text },
-  serviceDur: { fontSize: 11, color: colors.textSecondary },
-  servicePrice: { fontSize: 14, fontWeight: "500", color: colors.primary },
-  addBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 10,
-  },
-  addBtnText: { color: colors.white, fontSize: 18, fontWeight: "500", marginTop: -1 },
+  serviceList: { gap: 9 },
   muted: { color: colors.textMuted, fontSize: 14 },
 });

@@ -1,6 +1,35 @@
+import * as FileSystem from "expo-file-system/legacy";
+
 import { supabase } from "@/lib/supabase";
 
 const BUCKET = "business-images";
+
+const B64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+/** Decode a base64 string to bytes without relying on atob (absent on RN). */
+function base64ToBytes(base64: string): Uint8Array {
+  const clean = base64.replace(/[^A-Za-z0-9+/]/g, "");
+  const lookup = new Uint8Array(256);
+  for (let i = 0; i < B64_CHARS.length; i++) lookup[B64_CHARS.charCodeAt(i)] = i;
+
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  const byteLength = (clean.length * 3) / 4 - padding;
+  const bytes = new Uint8Array(byteLength);
+
+  let p = 0;
+  for (let i = 0; i < clean.length; i += 4) {
+    const e1 = lookup[clean.charCodeAt(i)];
+    const e2 = lookup[clean.charCodeAt(i + 1)];
+    const e3 = lookup[clean.charCodeAt(i + 2)];
+    const e4 = lookup[clean.charCodeAt(i + 3)];
+
+    if (p < byteLength) bytes[p++] = (e1 << 2) | (e2 >> 4);
+    if (p < byteLength) bytes[p++] = ((e2 & 15) << 4) | (e3 >> 2);
+    if (p < byteLength) bytes[p++] = ((e3 & 3) << 6) | e4;
+  }
+
+  return bytes;
+}
 
 function coverPath(businessId: string, ext: "jpg" | "png" | "webp") {
   return `${businessId}/cover.${ext}`;
@@ -32,12 +61,21 @@ export async function uploadBusinessCoverImage(
 
   const ext = extFromUri(localUri);
   const path = coverPath(businessId, ext);
-  const response = await fetch(localUri);
-  const arrayBuffer = await response.arrayBuffer();
+
+  // Read the picked file directly from disk. fetch(localUri).arrayBuffer() is
+  // unreliable on Android/iOS for content:// and file:// URIs, so we use
+  // expo-file-system to get base64 and decode it to an ArrayBuffer.
+  const base64 = await FileSystem.readAsStringAsync(localUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  if (!base64) {
+    throw new Error("Could not read the selected image. Try another photo.");
+  }
+  const fileData = base64ToBytes(base64);
 
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
-    .upload(path, arrayBuffer, { contentType: contentTypeFor(ext), upsert: true });
+    .upload(path, fileData, { contentType: contentTypeFor(ext), upsert: true });
 
   if (uploadError) {
     throw new Error(
@@ -61,7 +99,14 @@ export async function uploadBusinessCoverImage(
 }
 
 export async function removeBusinessCoverImage(businessId: string) {
-  await supabase.storage
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error("You must be signed in to update a business photo.");
+  }
+
+  const { error: removeError } = await supabase.storage
     .from(BUCKET)
     .remove([
       coverPath(businessId, "jpg"),
@@ -69,10 +114,13 @@ export async function removeBusinessCoverImage(businessId: string) {
       coverPath(businessId, "webp"),
     ]);
 
+  if (removeError) throw removeError;
+
   const { error } = await supabase
     .from("businesses")
     .update({ cover_image_url: null })
-    .eq("id", businessId);
+    .eq("id", businessId)
+    .eq("owner_id", session.user.id);
 
   if (error) throw error;
 }

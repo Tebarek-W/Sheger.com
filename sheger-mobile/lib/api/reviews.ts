@@ -14,7 +14,8 @@ export async function fetchBusinessReviews(businessId: string) {
     .from("reviews")
     .select("*")
     .eq("business_id", businessId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (error) throw error;
   if (!reviews?.length) return [] as ReviewWithCustomer[];
@@ -53,11 +54,33 @@ export type RatingSummary = { average: number | null; count: number };
 export type RatingMap = Record<string, RatingSummary>;
 
 /**
- * One query that returns rating summaries for every business, keyed by
- * business id. Used by discovery (search / nearby / home) so we don't fire one
- * request per card. Aggregation happens client-side to avoid extra RPCs.
+ * Rating summaries for every business, keyed by business id. Used by discovery
+ * (search / nearby / home) so we don't fire one request per card. Aggregation
+ * runs in the database via RPC; if the RPC isn't deployed yet we fall back to
+ * client-side aggregation so the app keeps working.
  */
 export async function fetchAllBusinessRatings(): Promise<RatingMap> {
+  // RPC isn't in the generated schema types, so call it untyped and validate.
+  const rpc = (await (
+    supabase.rpc as unknown as (
+      fn: string,
+    ) => Promise<{
+      data: { business_id: string; average: number | null; review_count: number }[] | null;
+      error: unknown;
+    }>
+  )("get_business_rating_summaries"));
+
+  if (!rpc.error && rpc.data) {
+    const map: RatingMap = {};
+    for (const row of rpc.data) {
+      map[row.business_id] = {
+        average: row.average != null ? Number(row.average) : null,
+        count: Number(row.review_count),
+      };
+    }
+    return map;
+  }
+
   const { data, error } = await supabase
     .from("reviews")
     .select("business_id, rating");

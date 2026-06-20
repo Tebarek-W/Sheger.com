@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -47,9 +47,14 @@ function PaymentScreenContent() {
   const setBookingId = useBookingStore((s) => s.setBookingId);
   const [method, setMethod] = useState("telebirr");
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
 
   const confirm = async () => {
     if (!user || !business || !service || !scheduledAt) return;
+    // Synchronous guard: state updates are async, so a fast double-tap could
+    // otherwise enter this handler twice and create duplicate bookings.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setLoading(true);
     try {
       setPaymentMethod(METHOD_LABELS[method] ?? method);
@@ -67,6 +72,7 @@ function PaymentScreenContent() {
       router.replace("/(app)/confirmation");
     } catch (error) {
       Alert.alert("Booking failed", getErrorMessage(error));
+      submittingRef.current = false;
     } finally {
       setLoading(false);
     }

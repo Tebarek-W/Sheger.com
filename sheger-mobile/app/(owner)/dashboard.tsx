@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/owner/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
+import { SignOutButton } from "@/components/ui/SignOutButton";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
@@ -35,13 +36,13 @@ export default function OwnerDashboardScreen() {
     return (
       <Screen scroll>
         <View style={styles.topRow}>
-          <Header
-            title="Business Owner"
-            subtitle={`Hello, ${profile?.full_name?.split(" ")[0] || "there"}`}
-          />
-          <Pressable onPress={signOut}>
-            <Text style={styles.signOut}>Sign out</Text>
-          </Pressable>
+          <View style={styles.topMain}>
+            <Header
+              title="Business Owner"
+              subtitle={`Hello, ${profile?.full_name?.split(" ")[0] || "there"}`}
+            />
+          </View>
+          <SignOutButton onPress={signOut} />
         </View>
 
         <View style={styles.emptyCard}>
@@ -59,13 +60,13 @@ export default function OwnerDashboardScreen() {
   return (
     <Screen scroll>
       <View style={styles.topRow}>
-        <Header
-          title={business.name}
-          subtitle="Manage your business on Sheger"
-        />
-        <Pressable onPress={signOut}>
-          <Text style={styles.signOut}>Sign out</Text>
-        </Pressable>
+        <View style={styles.topMain}>
+          <Header
+            title={business.name}
+            subtitle="Manage your business on Sheger"
+          />
+        </View>
+        <SignOutButton onPress={signOut} />
       </View>
 
       <StatusBadge status={business.status} />
@@ -149,8 +150,13 @@ export default function OwnerDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  signOut: { color: colors.primary, fontWeight: "600", fontSize: 14, marginTop: 8 },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  topMain: { flex: 1, minWidth: 0 },
   emptyCard: {
     marginTop: 24,
     backgroundColor: colors.surface,

@@ -37,6 +37,8 @@ export default function LoginScreen() {
       .maybeSingle();
     const role = profile?.role as UserRole | undefined;
     if (role === "admin") {
+      // Revoke the session so an admin JWT is never left active on a device.
+      await supabase.auth.signOut();
       router.replace("/(auth)/admin-blocked");
       return;
     }

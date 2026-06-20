@@ -11,7 +11,8 @@ export async function fetchApprovedBusinessesWithDetails() {
     .from("businesses")
     .select("*, categories(name, slug), services(*)")
     .eq("status", "approved")
-    .order("name");
+    .order("name")
+    .limit(200);
 
   if (error) throw error;
 
@@ -27,7 +28,8 @@ export async function fetchBusinessesByCategory(categoryId: string) {
     .select("*, categories(name, slug)")
     .eq("category_id", categoryId)
     .eq("status", "approved")
-    .order("name");
+    .order("name")
+    .limit(200);
 
   if (error) throw error;
   return data as (Business & { categories: Pick<Category, "name" | "slug"> | null })[];

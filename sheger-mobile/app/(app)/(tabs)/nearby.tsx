@@ -8,8 +8,10 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
+import { fetchCategories } from "@/lib/api/categories";
 import { fetchAllBusinessRatings } from "@/lib/api/reviews";
 import { distanceKm, formatDistance, useUserLocation } from "@/lib/location";
+import { useDiscoveryStore } from "@/stores/discoveryStore";
 
 type Business = Awaited<ReturnType<typeof fetchApprovedBusinessesWithDetails>>[number];
 
@@ -23,10 +25,17 @@ const RADIUS_OPTIONS = [
 export default function NearbyScreen() {
   const { coords, granted, loading: locationLoading, refresh } = useUserLocation();
   const [radiusKm, setRadiusKm] = useState<number | null>(null);
+  const categoryId = useDiscoveryStore((s) => s.categoryId);
+  const setCategoryId = useDiscoveryStore((s) => s.setCategoryId);
 
   const { data: businesses, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["home-businesses"],
     queryFn: fetchApprovedBusinessesWithDetails,
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
   });
 
   const { data: ratings } = useQuery({
@@ -34,10 +43,17 @@ export default function NearbyScreen() {
     queryFn: fetchAllBusinessRatings,
   });
 
-  const { located, missingLocation } = useMemo(() => {
+  const selectedCategory = categories?.find((c) => c.id === categoryId);
+
+  const categoryBusinesses = useMemo(() => {
     const all = businesses ?? [];
-    const withCoords = all.filter((b) => b.latitude != null && b.longitude != null);
-    const without = all.filter((b) => b.latitude == null || b.longitude == null);
+    if (!categoryId) return all;
+    return all.filter((b) => b.category_id === categoryId);
+  }, [businesses, categoryId]);
+
+  const { located, missingLocation } = useMemo(() => {
+    const withCoords = categoryBusinesses.filter((b) => b.latitude != null && b.longitude != null);
+    const without = categoryBusinesses.filter((b) => b.latitude == null || b.longitude == null);
 
     let ranked = withCoords.map((business) => ({
       business,
@@ -57,22 +73,37 @@ export default function NearbyScreen() {
     }
 
     return { located: ranked, missingLocation: without };
-  }, [businesses, coords, radiusKm]);
+  }, [categoryBusinesses, coords, radiusKm]);
 
   const loading = isLoading || locationLoading;
+  const categoryLabel = selectedCategory?.name;
 
   return (
     <Screen scroll padded={false} backgroundColor={colors.screenBg}>
       <View style={styles.header}>
         <Text style={styles.title}>Nearby</Text>
         <Text style={styles.subtitle}>
-          {coords
-            ? "Businesses sorted by distance from you"
-            : "Enable location to sort by distance"}
+          {categoryLabel
+            ? coords
+              ? `${categoryLabel} sorted by distance from you`
+              : `${categoryLabel} near you — enable location to sort by distance`
+            : coords
+              ? "Businesses sorted by distance from you"
+              : "Enable location to sort by distance"}
         </Text>
       </View>
 
       <View style={styles.body}>
+        {categoryLabel ? (
+          <View style={styles.categoryRow}>
+            <View style={styles.categoryChip}>
+              <Text style={styles.categoryChipText}>{categoryLabel}</Text>
+            </View>
+            <Pressable onPress={() => setCategoryId(null)} hitSlop={8}>
+              <Text style={styles.clearCategory}>Clear</Text>
+            </Pressable>
+          </View>
+        ) : null}
         {granted === false ? (
           <View style={styles.banner}>
             <Text style={styles.bannerText}>
@@ -104,7 +135,7 @@ export default function NearbyScreen() {
         ) : null}
 
         <SectionHeader
-          title={coords ? "Closest to you" : "Businesses"}
+          title={coords ? "Closest to you" : categoryLabel ? categoryLabel : "Businesses"}
           actionLabel={isRefetching ? "Updating…" : "Refresh"}
           onAction={() => refetch()}
         />
@@ -117,12 +148,22 @@ export default function NearbyScreen() {
         ) : located.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>
-              {radiusKm ? `Nothing within ${radiusKm} km` : "No businesses nearby"}
+              {categoryLabel
+                ? radiusKm
+                  ? `No ${categoryLabel.toLowerCase()} within ${radiusKm} km`
+                  : `No nearby ${categoryLabel.toLowerCase()}`
+                : radiusKm
+                  ? `Nothing within ${radiusKm} km`
+                  : "No businesses nearby"}
             </Text>
             <Text style={styles.emptyText}>
-              {radiusKm
-                ? "Try widening the distance filter."
-                : "Approved businesses will appear here soon."}
+              {categoryLabel
+                ? radiusKm
+                  ? "Try widening the distance filter or choose another category."
+                  : "Try another category or check back later."
+                : radiusKm
+                  ? "Try widening the distance filter."
+                  : "Approved businesses will appear here soon."}
             </Text>
           </View>
         ) : (
@@ -170,6 +211,20 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "500", color: colors.white },
   subtitle: { fontSize: 13, color: "rgba(255,255,255,0.65)", marginTop: 4, lineHeight: 18 },
   body: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 24 },
+  categoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  categoryChip: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.full,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  categoryChipText: { fontSize: 13, fontWeight: "600", color: colors.primaryDark },
+  clearCategory: { fontSize: 13, fontWeight: "600", color: colors.primary },
   banner: {
     backgroundColor: colors.primaryLight,
     borderRadius: radius.md,

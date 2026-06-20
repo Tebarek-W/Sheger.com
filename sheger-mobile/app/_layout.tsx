@@ -10,7 +10,19 @@ import { colors } from "@/constants/theme";
 import { AuthProvider } from "@/hooks/useAuth";
 
 export default function RootLayout() {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60_000,
+            gcTime: 5 * 60_000,
+            retry: 1,
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+  );
 
   return (
     <SafeAreaProvider>

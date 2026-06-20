@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
+import { SignOutButton } from "@/components/ui/SignOutButton";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -41,6 +42,9 @@ export default function ProfileScreen() {
   return (
     <Screen scroll padded={false} backgroundColor={colors.screenBg}>
       <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <SignOutButton onPress={signOut} variant="light" />
+        </View>
         <View style={styles.avatarLarge}>
           <Text style={styles.avatarLargeText}>{initials}</Text>
         </View>
@@ -80,8 +84,6 @@ export default function ProfileScreen() {
           <Text style={styles.menuLabel}>Search services</Text>
           <Text style={styles.menuChevron}>›</Text>
         </Pressable>
-
-        <Button title="Sign out" variant="outline" onPress={signOut} style={styles.signOut} />
       </View>
     </Screen>
   );
@@ -105,6 +107,12 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
     alignItems: "center",
+  },
+  headerTop: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginBottom: 8,
   },
   avatar: {
     width: 72,
@@ -171,5 +179,4 @@ const styles = StyleSheet.create({
   },
   menuLabel: { fontSize: 14, fontWeight: "500", color: colors.text },
   menuChevron: { fontSize: 20, color: colors.textTertiary },
-  signOut: { marginTop: 8 },
 });

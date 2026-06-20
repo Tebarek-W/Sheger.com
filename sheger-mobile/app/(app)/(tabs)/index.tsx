@@ -18,11 +18,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
 import { fetchAllBusinessRatings } from "@/lib/api/reviews";
+import { useDiscoveryStore } from "@/stores/discoveryStore";
 
 export default function HomeScreen() {
   const { session, profile } = useAuth();
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const categoryFilter = useDiscoveryStore((s) => s.categoryId);
+  const setCategoryFilter = useDiscoveryStore((s) => s.setCategoryId);
 
   const { data: businesses, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ["home-businesses"],

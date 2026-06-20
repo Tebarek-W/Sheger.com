@@ -14,6 +14,21 @@ export function calendarDayParts(date: Date) {
   };
 }
 
+/**
+ * "Today" as the Addis Ababa calendar day, returned as a local-midnight Date so
+ * it can be compared against the picker's `new Date(year, month, day)` cells.
+ * Ethiopia is a fixed UTC+3 (no DST), so we shift the instant by +3h and read
+ * its UTC parts — avoids relying on Intl timezone support under Hermes.
+ */
+export function addisToday(): Date {
+  const shifted = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  return new Date(
+    shifted.getUTCFullYear(),
+    shifted.getUTCMonth(),
+    shifted.getUTCDate(),
+  );
+}
+
 /** Day-of-week (0=Sun) for a calendar day in Addis Ababa. */
 export function dayOfWeekInAddis(date: Date): number {
   const { year, month, day } = calendarDayParts(date);

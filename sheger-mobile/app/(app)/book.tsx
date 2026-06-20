@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -9,7 +9,7 @@ import { DualDateTime } from "@/components/ui/DualDateTime";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { dateToEthiopian, formatMonthDual } from "@/lib/calendar/ethiopian";
-import { dayOfWeekInAddis } from "@/lib/calendar/timezone";
+import { addisToday, dayOfWeekInAddis } from "@/lib/calendar/timezone";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import { fetchAvailableSlotsForDate, slotInstantKey } from "@/lib/api/slots";
 import { fetchWorkingHours } from "@/lib/api/bookings";
@@ -33,14 +33,10 @@ function BookScreenContent() {
   const scheduledAt = useBookingStore((s) => s.scheduledAt);
 
   const [viewMonth, setViewMonth] = useState(() => {
-    const d = new Date();
+    const d = addisToday();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
+  const [selectedDate, setSelectedDate] = useState(() => addisToday());
 
   const { data: workingHours, isLoading: hoursLoading } = useQuery({
     queryKey: ["working-hours", business?.id, selectedDate.toDateString()],
@@ -49,16 +45,32 @@ function BookScreenContent() {
     refetchInterval: 30_000,
   });
 
+  // Hours not configured for this day == closed. `null` is a loaded value here.
+  const hoursConfigured = Boolean(workingHours);
+  const isOpenDay = hoursConfigured && !workingHours!.is_closed;
+
   const { data: availableSlots, isLoading: slotsLoading } = useQuery({
     queryKey: ["available-slots", business?.id, selectedDate.toDateString()],
     queryFn: () => fetchAvailableSlotsForDate(business!.id, selectedDate),
-    enabled: Boolean(business?.id) && !workingHours?.is_closed,
+    enabled: Boolean(business?.id) && isOpenDay,
     refetchInterval: 8_000,
     refetchOnMount: "always",
   });
 
   const bookableSlots = availableSlots?.filter((s) => !s.isFull) ?? [];
   const hasFullSlots = (availableSlots?.some((s) => s.isFull) ?? false) && bookableSlots.length === 0;
+
+  // If the chosen slot becomes full or disappears after a refetch, clear it so
+  // the user can't proceed to payment with a stale selection.
+  useEffect(() => {
+    if (!scheduledAt || !availableSlots) return;
+    const match = availableSlots.find(
+      (s) => slotInstantKey(s.scheduledAt) === slotInstantKey(scheduledAt),
+    );
+    if (!match || match.isFull) {
+      setScheduledAt(null);
+    }
+  }, [availableSlots, scheduledAt, setScheduledAt]);
 
   const calendarDays = useMemo(() => {
     const year = viewMonth.getFullYear();
@@ -73,11 +85,7 @@ function BookScreenContent() {
     return cells;
   }, [viewMonth]);
 
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
+  const today = useMemo(() => addisToday(), []);
 
   const shiftMonth = (delta: number) => {
     setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() + delta, 1));
@@ -192,7 +200,11 @@ function BookScreenContent() {
         </View>
 
         <Text style={styles.sectionLabel}>Available times (Ethiopian)</Text>
-        {workingHours?.is_closed ? (
+        {hoursLoading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : !hoursConfigured ? (
+          <Text style={styles.muted}>Hours are not set for this day yet.</Text>
+        ) : workingHours?.is_closed ? (
           <Text style={styles.muted}>This business is closed on this day.</Text>
         ) : loading ? (
           <ActivityIndicator color={colors.primary} />
