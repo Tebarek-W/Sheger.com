@@ -150,10 +150,7 @@ export default function BusinessProfileScreen() {
               {services?.map((service) => (
                 <ServiceCard
                   key={service.id}
-                  name={service.name}
-                  description={service.description}
-                  price={service.price}
-                  durationMinutes={service.duration_minutes}
+                  service={service}
                   onPress={() => onBook(service.id)}
                 />
               ))}

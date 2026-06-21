@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -13,6 +13,10 @@ import { RequireAuth } from "@/hooks/useRequireAuth";
 import { createBooking } from "@/lib/api/bookings";
 import { DEFAULT_CANCELLATION_HOURS, getCancellationPolicyText } from "@/lib/booking/cancellation";
 import { getErrorMessage } from "@/lib/errors";
+import {
+  formatServiceDuration,
+  getCheckoutPriceLabel,
+} from "@/lib/services/pricing";
 import { useBookingStore } from "@/stores/bookingStore";
 
 const PAYMENT_METHODS = [
@@ -48,6 +52,14 @@ function PaymentScreenContent() {
   const [method, setMethod] = useState("telebirr");
   const [loading, setLoading] = useState(false);
   const submittingRef = useRef(false);
+
+  const checkoutPrice = service ? getCheckoutPriceLabel(service) : null;
+
+  useEffect(() => {
+    if (service?.pricing_model === "variable") {
+      setMethod("cash");
+    }
+  }, [service?.pricing_model]);
 
   const confirm = async () => {
     if (!user || !business || !service || !scheduledAt) return;
@@ -89,7 +101,7 @@ function PaymentScreenContent() {
     );
   }
 
-  const price = Number(service.price).toFixed(0);
+  const price = checkoutPrice?.primary ?? "—";
 
   return (
     <Screen scroll padded={false}>
@@ -105,15 +117,24 @@ function PaymentScreenContent() {
             <Text style={styles.payLabel}>Business</Text>
             <Text style={styles.payValue}>{business.name}</Text>
           </View>
+          <View style={styles.payRow}>
+            <Text style={styles.payLabel}>Duration</Text>
+            <Text style={styles.payValue}>{formatServiceDuration(service)}</Text>
+          </View>
           <View style={styles.dateBlock}>
             <Text style={styles.payLabel}>Date & time</Text>
             <DualDateTime iso={scheduledAt} compact />
           </View>
           <View style={styles.divider} />
           <View style={styles.payRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>{price} ETB</Text>
+            <Text style={styles.totalLabel}>
+              {checkoutPrice?.showExactTotal ? "Total" : "Price"}
+            </Text>
+            <Text style={styles.totalValue}>{price}</Text>
           </View>
+          {checkoutPrice?.secondary ? (
+            <Text style={styles.priceNote}>{checkoutPrice.secondary}</Text>
+          ) : null}
         </View>
 
         <View style={styles.policyBox}>
@@ -185,6 +206,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontSize: 14, fontWeight: "500", color: colors.text },
   totalValue: { fontSize: 16, fontWeight: "500", color: colors.primary },
+  priceNote: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginTop: 4,
+  },
   policyBox: {
     backgroundColor: colors.primaryLight,
     borderRadius: radius.md,

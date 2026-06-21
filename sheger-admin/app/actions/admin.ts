@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { getSessionProfile } from "@/lib/auth";
 import { slugifyCategoryName } from "@/lib/categories";
+import { summarizeDocumentApproval } from "@/lib/documents/approval";
+import { getRequiredDocumentTypes } from "@/lib/documents/license";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { BusinessDocument, BusinessDocumentStatus } from "@/lib/types/database";
 
 /**
  * Server Actions run as POST endpoints and use the service-role client, which
@@ -18,11 +21,41 @@ async function requireAdmin() {
   }
 }
 
+async function assertBusinessCanBeApproved(businessId: string) {
+  const supabase = createAdminClient();
+  const { data: business, error } = await supabase
+    .from("businesses")
+    .select("id, categories(slug), business_documents(document_type, status)")
+    .eq("id", businessId)
+    .single();
+
+  if (error || !business) {
+    throw new Error("Business not found");
+  }
+
+  const categorySlug = (business.categories as { slug: string } | null)?.slug ?? null;
+  const documents =
+    (business.business_documents as Pick<BusinessDocument, "document_type" | "status">[] | null) ??
+    [];
+  const summary = summarizeDocumentApproval(categorySlug, documents);
+
+  if (!summary.allUploaded) {
+    throw new Error("Cannot approve: required license documents are missing.");
+  }
+  if (!summary.allApproved) {
+    throw new Error("Cannot approve: all required license documents must be verified first.");
+  }
+}
+
 export async function updateBusinessStatus(
   businessId: string,
   status: "approved" | "rejected" | "suspended" | "pending",
 ) {
   await requireAdmin();
+  if (status === "approved") {
+    await assertBusinessCanBeApproved(businessId);
+  }
+
   const supabase = createAdminClient();
   const { error } = await supabase
     .from("businesses")
@@ -31,7 +64,59 @@ export async function updateBusinessStatus(
 
   if (error) throw error;
   revalidatePath("/dashboard/businesses");
+  revalidatePath(`/dashboard/businesses/${businessId}`);
   revalidatePath("/dashboard");
+}
+
+export async function getBusinessLicenseSignedUrl(storagePath: string) {
+  await requireAdmin();
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage
+    .from("business-licenses")
+    .createSignedUrl(storagePath, 60 * 15);
+
+  if (error) throw error;
+  if (!data?.signedUrl) throw new Error("Could not generate document link");
+  return data.signedUrl;
+}
+
+export async function reviewBusinessDocument(
+  documentId: string,
+  status: Extract<BusinessDocumentStatus, "approved" | "rejected">,
+  rejectionReason?: string,
+) {
+  await requireAdmin();
+  const { profile } = await getSessionProfile();
+  if (!profile) throw new Error("Admin session required");
+
+  const supabase = createAdminClient();
+  const { data: doc, error: fetchError } = await supabase
+    .from("business_documents")
+    .select("id, business_id")
+    .eq("id", documentId)
+    .single();
+
+  if (fetchError || !doc) throw new Error("Document not found");
+
+  const { error } = await supabase
+    .from("business_documents")
+    .update({
+      status,
+      rejection_reason: status === "rejected" ? rejectionReason?.trim() || "Rejected by admin" : null,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: profile.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", documentId);
+
+  if (error) throw error;
+
+  revalidatePath("/dashboard/businesses");
+  revalidatePath(`/dashboard/businesses/${doc.business_id}`);
+}
+
+export async function getBusinessDocumentRequirements(categorySlug: string | null) {
+  return getRequiredDocumentTypes(categorySlug);
 }
 
 export type CategoryInput = {

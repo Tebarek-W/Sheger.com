@@ -75,6 +75,45 @@ eas build --profile production --platform android
 
 Profiles are defined in [sheger-mobile/eas.json](../sheger-mobile/eas.json).
 
+### Push notifications (FCM / APNs)
+
+Push uses **Expo Notifications** with tokens stored in `push_tokens`. In-app messages live in `notifications`.
+
+1. Run `eas init` in `sheger-mobile/` if you have not already (creates the Expo project ID used for push tokens).
+2. In [expo.dev](https://expo.dev) → Project → **Credentials**:
+   - **Android:** upload or generate an FCM v1 service account key.
+   - **iOS:** configure APNs (key or certificate) for bundle ID `com.sheger.app`.
+3. Build a **development client** or store build — Expo Go has limited push support on Android:
+
+```bash
+cd sheger-mobile
+eas build --profile development --platform android
+# or preview / production profiles
+```
+
+4. Apply migration `supabase/migrations/20250623000001_notifications.sql` on your Supabase project.
+
+5. Deploy Edge Functions:
+
+```bash
+supabase functions deploy booking-notifications --no-verify-jwt
+supabase functions deploy send-booking-reminders --no-verify-jwt
+```
+
+`--no-verify-jwt` is required for Database Webhooks and scheduled invocations (they do not send a user JWT).
+
+6. **Database Webhook** (Supabase Dashboard → Database → Webhooks):
+   - Table: `bookings`
+   - Events: `INSERT`, `UPDATE`
+   - Type: Supabase Edge Function
+   - Function: `booking-notifications`
+
+7. **Reminder cron** (Supabase Dashboard → Edge Functions → `send-booking-reminders` → Schedules, or Cron extension):
+   - Schedule: `*/15 * * * *` (every 15 minutes)
+   - Sends 24h and 1h reminders for `confirmed` bookings (Africa/Addis_Ababa formatting on the server).
+
+8. Test on a **physical device** with notification permission granted. Denied permission still allows the in-app inbox.
+
 ## Pre-push checklist
 
 - [ ] `git status` shows no `.env` files

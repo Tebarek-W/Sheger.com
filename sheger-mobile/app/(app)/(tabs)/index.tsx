@@ -15,6 +15,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors, getTimeGreeting, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
 import { fetchAllBusinessRatings } from "@/lib/api/reviews";
@@ -59,6 +60,8 @@ export default function HomeScreen() {
     return list;
   }, [businesses, categoryFilter, search]);
 
+  const { data: unreadCount = 0 } = useUnreadNotifications(session?.user.id);
+
   const firstName = profile?.full_name?.split(" ")[0] ?? "there";
   const displayName = session ? `${firstName} 👋` : "Guest 👋";
 
@@ -70,9 +73,12 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{getTimeGreeting()}</Text>
             <Text style={styles.name}>{displayName}</Text>
           </View>
-          <Pressable style={styles.notif} onPress={() => router.push("/(app)/(tabs)/bookings")}>
+          <Pressable
+            style={styles.notif}
+            onPress={() => router.push(session ? "/(app)/notifications" : "/(auth)/login")}
+          >
             <Text style={styles.notifIcon}>🔔</Text>
-            <View style={styles.notifDot} />
+            {unreadCount > 0 ? <View style={styles.notifDot} /> : null}
           </Pressable>
         </View>
 

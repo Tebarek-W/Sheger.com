@@ -8,6 +8,7 @@ import { colors, radius } from "@/constants/theme";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import { CUSTOMER_HOME } from "@/lib/routing";
 import { DEFAULT_CANCELLATION_HOURS, getCancellationPolicyText } from "@/lib/booking/cancellation";
+import { formatServiceDuration, getCheckoutPriceLabel } from "@/lib/services/pricing";
 import { useBookingStore } from "@/stores/bookingStore";
 
 export default function ConfirmationScreen() {
@@ -25,6 +26,8 @@ function ConfirmationScreenContent() {
   const paymentMethod = useBookingStore((s) => s.paymentMethod);
   const bookingId = useBookingStore((s) => s.bookingId);
   const reset = useBookingStore((s) => s.reset);
+
+  const checkoutPrice = service ? getCheckoutPriceLabel(service) : null;
 
   const done = () => {
     reset();
@@ -52,6 +55,8 @@ function ConfirmationScreenContent() {
         <View style={styles.card}>
           <Row label="Service" value={service?.name ?? "—"} />
           <Row label="Business" value={business?.name ?? "—"} />
+          {service ? <Row label="Duration" value={formatServiceDuration(service)} /> : null}
+          {checkoutPrice ? <Row label="Price" value={checkoutPrice.primary} /> : null}
           {scheduledAt ? (
             <View style={styles.whenBlock}>
               <Text style={styles.rowLabel}>When</Text>

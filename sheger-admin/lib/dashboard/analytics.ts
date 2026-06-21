@@ -1,5 +1,6 @@
 import "server-only";
 
+import { getBookingRevenueAmount } from "@/lib/services/pricing";
 import { getSessionProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -162,7 +163,9 @@ export async function fetchDashboardAnalytics(): Promise<DashboardAnalytics | nu
     supabase.from("categories").select("*", { count: "exact", head: true }),
     supabase
       .from("bookings")
-      .select("created_at, status, business_id, services(price), businesses(name)"),
+      .select(
+        "created_at, status, business_id, final_price, listed_price, listed_price_min, services(price), businesses(name)",
+      ),
   ]);
 
   const userDates = (profilesRes.data ?? []).map((r) => r.created_at);
@@ -175,7 +178,7 @@ export async function fetchDashboardAnalytics(): Promise<DashboardAnalytics | nu
 
   const bookingsForSeries = bookingRows.map((row) => {
     bookingsByStatus[row.status] = (bookingsByStatus[row.status] ?? 0) + 1;
-    const price = Number((row.services as { price: number } | null)?.price ?? 0);
+    const price = getBookingRevenueAmount(row);
     const revenue = row.status === "completed" ? price : 0;
     totalRevenue += revenue;
 

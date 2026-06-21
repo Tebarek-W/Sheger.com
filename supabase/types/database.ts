@@ -1,6 +1,16 @@
 export type UserRole = "customer" | "business_owner" | "admin";
 export type BookingStatus = "pending" | "confirmed" | "cancelled" | "completed";
 export type BusinessStatus = "pending" | "approved" | "rejected" | "suspended";
+export type NotificationType =
+  | "booking_confirmed"
+  | "booking_cancelled"
+  | "booking_new"
+  | "booking_reminder_24h"
+  | "booking_reminder_1h";
+export type PushPlatform = "ios" | "android";
+export type ReminderKind = "24h" | "1h";
+export type ServicePricingModel = "fixed" | "starting_from" | "range" | "variable";
+export type ServiceDurationModel = "fixed" | "estimated" | "flexible";
 
 export interface Profile {
   id: string;
@@ -46,8 +56,13 @@ export interface Service {
   business_id: string;
   name: string;
   description: string | null;
-  price: number;
+  price: number | null;
+  price_min: number | null;
+  price_max: number | null;
+  pricing_model: ServicePricingModel;
+  duration_model: ServiceDurationModel;
   duration_minutes: number;
+  scheduling_block_minutes: number | null;
   is_active: boolean;
   created_at: string;
 }
@@ -89,6 +104,14 @@ export interface Booking {
   employee_id: string | null;
   scheduled_at: string;
   duration_minutes: number;
+  scheduling_block_minutes: number;
+  pricing_model: ServicePricingModel;
+  duration_model: ServiceDurationModel;
+  listed_price: number | null;
+  listed_price_min: number | null;
+  listed_price_max: number | null;
+  final_price: number | null;
+  actual_duration_minutes: number | null;
   status: BookingStatus;
   payment_method: string | null;
   notes: string | null;
@@ -104,6 +127,32 @@ export interface Review {
   rating: number;
   comment: string | null;
   created_at: string;
+}
+
+export interface PushToken {
+  id: string;
+  user_id: string;
+  expo_push_token: string;
+  platform: PushPlatform;
+  updated_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface BookingReminderDelivery {
+  id: string;
+  booking_id: string;
+  reminder_kind: ReminderKind;
+  sent_at: string;
 }
 
 type Relationship = {
@@ -261,6 +310,23 @@ export interface Database {
         ]
       >;
       reviews: TableDef<Review, Partial<Review> & { booking_id: string; customer_id: string; business_id: string; rating: number }>;
+      push_tokens: TableDef<
+        PushToken,
+        Partial<PushToken> & { user_id: string; expo_push_token: string; platform: PushPlatform }
+      >;
+      notifications: TableDef<
+        Notification,
+        Partial<Notification> & {
+          user_id: string;
+          type: NotificationType;
+          title: string;
+          body: string;
+        }
+      >;
+      booking_reminder_deliveries: TableDef<
+        BookingReminderDelivery,
+        Partial<BookingReminderDelivery> & { booking_id: string; reminder_kind: ReminderKind }
+      >;
     };
     Views: {
       [_ in never]: never;
@@ -282,6 +348,11 @@ export interface Database {
       user_role: UserRole;
       booking_status: BookingStatus;
       business_status: BusinessStatus;
+      notification_type: NotificationType;
+      push_platform: PushPlatform;
+      reminder_kind: ReminderKind;
+      service_pricing_model: ServicePricingModel;
+      service_duration_model: ServiceDurationModel;
     };
     CompositeTypes: {
       [_ in never]: never;

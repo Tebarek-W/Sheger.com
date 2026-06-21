@@ -11,10 +11,13 @@ import { SignOutButton } from "@/components/ui/SignOutButton";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
+import { fetchBusinessDocuments } from "@/lib/api/business-license";
+import { getMissingDocumentTypes } from "@/lib/documents/license-status";
 import { fetchOwnerStats } from "@/lib/api/owner";
 
 export default function OwnerDashboardScreen() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, session } = useAuth();
   const { business, isLoading } = useOwnerBusiness();
 
   const { data: stats } = useQuery({
@@ -23,6 +26,24 @@ export default function OwnerDashboardScreen() {
     enabled: Boolean(business?.id),
     refetchInterval: 30_000,
   });
+
+  const categorySlug =
+    business && "categories" in business
+      ? (business.categories as { slug: string } | null)?.slug
+      : null;
+
+  const { data: documents } = useQuery({
+    queryKey: ["business-documents", business?.id],
+    queryFn: () => fetchBusinessDocuments(business!.id),
+    enabled: Boolean(business?.id),
+  });
+
+  const missingDocuments =
+    business && documents
+      ? getMissingDocumentTypes(categorySlug, documents)
+      : [];
+
+  const { data: unreadCount = 0 } = useUnreadNotifications(session?.user.id);
 
   if (isLoading) {
     return (
@@ -66,6 +87,10 @@ export default function OwnerDashboardScreen() {
             subtitle="Manage your business on Sheger"
           />
         </View>
+        <Pressable style={styles.notif} onPress={() => router.push("/(owner)/notifications")}>
+          <Text style={styles.notifIcon}>🔔</Text>
+          {unreadCount > 0 ? <View style={styles.notifDot} /> : null}
+        </Pressable>
         <SignOutButton onPress={signOut} />
       </View>
 
@@ -76,6 +101,15 @@ export default function OwnerDashboardScreen() {
           <Text style={styles.locationBannerTitle}>📍 Add your location</Text>
           <Text style={styles.locationBannerText}>
             Set your business location so customers can find you in Nearby search. Tap to add it.
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {business.status === "pending" && missingDocuments.length > 0 ? (
+        <Pressable style={styles.licenseBanner} onPress={() => router.push("/(owner)/licenses")}>
+          <Text style={styles.licenseBannerTitle}>Upload required licenses</Text>
+          <Text style={styles.licenseBannerText}>
+            {missingDocuments.length} required document(s) are missing. Tap to upload before admin can review your business.
           </Text>
         </Pressable>
       ) : null}
@@ -157,6 +191,27 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   topMain: { flex: 1, minWidth: 0 },
+  notif: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  notifIcon: { fontSize: 20 },
+  notifDot: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.error,
+  },
   emptyCard: {
     marginTop: 24,
     backgroundColor: colors.surface,
@@ -177,6 +232,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   noticeText: { color: colors.primaryDarker, fontSize: 14, lineHeight: 20 },
+  licenseBanner: {
+    marginTop: 16,
+    backgroundColor: colors.errorBg,
+    borderRadius: radius.md,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    gap: 4,
+  },
+  licenseBannerTitle: { fontSize: 14, fontWeight: "700", color: colors.error },
+  licenseBannerText: { fontSize: 13, color: "#991b1b", lineHeight: 19 },
   locationBanner: {
     marginTop: 16,
     backgroundColor: "#faeeda",

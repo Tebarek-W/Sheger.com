@@ -1,11 +1,14 @@
 import { buildDefaultWorkingHours } from "@/lib/business/default-working-hours";
 import { supabase } from "@/lib/supabase";
+import { getBookingRevenueAmount } from "@/lib/services/pricing";
 import type {
   Booking,
   BookingStatus,
   Business,
   Employee,
   Service,
+  ServiceDurationModel,
+  ServicePricingModel,
   WorkingHours,
 } from "@/lib/types/database";
 
@@ -26,8 +29,13 @@ export type CreateServiceInput = {
   businessId: string;
   name: string;
   description?: string;
-  price: number;
+  pricingModel: ServicePricingModel;
+  durationModel: ServiceDurationModel;
+  price?: number | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
   durationMinutes: number;
+  schedulingBlockMinutes?: number | null;
 };
 
 export type CreateEmployeeInput = {
@@ -50,6 +58,27 @@ export type OwnerStats = {
   totalRevenue: number;
   last30DaysRevenue: number;
 };
+
+export type CompleteBookingInput = {
+  finalPrice?: number | null;
+  actualDurationMinutes?: number | null;
+};
+
+function buildServiceRow(input: CreateServiceInput) {
+  return {
+    business_id: input.businessId,
+    name: input.name,
+    description: input.description ?? null,
+    pricing_model: input.pricingModel,
+    duration_model: input.durationModel,
+    price: input.price ?? null,
+    price_min: input.priceMin ?? null,
+    price_max: input.priceMax ?? null,
+    duration_minutes: input.durationMinutes,
+    scheduling_block_minutes: input.schedulingBlockMinutes ?? input.durationMinutes,
+    is_active: true,
+  };
+}
 
 export async function fetchMyBusinesses(ownerId: string) {
   const { data, error } = await supabase
@@ -127,14 +156,7 @@ export async function fetchMyServices(businessId: string) {
 export async function createService(input: CreateServiceInput) {
   const { data, error } = await supabase
     .from("services")
-    .insert({
-      business_id: input.businessId,
-      name: input.name,
-      description: input.description ?? null,
-      price: input.price,
-      duration_minutes: input.durationMinutes,
-      is_active: true,
-    })
+    .insert(buildServiceRow(input))
     .select("*")
     .single();
 
@@ -151,8 +173,13 @@ export async function updateService(
     .update({
       name: input.name,
       description: input.description ?? null,
-      price: input.price,
+      pricing_model: input.pricingModel,
+      duration_model: input.durationModel,
+      price: input.price ?? null,
+      price_min: input.priceMin ?? null,
+      price_max: input.priceMax ?? null,
       duration_minutes: input.durationMinutes,
+      scheduling_block_minutes: input.schedulingBlockMinutes ?? input.durationMinutes,
       is_active: input.is_active,
     })
     .eq("id", serviceId)
@@ -240,13 +267,13 @@ export async function saveWorkingHours(businessId: string, hours: WorkingHoursIn
 
 export type OwnerBooking = Booking & {
   profiles: { full_name: string | null; phone: string | null } | null;
-  services: { name: string; price: number } | null;
+  services: Service | null;
 };
 
 export async function fetchMyBookings(businessId: string) {
   const { data: bookings, error } = await supabase
     .from("bookings")
-    .select("*, services(name, price)")
+    .select("*, services(*)")
     .eq("business_id", businessId)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -284,10 +311,28 @@ export async function updateOwnerBookingStatus(bookingId: string, status: Bookin
   return data as Booking;
 }
 
+export async function completeOwnerBooking(bookingId: string, input: CompleteBookingInput = {}) {
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({
+      status: "completed",
+      final_price: input.finalPrice ?? null,
+      actual_duration_minutes: input.actualDurationMinutes ?? null,
+    })
+    .eq("id", bookingId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data as Booking;
+}
+
 export async function fetchOwnerStats(businessId: string): Promise<OwnerStats> {
   const { data: bookings, error } = await supabase
     .from("bookings")
-    .select("status, scheduled_at, services(price)")
+    .select(
+      "status, scheduled_at, final_price, listed_price, listed_price_min, pricing_model, services(price)",
+    )
     .eq("business_id", businessId);
 
   if (error) throw error;
@@ -304,10 +349,10 @@ export async function fetchOwnerStats(businessId: string): Promise<OwnerStats> {
     if (row.status === "pending") pendingBookings += 1;
     if (row.status === "completed") {
       completedBookings += 1;
-      const price = (row.services as { price: number } | null)?.price ?? 0;
-      totalRevenue += Number(price);
+      const amount = getBookingRevenueAmount(row as Booking & { services?: { price: number } | null });
+      totalRevenue += amount;
       if (new Date(row.scheduled_at).getTime() >= thirtyDaysAgo) {
-        last30DaysRevenue += Number(price);
+        last30DaysRevenue += amount;
       }
     }
   });

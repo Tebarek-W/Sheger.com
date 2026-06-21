@@ -1,4 +1,5 @@
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { formatBookingPrice } from "@/lib/services/pricing";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function BookingsPage() {
@@ -44,8 +45,7 @@ export default async function BookingsPage() {
                     {(booking.services as { name: string } | null)?.name ?? "—"}
                   </p>
                   <p className="text-xs text-[var(--muted)]">
-                    ETB{" "}
-                    {(booking.services as { price: number } | null)?.price ?? 0}
+                    {formatBookingPrice(booking)}
                   </p>
                 </td>
                 <td className="px-4 py-3 text-[var(--muted)]">

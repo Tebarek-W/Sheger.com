@@ -1,13 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Alert,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { DualDateTime } from "@/components/ui/DualDateTime";
+import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
+import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
-import { fetchMyBookings, updateOwnerBookingStatus, type OwnerBooking } from "@/lib/api/owner";
+import {
+  completeOwnerBooking,
+  fetchMyBookings,
+  updateOwnerBookingStatus,
+  type OwnerBooking,
+} from "@/lib/api/owner";
 import { getErrorMessage } from "@/lib/errors";
+import {
+  formatBookingPrice,
+  requiresBookingFinalization,
+} from "@/lib/services/pricing";
+import { parseOptionalNumber } from "@/lib/services/validation";
 import type { BookingStatus } from "@/lib/types/database";
 
 const STATUS_COLORS: Record<BookingStatus, string> = {
@@ -28,6 +48,9 @@ function customerDisplayName(booking: OwnerBooking) {
 export default function OwnerBookingsScreen() {
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
+  const [completingBooking, setCompletingBooking] = useState<OwnerBooking | null>(null);
+  const [finalPrice, setFinalPrice] = useState("");
+  const [actualDuration, setActualDuration] = useState("");
 
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ["owner-bookings", business?.id],
@@ -46,8 +69,65 @@ export default function OwnerBookingsScreen() {
     onError: (e) => Alert.alert("Error", getErrorMessage(e)),
   });
 
+  const completeMutation = useMutation({
+    mutationFn: ({
+      id,
+      finalPrice: price,
+      actualDurationMinutes,
+    }: {
+      id: string;
+      finalPrice?: number | null;
+      actualDurationMinutes?: number | null;
+    }) =>
+      completeOwnerBooking(id, {
+        finalPrice: price,
+        actualDurationMinutes,
+      }),
+    onSuccess: () => {
+      setCompletingBooking(null);
+      setFinalPrice("");
+      setActualDuration("");
+      queryClient.invalidateQueries({ queryKey: ["owner-bookings", business?.id] });
+      queryClient.invalidateQueries({ queryKey: ["owner-stats", business?.id] });
+    },
+    onError: (e) => Alert.alert("Error", getErrorMessage(e)),
+  });
+
   const act = (id: string, status: BookingStatus) => {
     mutation.mutate({ id, status });
+  };
+
+  const openComplete = (booking: OwnerBooking) => {
+    if (requiresBookingFinalization(booking)) {
+      setCompletingBooking(booking);
+      setFinalPrice("");
+      setActualDuration(
+        booking.duration_model === "flexible" || booking.duration_model === "estimated"
+          ? String(booking.duration_minutes)
+          : "",
+      );
+      return;
+    }
+    act(booking.id, "completed");
+  };
+
+  const submitComplete = () => {
+    if (!completingBooking) return;
+    const parsedPrice = parseOptionalNumber(finalPrice);
+    if (
+      (completingBooking.pricing_model === "variable" ||
+        completingBooking.pricing_model === "range") &&
+      (parsedPrice == null || parsedPrice < 0)
+    ) {
+      Alert.alert("Final price required", "Enter the final amount charged for this visit.");
+      return;
+    }
+
+    completeMutation.mutate({
+      id: completingBooking.id,
+      finalPrice: parsedPrice,
+      actualDurationMinutes: parseOptionalNumber(actualDuration),
+    });
   };
 
   return (
@@ -79,8 +159,7 @@ export default function OwnerBookingsScreen() {
               </Text>
             </View>
             <Text style={styles.service}>
-              {booking.services?.name ?? "Service"} ·{" "}
-              {Number(booking.services?.price ?? 0).toFixed(0)} ETB
+              {booking.services?.name ?? "Service"} · {formatBookingPrice(booking)}
             </Text>
             <DualDateTime iso={booking.scheduled_at} compact />
 
@@ -105,7 +184,7 @@ export default function OwnerBookingsScreen() {
                 <>
                   <Pressable
                     style={styles.actionBtn}
-                    onPress={() => act(booking.id, "completed")}
+                    onPress={() => openComplete(booking)}
                   >
                     <Text style={styles.actionPrimary}>Complete</Text>
                   </Pressable>
@@ -124,6 +203,46 @@ export default function OwnerBookingsScreen() {
           <Text style={styles.muted}>No bookings yet.</Text>
         ) : null}
       </View>
+
+      <Modal
+        visible={Boolean(completingBooking)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCompletingBooking(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Complete visit</Text>
+            <Text style={styles.modalText}>
+              Record the final amount and actual duration for this appointment.
+            </Text>
+            <Input
+              label="Final price (ETB)"
+              value={finalPrice}
+              onChangeText={setFinalPrice}
+              keyboardType="numeric"
+            />
+            <Input
+              label="Actual duration (min, optional)"
+              value={actualDuration}
+              onChangeText={setActualDuration}
+              keyboardType="numeric"
+            />
+            <View style={styles.modalActions}>
+              <Button
+                title="Cancel"
+                variant="outline"
+                onPress={() => setCompletingBooking(null)}
+              />
+              <Button
+                title="Complete"
+                onPress={submitComplete}
+                loading={completeMutation.isPending}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -165,4 +284,19 @@ const styles = StyleSheet.create({
   },
   actionOutline: { color: colors.primary, fontWeight: "700", fontSize: 14 },
   muted: { color: colors.textMuted },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    padding: 24,
+  },
+  modalCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: 20,
+    gap: 12,
+  },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: colors.primaryDarker },
+  modalText: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
+  modalActions: { flexDirection: "row", gap: 10, marginTop: 4 },
 });

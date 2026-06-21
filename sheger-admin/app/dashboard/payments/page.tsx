@@ -1,4 +1,5 @@
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { formatBookingPrice, getBookingRevenueAmount } from "@/lib/services/pricing";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function PaymentsPage() {
@@ -11,12 +12,7 @@ export default async function PaymentsPage() {
     .limit(100);
 
   const total =
-    bookings?.reduce(
-      (sum, b) =>
-        sum +
-        ((b.services as { price: number } | null)?.price ?? 0),
-      0,
-    ) ?? 0;
+    bookings?.reduce((sum, b) => sum + getBookingRevenueAmount(b), 0) ?? 0;
 
   return (
     <div>
@@ -56,8 +52,7 @@ export default async function PaymentsPage() {
                   {(booking.services as { name: string } | null)?.name ?? "—"}
                 </td>
                 <td className="px-4 py-3 font-semibold text-[var(--primary-dark)]">
-                  ETB{" "}
-                  {(booking.services as { price: number } | null)?.price ?? 0}
+                  {formatBookingPrice(booking)}
                 </td>
                 <td className="px-4 py-3 capitalize text-[var(--muted)]">
                   {booking.payment_method?.replace("_", " ") ?? "—"}

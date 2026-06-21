@@ -1,47 +1,45 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { colors, radius } from "@/constants/theme";
+import {
+  formatServiceDuration,
+  formatServicePrice,
+} from "@/lib/services/pricing";
+import type { Service } from "@/lib/types/database";
 
 type ServiceCardProps = {
-  name: string;
-  description?: string | null;
-  price: number;
-  durationMinutes: number;
+  service: Service;
   onPress: () => void;
 };
 
-export function ServiceCard({
-  name,
-  description,
-  price,
-  durationMinutes,
-  onPress,
-}: ServiceCardProps) {
-  const hasDescription = Boolean(description?.trim());
+export function ServiceCard({ service, onPress }: ServiceCardProps) {
+  const hasDescription = Boolean(service.description?.trim());
+  const priceLabel = formatServicePrice(service);
+  const durationLabel = formatServiceDuration(service);
 
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       accessibilityRole="button"
-      accessibilityLabel={`Book ${name}`}
+      accessibilityLabel={`Book ${service.name}`}
     >
       <View style={styles.topRow}>
         <Text style={styles.name} numberOfLines={1}>
-          {name}
+          {service.name}
         </Text>
-        <Text style={styles.price}>{Number(price).toFixed(0)} ETB</Text>
+        <Text style={styles.price}>{priceLabel}</Text>
       </View>
 
       {hasDescription ? (
         <Text style={styles.description} numberOfLines={1}>
-          {description!.trim()}
+          {service.description!.trim()}
         </Text>
       ) : null}
 
       <View style={styles.bottomRow}>
         <View style={styles.durationBadge}>
-          <Text style={styles.durationText}>{durationMinutes} min</Text>
+          <Text style={styles.durationText}>{durationLabel}</Text>
         </View>
         <View style={styles.bookRow}>
           <Text style={styles.bookText}>Book</Text>
@@ -88,6 +86,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: colors.primary,
+    flexShrink: 1,
+    textAlign: "right",
   },
   description: {
     fontSize: 12,
@@ -106,6 +106,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+    flexShrink: 1,
   },
   durationText: {
     fontSize: 11,

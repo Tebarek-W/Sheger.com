@@ -3,6 +3,26 @@
 export type UserRole = "customer" | "business_owner" | "admin";
 export type BookingStatus = "pending" | "confirmed" | "cancelled" | "completed";
 export type BusinessStatus = "pending" | "approved" | "rejected" | "suspended";
+export type BusinessDocumentType = "trade_license" | "health_facility_license";
+export type BusinessDocumentStatus = "pending_review" | "approved" | "rejected";
+export type ServicePricingModel = "fixed" | "starting_from" | "range" | "variable";
+export type ServiceDurationModel = "fixed" | "estimated" | "flexible";
+
+export interface BusinessDocument {
+  id: string;
+  business_id: string;
+  document_type: BusinessDocumentType;
+  storage_path: string;
+  file_name: string;
+  mime_type: string;
+  file_size_bytes: number;
+  status: BusinessDocumentStatus;
+  rejection_reason: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Profile {
   id: string;
@@ -48,8 +68,13 @@ export interface Service {
   business_id: string;
   name: string;
   description: string | null;
-  price: number;
+  price: number | null;
+  price_min: number | null;
+  price_max: number | null;
+  pricing_model: ServicePricingModel;
+  duration_model: ServiceDurationModel;
   duration_minutes: number;
+  scheduling_block_minutes: number | null;
   is_active: boolean;
   created_at: string;
 }
@@ -91,6 +116,14 @@ export interface Booking {
   employee_id: string | null;
   scheduled_at: string;
   duration_minutes: number;
+  scheduling_block_minutes: number;
+  pricing_model: ServicePricingModel;
+  duration_model: ServiceDurationModel;
+  listed_price: number | null;
+  listed_price_min: number | null;
+  listed_price_max: number | null;
+  final_price: number | null;
+  actual_duration_minutes: number | null;
   status: BookingStatus;
   payment_method: string | null;
   notes: string | null;
@@ -263,6 +296,26 @@ export interface Database {
         ]
       >;
       reviews: TableDef<Review, Partial<Review> & { booking_id: string; customer_id: string; business_id: string; rating: number }>;
+      business_documents: TableDef<
+        BusinessDocument,
+        Partial<BusinessDocument> & {
+          business_id: string;
+          document_type: BusinessDocumentType;
+          storage_path: string;
+          file_name: string;
+          mime_type: string;
+          file_size_bytes: number;
+        },
+        Partial<BusinessDocument>,
+        [
+          {
+            foreignKeyName: "business_documents_business_id_fkey";
+            columns: ["business_id"];
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
     };
     Views: {
       [_ in never]: never;
@@ -274,6 +327,8 @@ export interface Database {
       user_role: UserRole;
       booking_status: BookingStatus;
       business_status: BusinessStatus;
+      business_document_type: BusinessDocumentType;
+      business_document_status: BusinessDocumentStatus;
     };
     CompositeTypes: {
       [_ in never]: never;

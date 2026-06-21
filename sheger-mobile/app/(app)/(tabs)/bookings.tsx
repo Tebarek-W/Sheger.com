@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { fetchCustomerBookings } from "@/lib/api/bookings";
 import { DEFAULT_CANCELLATION_HOURS } from "@/lib/booking/cancellation";
 import { fetchReviewedBookingIds } from "@/lib/api/reviews";
+import { formatBookingPrice } from "@/lib/services/pricing";
 import type { BookingStatus } from "@/lib/types/database";
 
 const STATUS_STYLES: Record<BookingStatus, { bg: string; text: string }> = {
@@ -115,9 +116,7 @@ export default function BookingsScreen() {
                     📍 {booking.businesses.address ?? booking.businesses.city}
                   </Text>
                 ) : null}
-                {booking.services?.price != null ? (
-                  <Text style={styles.price}>{Number(booking.services.price).toFixed(0)} ETB</Text>
-                ) : null}
+                <Text style={styles.price}>{formatBookingPrice(booking)}</Text>
 
                 {canReview && showingReview && user ? (
                   <ReviewForm

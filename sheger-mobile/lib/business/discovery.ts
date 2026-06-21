@@ -1,5 +1,6 @@
 import type { BusinessWithDetails } from "@/lib/api/businesses";
 import type { RatingMap, RatingSummary } from "@/lib/api/reviews";
+import { getDiscoveryPrice } from "@/lib/services/pricing";
 import { distanceKm, type Coordinates } from "@/lib/location";
 
 export type SortKey = "relevance" | "nearest" | "rating" | "price_low" | "price_high";
@@ -72,8 +73,8 @@ const EMPTY_RATING: RatingSummary = { average: null, count: 0 };
 
 function servicePrices(business: BusinessWithDetails): number[] {
   return (business.services ?? [])
-    .map((service) => Number(service.price))
-    .filter((value) => Number.isFinite(value));
+    .map((service) => getDiscoveryPrice(service))
+    .filter((value): value is number => value != null && Number.isFinite(value));
 }
 
 function fromPrice(business: BusinessWithDetails): number | null {

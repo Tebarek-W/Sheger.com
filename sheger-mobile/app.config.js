@@ -68,6 +68,14 @@ module.exports = {
           "Sheger needs access to your photos so you can add a business profile picture.",
       },
     ],
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/icon.png",
+        color: "#0d4d0d",
+        defaultChannel: "bookings",
+      },
+    ],
   ],
   extra: {
     supabaseUrl,
