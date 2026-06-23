@@ -7,7 +7,10 @@ import { slugifyCategoryName } from "@/lib/categories";
 import { summarizeDocumentApproval } from "@/lib/documents/approval";
 import { getRequiredDocumentTypes } from "@/lib/documents/license";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { BusinessDocument, BusinessDocumentStatus } from "@/lib/types/database";
+import type {
+  BusinessDocument,
+  BusinessDocumentStatus,
+} from "@/lib/types/database";
 
 /**
  * Server Actions run as POST endpoints and use the service-role client, which
@@ -237,4 +240,129 @@ export async function setCategoryVisibility(categoryId: string, isActive: boolea
 
   if (error) throwAdminActionError(error, "Hide/show category");
   revalidateCategories();
+}
+
+export type SubscriptionPlanInput = {
+  name: string;
+  slug: string;
+  description?: string | null;
+  monthly_fee_etb: number;
+  yearly_fee_etb: number;
+  max_services: number;
+  max_bookings_per_week: number;
+  sort_order?: number;
+  is_featured_in_search?: boolean;
+};
+
+function revalidatePlans() {
+  revalidatePath("/dashboard/plans");
+}
+
+export async function createSubscriptionPlan(input: SubscriptionPlanInput) {
+  await requireAdmin();
+  const name = input.name.trim();
+  const slug = input.slug.trim().toLowerCase();
+  if (!name) throw new Error("Plan name is required");
+  if (!slug) throw new Error("Plan slug is required");
+  if (input.max_services < 1 || input.max_bookings_per_week < 1) {
+    throw new Error("Limits must be at least 1");
+  }
+  if (input.monthly_fee_etb < 0 || input.yearly_fee_etb < 0) {
+    throw new Error("Fees must be >= 0");
+  }
+
+  const supabase = createAdminClient();
+  let sortOrder = input.sort_order;
+  if (sortOrder == null) {
+    const { data: last } = await supabase
+      .from("subscription_plans")
+      .select("sort_order")
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    sortOrder = (last?.sort_order ?? 0) + 1;
+  }
+
+  const { error } = await supabase.from("subscription_plans").insert({
+    name,
+    slug,
+    description: input.description?.trim() || null,
+    monthly_fee_etb: input.monthly_fee_etb,
+    yearly_fee_etb: input.yearly_fee_etb,
+    max_services: input.max_services,
+    max_bookings_per_week: input.max_bookings_per_week,
+    sort_order: sortOrder,
+    is_active: true,
+    is_featured_in_search: input.is_featured_in_search ?? false,
+  });
+
+  if (error) {
+    if (error.code === "23505") throw new Error("A plan with this slug already exists");
+    throw error;
+  }
+  revalidatePlans();
+}
+
+export async function updateSubscriptionPlan(planId: string, input: SubscriptionPlanInput) {
+  await requireAdmin();
+  const name = input.name.trim();
+  const slug = input.slug.trim().toLowerCase();
+  if (!name) throw new Error("Plan name is required");
+  if (!slug) throw new Error("Plan slug is required");
+  if (input.max_services < 1 || input.max_bookings_per_week < 1) {
+    throw new Error("Limits must be at least 1");
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("subscription_plans")
+    .update({
+      name,
+      slug,
+      description: input.description?.trim() || null,
+      monthly_fee_etb: input.monthly_fee_etb,
+      yearly_fee_etb: input.yearly_fee_etb,
+      max_services: input.max_services,
+      max_bookings_per_week: input.max_bookings_per_week,
+      sort_order: input.sort_order ?? 0,
+      is_featured_in_search: input.is_featured_in_search ?? false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", planId);
+
+  if (error) {
+    if (error.code === "23505") throw new Error("A plan with this slug already exists");
+    throw error;
+  }
+  revalidatePlans();
+}
+
+export async function setSubscriptionPlanVisibility(planId: string, isActive: boolean) {
+  await requireAdmin();
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("subscription_plans")
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq("id", planId);
+  if (error) throw error;
+  revalidatePlans();
+}
+
+export async function deleteSubscriptionPlan(planId: string) {
+  await requireAdmin();
+  const supabase = createAdminClient();
+
+  const { count, error: countError } = await supabase
+    .from("business_subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("plan_id", planId);
+
+  if (countError) throw countError;
+  if ((count ?? 0) > 0) {
+    throw new Error("Cannot delete a plan that businesses are currently using. Hide it instead.");
+  }
+
+  const { error } = await supabase.from("subscription_plans").delete().eq("id", planId);
+  if (error) throw error;
+  revalidatePlans();
 }

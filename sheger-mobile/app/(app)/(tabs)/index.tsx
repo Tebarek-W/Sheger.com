@@ -19,6 +19,7 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
 import { fetchAllBusinessRatings } from "@/lib/api/reviews";
+import { compareFeaturedFirst } from "@/lib/business/discovery";
 import { useDiscoveryStore } from "@/stores/discoveryStore";
 
 export default function HomeScreen() {
@@ -57,7 +58,7 @@ export default function HomeScreen() {
           b.categories?.name.toLowerCase().includes(q),
       );
     }
-    return list;
+    return [...list].sort(compareFeaturedFirst);
   }, [businesses, categoryFilter, search]);
 
   const { data: unreadCount = 0 } = useUnreadNotifications(session?.user.id);

@@ -114,6 +114,66 @@ supabase functions deploy send-booking-reminders --no-verify-jwt
 
 8. Test on a **physical device** with notification permission granted. Denied permission still allows the in-app inbox.
 
+## Provider subscriptions (mock payment)
+
+Providers choose a **subscription plan** (Free, Basic, Premium, etc.) to stay visible on the marketplace. Admins create plans and set limits; businesses pick a plan and inherit those limits automatically.
+
+### 1. Apply migrations
+
+```bash
+supabase db push
+```
+
+Required file:
+
+- `supabase/migrations/20250625000001_business_subscriptions.sql` (plans, marketplace gating, featured search)
+
+Or run it in the Supabase SQL Editor.
+
+If you previously applied the older split migrations (`20250626000001`–`20250628000001`), mark them as reverted locally so `db push` stays in sync:
+
+```bash
+supabase migration repair 20250626000001 --status reverted
+supabase migration repair 20250627000001 --status reverted
+supabase migration repair 20250627000002 --status reverted
+supabase migration repair 20250628000001 --status reverted
+```
+
+### 2. Admin configuration
+
+In the admin panel, open **Subscription plans** (`/dashboard/plans`):
+
+- Create/edit plans (name, monthly/yearly fee, max services, max bookings per week)
+- Hide or delete unused plans (cannot delete plans in use)
+
+Default seeded plans: **Free** (0 ETB), **Basic** (500/5000 ETB), **Premium** (1500/15000 ETB).
+
+### 3. Owner app
+
+Owners use **Subscription & billing** on the dashboard:
+
+1. Pick a plan (Free, Basic, Premium, …)
+2. For paid plans: choose monthly/yearly + mock payment method
+3. For free plans: tap **Activate plan** (no payment)
+
+Limits update immediately from the selected plan.
+
+### 4. Expiry cron (optional)
+
+Deploy and schedule the expiry checker:
+
+```bash
+supabase functions deploy check-subscription-expiry --no-verify-jwt
+```
+
+Schedule: `0 */6 * * *` (every 6 hours). Marks expired `active` subscriptions as `past_due` and sets `grace_ends_at`.
+
+### 5. Marketplace gating
+
+- Customers only see businesses with an active paid period (`business_is_marketplace_live`)
+- Booking inserts are rejected when subscription expired or weekly booking cap reached
+- Service activation is blocked when max active services reached
+
 ## Pre-push checklist
 
 - [ ] `git status` shows no `.env` files

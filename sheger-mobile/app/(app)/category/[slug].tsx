@@ -7,6 +7,7 @@ import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { fetchBusinessesByCategory, fetchCategoryBySlug } from "@/lib/api/businesses";
+import { compareFeaturedFirst } from "@/lib/business/discovery";
 
 export default function BusinessListScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -21,6 +22,7 @@ export default function BusinessListScreen() {
     queryKey: ["businesses", category?.id],
     queryFn: () => fetchBusinessesByCategory(category!.id),
     enabled: Boolean(category?.id),
+    select: (rows) => [...rows].sort(compareFeaturedFirst),
   });
 
   return (

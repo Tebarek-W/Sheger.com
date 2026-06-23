@@ -48,6 +48,11 @@ export function BusinessCard({
           ) : null}
         </View>
         <View style={styles.meta}>
+          {business.featured_in_search ? (
+            <View style={styles.featuredBadge}>
+              <Text style={styles.featuredBadgeText}>Featured</Text>
+            </View>
+          ) : null}
           {business.categories?.name ? (
             <View style={[styles.badge, { backgroundColor: theme.badgeBg }]}>
               <Text style={[styles.badgeText, { color: theme.badgeText }]}>
@@ -102,6 +107,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   badgeText: { fontSize: 10, fontWeight: "500" },
+  featuredBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: "#faeeda",
+  },
+  featuredBadgeText: { fontSize: 10, fontWeight: "700", color: "#854f0b" },
   stars: { flexDirection: "row", alignItems: "center", gap: 3 },
   starIcon: { fontSize: 12, color: colors.star },
   starText: { fontSize: 11, color: colors.textSecondary },

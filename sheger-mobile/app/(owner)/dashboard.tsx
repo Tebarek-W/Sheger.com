@@ -15,6 +15,7 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { fetchBusinessDocuments } from "@/lib/api/business-license";
 import { getMissingDocumentTypes } from "@/lib/documents/license-status";
 import { fetchOwnerStats } from "@/lib/api/owner";
+import { fetchSubscriptionSummary } from "@/lib/api/subscription";
 
 export default function OwnerDashboardScreen() {
   const { profile, signOut, session } = useAuth();
@@ -44,6 +45,21 @@ export default function OwnerDashboardScreen() {
       : [];
 
   const { data: unreadCount = 0 } = useUnreadNotifications(session?.user.id);
+
+  const { data: subscriptionSummary } = useQuery({
+    queryKey: ["subscription-summary", business?.id],
+    queryFn: () => fetchSubscriptionSummary(business!.id),
+    enabled: Boolean(business?.id),
+  });
+
+  const subscriptionExpired =
+    business?.status === "approved" && subscriptionSummary && !subscriptionSummary.is_marketplace_live;
+  const nearServiceCap =
+    subscriptionSummary &&
+    subscriptionSummary.usage.active_services >= subscriptionSummary.limits.max_services - 1;
+  const nearBookingCap =
+    subscriptionSummary &&
+    subscriptionSummary.usage.weekly_bookings >= subscriptionSummary.limits.max_bookings_per_week - 5;
 
   if (isLoading) {
     return (
@@ -123,6 +139,33 @@ export default function OwnerDashboardScreen() {
         </View>
       ) : null}
 
+      {subscriptionExpired ? (
+        <Pressable style={styles.subscriptionBanner} onPress={() => router.push("/(owner)/billing")}>
+          <Text style={styles.subscriptionBannerTitle}>Subscription expired</Text>
+          <Text style={styles.subscriptionBannerText}>
+            Renew your subscription to stay visible on the marketplace and accept bookings.
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {nearServiceCap && !subscriptionExpired ? (
+        <Pressable style={styles.limitBanner} onPress={() => router.push("/(owner)/billing")}>
+          <Text style={styles.limitBannerTitle}>Service limit almost reached</Text>
+          <Text style={styles.limitBannerText}>
+            {subscriptionSummary!.usage.active_services} / {subscriptionSummary!.limits.max_services} active services.
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {nearBookingCap && !subscriptionExpired ? (
+        <Pressable style={styles.limitBanner} onPress={() => router.push("/(owner)/billing")}>
+          <Text style={styles.limitBannerTitle}>Weekly booking limit almost reached</Text>
+          <Text style={styles.limitBannerText}>
+            {subscriptionSummary!.usage.weekly_bookings} / {subscriptionSummary!.limits.max_bookings_per_week} bookings this week.
+          </Text>
+        </Pressable>
+      ) : null}
+
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{stats?.pendingBookings ?? 0}</Text>
@@ -171,6 +214,12 @@ export default function OwnerDashboardScreen() {
           title="Bookings"
           subtitle="Confirm, cancel, or complete"
           onPress={() => router.push("/(owner)/bookings")}
+        />
+        <MenuCard
+          icon="💳"
+          title="Subscription & billing"
+          subtitle="Renew plan, view usage and payments"
+          onPress={() => router.push("/(owner)/billing")}
         />
         <MenuCard
           icon="📊"
@@ -254,6 +303,28 @@ const styles = StyleSheet.create({
   },
   locationBannerTitle: { fontSize: 14, fontWeight: "700", color: "#854f0b" },
   locationBannerText: { fontSize: 13, color: "#854f0b", lineHeight: 19 },
+  subscriptionBanner: {
+    marginTop: 16,
+    backgroundColor: colors.errorBg,
+    borderRadius: radius.md,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    gap: 4,
+  },
+  subscriptionBannerTitle: { fontSize: 14, fontWeight: "700", color: colors.error },
+  subscriptionBannerText: { fontSize: 13, color: "#991b1b", lineHeight: 19 },
+  limitBanner: {
+    marginTop: 16,
+    backgroundColor: "#faeeda",
+    borderRadius: radius.md,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#f0d9b5",
+    gap: 4,
+  },
+  limitBannerTitle: { fontSize: 14, fontWeight: "700", color: "#854f0b" },
+  limitBannerText: { fontSize: 13, color: "#854f0b", lineHeight: 19 },
   statsRow: { flexDirection: "row", gap: 10, marginTop: 20 },
   statCard: {
     flex: 1,

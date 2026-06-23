@@ -11,6 +11,7 @@ import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
 import { fetchAllBusinessRatings } from "@/lib/api/reviews";
 import { distanceKm, formatDistance, useUserLocation } from "@/lib/location";
+import { compareFeaturedFirst } from "@/lib/business/discovery";
 import { useDiscoveryStore } from "@/stores/discoveryStore";
 
 type Business = Awaited<ReturnType<typeof fetchApprovedBusinessesWithDetails>>[number];
@@ -69,10 +70,18 @@ export default function NearbyScreen() {
     if (coords) {
       ranked = ranked
         .filter((item) => radiusKm == null || (item.km != null && item.km <= radiusKm))
-        .sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity));
+        .sort((a, b) => {
+          const featuredDiff = compareFeaturedFirst(a.business, b.business);
+          if (featuredDiff !== 0) return featuredDiff;
+          return (a.km ?? Infinity) - (b.km ?? Infinity);
+        });
+    } else {
+      ranked = [...ranked].sort((a, b) => compareFeaturedFirst(a.business, b.business));
     }
 
-    return { located: ranked, missingLocation: without };
+    const sortedMissing = [...without].sort(compareFeaturedFirst);
+
+    return { located: ranked, missingLocation: sortedMissing };
   }, [categoryBusinesses, coords, radiusKm]);
 
   const loading = isLoading || locationLoading;

@@ -7,6 +7,53 @@ export type BusinessDocumentType = "trade_license" | "health_facility_license";
 export type BusinessDocumentStatus = "pending_review" | "approved" | "rejected";
 export type ServicePricingModel = "fixed" | "starting_from" | "range" | "variable";
 export type ServiceDurationModel = "fixed" | "estimated" | "flexible";
+export type BillingInterval = "monthly" | "yearly";
+export type SubscriptionStatus = "active" | "past_due" | "cancelled";
+export type SubscriptionPaymentSource = "mock" | "admin_manual";
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  monthly_fee_etb: number;
+  yearly_fee_etb: number;
+  max_services: number;
+  max_bookings_per_week: number;
+  sort_order: number;
+  is_active: boolean;
+  is_featured_in_search: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BusinessSubscription {
+  id: string;
+  business_id: string;
+  plan_id: string | null;
+  status: SubscriptionStatus;
+  billing_interval: BillingInterval | null;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  grace_ends_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionPayment {
+  id: string;
+  business_id: string;
+  plan_id: string | null;
+  billing_interval: BillingInterval;
+  amount_etb: number;
+  payment_method: string;
+  reference_code: string;
+  period_start: string;
+  period_end: string;
+  source: SubscriptionPaymentSource;
+  created_at: string;
+}
 
 export interface BusinessDocument {
   id: string;
@@ -59,6 +106,7 @@ export interface Business {
   cover_image_url: string | null;
   status: BusinessStatus;
   cancellation_hours: number;
+  featured_in_search: boolean;
   created_at: string;
   updated_at: string;
 }

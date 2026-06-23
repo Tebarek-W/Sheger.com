@@ -15,6 +15,72 @@ export type PushPlatform = "ios" | "android";
 export type ReminderKind = "24h" | "1h";
 export type ServicePricingModel = "fixed" | "starting_from" | "range" | "variable";
 export type ServiceDurationModel = "fixed" | "estimated" | "flexible";
+export type BillingInterval = "monthly" | "yearly";
+export type SubscriptionStatus = "active" | "past_due" | "cancelled";
+export type SubscriptionPaymentSource = "mock" | "admin_manual";
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  monthly_fee_etb: number;
+  yearly_fee_etb: number;
+  max_services: number;
+  max_bookings_per_week: number;
+  sort_order: number;
+  is_active: boolean;
+  is_featured_in_search: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BusinessSubscription {
+  id: string;
+  business_id: string;
+  plan_id: string | null;
+  status: SubscriptionStatus;
+  billing_interval: BillingInterval | null;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  grace_ends_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionPayment {
+  id: string;
+  business_id: string;
+  plan_id: string | null;
+  billing_interval: BillingInterval;
+  amount_etb: number;
+  payment_method: string;
+  reference_code: string;
+  period_start: string;
+  period_end: string;
+  source: SubscriptionPaymentSource;
+  created_at: string;
+}
+
+export type SubscriptionSummary = {
+  subscription: BusinessSubscription | null;
+  current_plan: SubscriptionPlan | null;
+  plans: SubscriptionPlan[];
+  platform: {
+    currency: string;
+    grace_period_days: number;
+  };
+  limits: {
+    max_services: number;
+    max_bookings_per_week: number;
+  };
+  usage: {
+    active_services: number;
+    weekly_bookings: number;
+  };
+  is_marketplace_live: boolean;
+};
 
 export interface BusinessDocument {
   id: string;
@@ -67,6 +133,7 @@ export interface Business {
   cover_image_url: string | null;
   status: BusinessStatus;
   cancellation_hours: number;
+  featured_in_search: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -408,6 +475,25 @@ export interface Database {
           scheduled_at: string;
           booking_count: number;
         }[];
+      };
+      get_subscription_summary: {
+        Args: { p_business_id: string };
+        Returns: SubscriptionSummary;
+      };
+      record_subscription_payment: {
+        Args: {
+          p_business_id: string;
+          p_plan_id: string;
+          p_billing_interval: BillingInterval;
+          p_payment_method: string;
+        };
+        Returns: {
+          subscription: BusinessSubscription;
+          plan: SubscriptionPlan;
+          payment_id: string;
+          reference_code: string;
+          amount_etb: number;
+        };
       };
     };
     Enums: {

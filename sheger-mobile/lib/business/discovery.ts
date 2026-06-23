@@ -121,7 +121,20 @@ export function activeFilterCount(filters: DiscoveryFilters): number {
   return count;
 }
 
+/** Featured businesses sort before non-featured within any list. */
+export function compareFeaturedFirst(
+  a: { featured_in_search?: boolean },
+  b: { featured_in_search?: boolean },
+): number {
+  const af = a.featured_in_search ? 1 : 0;
+  const bf = b.featured_in_search ? 1 : 0;
+  return bf - af;
+}
+
 function compare(a: RankedBusiness, b: RankedBusiness, sort: SortKey): number {
+  const featuredDiff = compareFeaturedFirst(a.business, b.business);
+  if (featuredDiff !== 0) return featuredDiff;
+
   switch (sort) {
     case "nearest":
       return (a.km ?? Infinity) - (b.km ?? Infinity);
@@ -186,8 +199,13 @@ export function applyDiscovery(
   if (sort !== "relevance") {
     filtered.sort((a, b) => compare(a, b, sort));
   } else if (center) {
-    // With a location set but no explicit sort, nearest-first is the most useful default.
-    filtered.sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity));
+    filtered.sort((a, b) => {
+      const featuredDiff = compareFeaturedFirst(a.business, b.business);
+      if (featuredDiff !== 0) return featuredDiff;
+      return (a.km ?? Infinity) - (b.km ?? Infinity);
+    });
+  } else {
+    filtered.sort((a, b) => compareFeaturedFirst(a.business, b.business));
   }
 
   return filtered;

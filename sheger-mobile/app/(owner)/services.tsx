@@ -9,6 +9,7 @@ import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { createService, fetchMyServices, updateService } from "@/lib/api/owner";
+import { fetchSubscriptionSummary } from "@/lib/api/subscription";
 import { isHealthFacilityCategory } from "@/lib/documents/license-validation";
 import { getErrorMessage } from "@/lib/errors";
 import {
@@ -91,6 +92,12 @@ export default function OwnerServicesScreen() {
     enabled: Boolean(business?.id),
   });
 
+  const { data: subscriptionSummary } = useQuery({
+    queryKey: ["subscription-summary", business?.id],
+    queryFn: () => fetchSubscriptionSummary(business!.id),
+    enabled: Boolean(business?.id),
+  });
+
   const resetForm = () => {
     setName("");
     setDescription("");
@@ -167,7 +174,32 @@ export default function OwnerServicesScreen() {
       Alert.alert("Missing fields", validationError);
       return;
     }
+    if (
+      subscriptionSummary &&
+      subscriptionSummary.usage.active_services >= subscriptionSummary.limits.max_services
+    ) {
+      Alert.alert(
+        "Service limit reached",
+        `You can have at most ${subscriptionSummary.limits.max_services} active services. Deactivate one or renew your plan from Subscription & billing.`,
+      );
+      return;
+    }
     addMutation.mutate();
+  };
+
+  const onToggle = (id: string, is_active: boolean) => {
+    if (
+      is_active &&
+      subscriptionSummary &&
+      subscriptionSummary.usage.active_services >= subscriptionSummary.limits.max_services
+    ) {
+      Alert.alert(
+        "Service limit reached",
+        `You can have at most ${subscriptionSummary.limits.max_services} active services.`,
+      );
+      return;
+    }
+    toggleMutation.mutate({ id, is_active });
   };
 
   const showPriceField = pricingModel === "fixed" || pricingModel === "starting_from";
@@ -281,9 +313,7 @@ export default function OwnerServicesScreen() {
               ) : null}
             </View>
             <Pressable
-              onPress={() =>
-                toggleMutation.mutate({ id: service.id, is_active: !service.is_active })
-              }
+              onPress={() => onToggle(service.id, !service.is_active)}
             >
               <Text style={styles.toggle}>
                 {service.is_active ? "Deactivate" : "Activate"}
