@@ -4,11 +4,14 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
 import { SignOutButton } from "@/components/ui/SignOutButton";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 
 export default function ProfileScreen() {
   const { session, profile, user, signOut } = useAuth();
+  const { t } = useI18n();
 
   const initials = profile?.full_name
     ? profile.full_name
@@ -21,19 +24,24 @@ export default function ProfileScreen() {
 
   if (!session) {
     return (
-      <Screen backgroundColor={colors.screenBg}>
-        <View style={styles.guest}>
+      <Screen scroll padded={false} backgroundColor={colors.screenBg}>
+        <View style={styles.guestHeader}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>👤</Text>
           </View>
-          <Text style={styles.name}>Guest</Text>
-          <Text style={styles.hint}>Sign in to manage your profile and bookings</Text>
-          <Button title="Sign in" onPress={() => router.push("/(auth)/login")} />
+          <Text style={styles.guestName}>{t("common.guest")}</Text>
+          <Text style={styles.hint}>{t("profile.guestHint")}</Text>
+        </View>
+
+        <View style={styles.body}>
+          <Button title={t("common.signIn")} onPress={() => router.push("/(auth)/login")} />
           <Button
-            title="Create account"
+            title={t("common.createAccount")}
             variant="outline"
             onPress={() => router.push("/(auth)/signup")}
           />
+
+          <LanguageSwitcher />
         </View>
       </Screen>
     );
@@ -48,16 +56,16 @@ export default function ProfileScreen() {
         <View style={styles.avatarLarge}>
           <Text style={styles.avatarLargeText}>{initials}</Text>
         </View>
-        <Text style={styles.name}>{profile?.full_name ?? "Sheger user"}</Text>
+        <Text style={styles.name}>{profile?.full_name ?? t("profile.defaultName")}</Text>
         <Text style={styles.email}>{user?.email}</Text>
       </View>
 
       <View style={styles.body}>
         <View style={styles.card}>
-          <Row label="Phone" value={profile?.phone ?? "Not set"} />
-          <Row label="Account type" value="Customer" />
+          <Row label={t("profile.phone")} value={profile?.phone ?? t("common.notSet")} />
+          <Row label={t("profile.accountType")} value={t("common.customer")} />
           <Row
-            label="Member since"
+            label={t("profile.memberSince")}
             value={
               profile?.created_at
                 ? new Date(profile.created_at).toLocaleDateString("en-ET", {
@@ -73,7 +81,7 @@ export default function ProfileScreen() {
           style={styles.menuItem}
           onPress={() => router.push("/(app)/(tabs)/bookings")}
         >
-          <Text style={styles.menuLabel}>My bookings</Text>
+          <Text style={styles.menuLabel}>{t("profile.myBookings")}</Text>
           <Text style={styles.menuChevron}>›</Text>
         </Pressable>
 
@@ -81,9 +89,11 @@ export default function ProfileScreen() {
           style={styles.menuItem}
           onPress={() => router.push("/(app)/(tabs)/search")}
         >
-          <Text style={styles.menuLabel}>Search services</Text>
+          <Text style={styles.menuLabel}>{t("profile.searchServices")}</Text>
           <Text style={styles.menuChevron}>›</Text>
         </Pressable>
+
+        <LanguageSwitcher />
       </View>
     </Screen>
   );
@@ -108,6 +118,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 28,
     alignItems: "center",
   },
+  guestHeader: {
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 8,
+    gap: 8,
+  },
   headerTop: {
     width: "100%",
     flexDirection: "row",
@@ -121,7 +138,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
+    marginBottom: 4,
   },
   avatarText: { fontSize: 32 },
   avatarLarge: {
@@ -135,20 +152,13 @@ const styles = StyleSheet.create({
   },
   avatarLargeText: { fontSize: 24, fontWeight: "600", color: colors.accentLime },
   name: { fontSize: 20, fontWeight: "500", color: colors.white },
+  guestName: { fontSize: 20, fontWeight: "500", color: colors.text },
   email: { fontSize: 13, color: "rgba(255,255,255,0.65)", marginTop: 4 },
   hint: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: "center",
     lineHeight: 21,
-    marginBottom: 8,
-  },
-  guest: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    gap: 12,
   },
   body: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 24, gap: 12 },
   card: {

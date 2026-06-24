@@ -4,24 +4,26 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 
 type TabConfig = {
   name: string;
-  label: string;
+  labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconFocused: keyof typeof Ionicons.glyphMap;
   fab?: boolean;
 };
 
 const TABS: TabConfig[] = [
-  { name: "index", label: "Home", icon: "home-outline", iconFocused: "home" },
-  { name: "nearby", label: "Nearby", icon: "location-outline", iconFocused: "location" },
-  { name: "search", label: "Search", icon: "search", iconFocused: "search", fab: true },
-  { name: "bookings", label: "Bookings", icon: "calendar-outline", iconFocused: "calendar" },
-  { name: "profile", label: "Profile", icon: "person-outline", iconFocused: "person" },
+  { name: "index", labelKey: "tabs.home", icon: "home-outline", iconFocused: "home" },
+  { name: "nearby", labelKey: "tabs.nearby", icon: "location-outline", iconFocused: "location" },
+  { name: "search", labelKey: "tabs.search", icon: "search", iconFocused: "search", fab: true },
+  { name: "bookings", labelKey: "tabs.bookings", icon: "calendar-outline", iconFocused: "calendar" },
+  { name: "profile", labelKey: "tabs.profile", icon: "person-outline", iconFocused: "person" },
 ];
 
 export function CustomerTabBar({ state, navigation }: BottomTabBarProps) {
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
 
   return (
@@ -50,7 +52,7 @@ export function CustomerTabBar({ state, navigation }: BottomTabBarProps) {
               <View style={styles.fab}>
                 <Ionicons name={tab.icon} size={24} color={colors.white} />
               </View>
-              <Text style={[styles.label, focused && styles.labelActive]}>{tab.label}</Text>
+              <Text style={[styles.label, focused && styles.labelActive]}>{t(tab.labelKey)}</Text>
             </Pressable>
           );
         }
@@ -62,7 +64,7 @@ export function CustomerTabBar({ state, navigation }: BottomTabBarProps) {
               size={22}
               color={color}
             />
-            <Text style={[styles.label, focused && styles.labelActive]}>{tab.label}</Text>
+            <Text style={[styles.label, focused && styles.labelActive]}>{t(tab.labelKey)}</Text>
           </Pressable>
         );
       })}

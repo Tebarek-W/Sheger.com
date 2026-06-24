@@ -6,10 +6,12 @@ import { MenuCard } from "@/components/owner/MenuCard";
 import { StatusBadge } from "@/components/owner/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { Screen } from "@/components/ui/Screen";
 import { SignOutButton } from "@/components/ui/SignOutButton";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { fetchBusinessDocuments } from "@/lib/api/business-license";
@@ -19,6 +21,7 @@ import { fetchSubscriptionSummary } from "@/lib/api/subscription";
 
 export default function OwnerDashboardScreen() {
   const { profile, signOut, session } = useAuth();
+  const { t } = useI18n();
   const { business, isLoading } = useOwnerBusiness();
 
   const { data: stats } = useQuery({
@@ -75,20 +78,19 @@ export default function OwnerDashboardScreen() {
         <View style={styles.topRow}>
           <View style={styles.topMain}>
             <Header
-              title="Business Owner"
-              subtitle={`Hello, ${profile?.full_name?.split(" ")[0] || "there"}`}
+              title={t("owner.title")}
+              subtitle={t("owner.hello", {
+                name: profile?.full_name?.split(" ")[0] || t("common.there"),
+              })}
             />
           </View>
           <SignOutButton onPress={signOut} />
         </View>
 
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>Register your business</Text>
-          <Text style={styles.emptyText}>
-            Add your salon, barbershop, clinic, or studio. After admin approval,
-            customers can find and book you on Sheger.
-          </Text>
-          <Button title="Register Business" onPress={() => router.push("/(owner)/register")} />
+          <Text style={styles.emptyTitle}>{t("owner.registerTitle")}</Text>
+          <Text style={styles.emptyText}>{t("owner.registerText")}</Text>
+          <Button title={t("owner.registerButton")} onPress={() => router.push("/(owner)/register")} />
         </View>
       </Screen>
     );
@@ -100,7 +102,7 @@ export default function OwnerDashboardScreen() {
         <View style={styles.topMain}>
           <Header
             title={business.name}
-            subtitle="Manage your business on Sheger"
+            subtitle={t("owner.manageSubtitle")}
           />
         </View>
         <Pressable style={styles.notif} onPress={() => router.push("/(owner)/notifications")}>
@@ -114,54 +116,53 @@ export default function OwnerDashboardScreen() {
 
       {business.latitude == null || business.longitude == null ? (
         <Pressable style={styles.locationBanner} onPress={() => router.push("/(owner)/business")}>
-          <Text style={styles.locationBannerTitle}>📍 Add your location</Text>
-          <Text style={styles.locationBannerText}>
-            Set your business location so customers can find you in Nearby search. Tap to add it.
-          </Text>
+          <Text style={styles.locationBannerTitle}>{t("owner.addLocationTitle")}</Text>
+          <Text style={styles.locationBannerText}>{t("owner.addLocationText")}</Text>
         </Pressable>
       ) : null}
 
       {business.status === "pending" && missingDocuments.length > 0 ? (
         <Pressable style={styles.licenseBanner} onPress={() => router.push("/(owner)/licenses")}>
-          <Text style={styles.licenseBannerTitle}>Upload required licenses</Text>
+          <Text style={styles.licenseBannerTitle}>{t("owner.uploadLicensesTitle")}</Text>
           <Text style={styles.licenseBannerText}>
-            {missingDocuments.length} required document(s) are missing. Tap to upload before admin can review your business.
+            {t("owner.uploadLicensesText", { count: missingDocuments.length })}
           </Text>
         </Pressable>
       ) : null}
 
       {business.status === "pending" ? (
         <View style={styles.notice}>
-          <Text style={styles.noticeText}>
-            Your business is awaiting admin approval. You can still set up
-            services, staff, and hours while you wait.
-          </Text>
+          <Text style={styles.noticeText}>{t("owner.pendingNotice")}</Text>
         </View>
       ) : null}
 
       {subscriptionExpired ? (
         <Pressable style={styles.subscriptionBanner} onPress={() => router.push("/(owner)/billing")}>
-          <Text style={styles.subscriptionBannerTitle}>Subscription expired</Text>
-          <Text style={styles.subscriptionBannerText}>
-            Renew your subscription to stay visible on the marketplace and accept bookings.
-          </Text>
+          <Text style={styles.subscriptionBannerTitle}>{t("owner.subscriptionExpiredTitle")}</Text>
+          <Text style={styles.subscriptionBannerText}>{t("owner.subscriptionExpiredText")}</Text>
         </Pressable>
       ) : null}
 
       {nearServiceCap && !subscriptionExpired ? (
         <Pressable style={styles.limitBanner} onPress={() => router.push("/(owner)/billing")}>
-          <Text style={styles.limitBannerTitle}>Service limit almost reached</Text>
+          <Text style={styles.limitBannerTitle}>{t("owner.serviceLimitTitle")}</Text>
           <Text style={styles.limitBannerText}>
-            {subscriptionSummary!.usage.active_services} / {subscriptionSummary!.limits.max_services} active services.
+            {t("owner.serviceLimitText", {
+              used: subscriptionSummary!.usage.active_services,
+              max: subscriptionSummary!.limits.max_services,
+            })}
           </Text>
         </Pressable>
       ) : null}
 
       {nearBookingCap && !subscriptionExpired ? (
         <Pressable style={styles.limitBanner} onPress={() => router.push("/(owner)/billing")}>
-          <Text style={styles.limitBannerTitle}>Weekly booking limit almost reached</Text>
+          <Text style={styles.limitBannerTitle}>{t("owner.bookingLimitTitle")}</Text>
           <Text style={styles.limitBannerText}>
-            {subscriptionSummary!.usage.weekly_bookings} / {subscriptionSummary!.limits.max_bookings_per_week} bookings this week.
+            {t("owner.bookingLimitText", {
+              used: subscriptionSummary!.usage.weekly_bookings,
+              max: subscriptionSummary!.limits.max_bookings_per_week,
+            })}
           </Text>
         </Pressable>
       ) : null}
@@ -169,64 +170,65 @@ export default function OwnerDashboardScreen() {
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{stats?.pendingBookings ?? 0}</Text>
-          <Text style={styles.statLabel}>Pending</Text>
+          <Text style={styles.statLabel}>{t("owner.pending")}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{stats?.completedBookings ?? 0}</Text>
-          <Text style={styles.statLabel}>Completed</Text>
+          <Text style={styles.statLabel}>{t("owner.completed")}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>
             {(stats?.last30DaysRevenue ?? 0).toLocaleString()}
           </Text>
-          <Text style={styles.statLabel}>ETB (30d)</Text>
+          <Text style={styles.statLabel}>{t("owner.revenue30d")}</Text>
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Manage</Text>
+      <Text style={styles.sectionTitle}>{t("owner.manage")}</Text>
       <View style={styles.menu}>
         <MenuCard
           icon="🏪"
-          title="Business profile"
-          subtitle="Edit name, address, contact"
+          title={t("owner.menu.profile")}
+          subtitle={t("owner.menu.profileSub")}
           onPress={() => router.push("/(owner)/business")}
         />
         <MenuCard
           icon="✂️"
-          title="Services & prices"
-          subtitle="Add and update your offerings"
+          title={t("owner.menu.services")}
+          subtitle={t("owner.menu.servicesSub")}
           onPress={() => router.push("/(owner)/services")}
         />
         <MenuCard
           icon="👥"
-          title="Employees"
-          subtitle="Manage your team"
+          title={t("owner.menu.employees")}
+          subtitle={t("owner.menu.employeesSub")}
           onPress={() => router.push("/(owner)/employees")}
         />
         <MenuCard
           icon="🕐"
-          title="Hours & slots"
-          subtitle="Opening hours and bookable time slots"
+          title={t("owner.menu.hours")}
+          subtitle={t("owner.menu.hoursSub")}
           onPress={() => router.push("/(owner)/hours")}
         />
         <MenuCard
           icon="📅"
-          title="Bookings"
-          subtitle="Confirm, cancel, or complete"
+          title={t("owner.menu.bookings")}
+          subtitle={t("owner.menu.bookingsSub")}
           onPress={() => router.push("/(owner)/bookings")}
         />
         <MenuCard
           icon="💳"
-          title="Subscription & billing"
-          subtitle="Renew plan, view usage and payments"
+          title={t("owner.menu.billing")}
+          subtitle={t("owner.menu.billingSub")}
           onPress={() => router.push("/(owner)/billing")}
         />
         <MenuCard
           icon="📊"
-          title="Income & reports"
-          subtitle="Revenue and booking stats"
+          title={t("owner.menu.reports")}
+          subtitle={t("owner.menu.reportsSub")}
           onPress={() => router.push("/(owner)/reports")}
         />
+        <LanguageSwitcher />
       </View>
     </Screen>
   );

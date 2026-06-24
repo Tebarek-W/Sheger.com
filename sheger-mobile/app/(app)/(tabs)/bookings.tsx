@@ -11,6 +11,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { fetchCustomerBookings } from "@/lib/api/bookings";
 import { DEFAULT_CANCELLATION_HOURS } from "@/lib/booking/cancellation";
 import { fetchReviewedBookingIds } from "@/lib/api/reviews";
@@ -26,6 +27,7 @@ const STATUS_STYLES: Record<BookingStatus, { bg: string; text: string }> = {
 
 export default function BookingsScreen() {
   const { session, user } = useAuth();
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
 
@@ -46,13 +48,11 @@ export default function BookingsScreen() {
       <Screen backgroundColor={colors.screenBg}>
         <View style={styles.guest}>
           <Text style={styles.guestEmoji}>📅</Text>
-          <Text style={styles.guestTitle}>Your bookings</Text>
-          <Text style={styles.guestText}>
-            Sign in to view upcoming appointments and booking history.
-          </Text>
-          <Button title="Sign in" onPress={() => router.push("/(auth)/login")} />
+          <Text style={styles.guestTitle}>{t("bookings.guestTitle")}</Text>
+          <Text style={styles.guestText}>{t("bookings.guestText")}</Text>
+          <Button title={t("common.signIn")} onPress={() => router.push("/(auth)/login")} />
           <Button
-            title="Create account"
+            title={t("common.createAccount")}
             variant="outline"
             onPress={() => router.push("/(auth)/signup")}
           />
@@ -64,14 +64,14 @@ export default function BookingsScreen() {
   return (
     <Screen scroll padded={false} backgroundColor={colors.screenBg}>
       <View style={styles.header}>
-        <Text style={styles.title}>My bookings</Text>
-        <Text style={styles.subtitle}>Upcoming and past appointments</Text>
+        <Text style={styles.title}>{t("bookings.title")}</Text>
+        <Text style={styles.subtitle}>{t("bookings.subtitle")}</Text>
       </View>
 
       <View style={styles.body}>
         <SectionHeader
-          title="All appointments"
-          actionLabel={isRefetching ? "Updating…" : "Refresh"}
+          title={t("bookings.allAppointments")}
+          actionLabel={isRefetching ? t("common.updating") : t("common.refresh")}
           onAction={() => refetch()}
         />
 
@@ -82,11 +82,9 @@ export default function BookingsScreen() {
         ) : !bookings?.length ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>📋</Text>
-            <Text style={styles.emptyTitle}>No bookings yet</Text>
-            <Text style={styles.emptyText}>
-              Browse businesses and book your first appointment on Sheger.
-            </Text>
-            <Button title="Explore services" onPress={() => router.push("/(app)/(tabs)")} />
+            <Text style={styles.emptyTitle}>{t("bookings.emptyTitle")}</Text>
+            <Text style={styles.emptyText}>{t("bookings.emptyText")}</Text>
+            <Button title={t("bookings.exploreServices")} onPress={() => router.push("/(app)/(tabs)")} />
           </View>
         ) : (
           bookings.map((booking) => {
@@ -103,7 +101,7 @@ export default function BookingsScreen() {
                   </Text>
                   <View style={[styles.badge, { backgroundColor: statusStyle.bg }]}>
                     <Text style={[styles.badgeText, { color: statusStyle.text }]}>
-                      {booking.status}
+                      {t(`bookings.status.${booking.status}`)}
                     </Text>
                   </View>
                 </View>
@@ -136,7 +134,7 @@ export default function BookingsScreen() {
 
                 {canReview && !showingReview ? (
                   <Button
-                    title="Leave a review"
+                    title={t("bookings.leaveReview")}
                     variant="outline"
                     onPress={() => setReviewBookingId(booking.id)}
                     style={styles.reviewBtn}

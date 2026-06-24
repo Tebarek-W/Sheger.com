@@ -7,6 +7,7 @@ import { BusinessCard } from "@/components/customer/BusinessCard";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
 import { fetchAllBusinessRatings } from "@/lib/api/reviews";
@@ -16,14 +17,10 @@ import { useDiscoveryStore } from "@/stores/discoveryStore";
 
 type Business = Awaited<ReturnType<typeof fetchApprovedBusinessesWithDetails>>[number];
 
-const RADIUS_OPTIONS = [
-  { label: "All", value: null },
-  { label: "5 km", value: 5 },
-  { label: "10 km", value: 10 },
-  { label: "25 km", value: 25 },
-];
+const RADIUS_OPTION_VALUES = [null, 5, 10, 25] as const;
 
 export default function NearbyScreen() {
+  const { t } = useI18n();
   const { coords, granted, loading: locationLoading, refresh } = useUserLocation();
   const [radiusKm, setRadiusKm] = useState<number | null>(null);
   const categoryId = useDiscoveryStore((s) => s.categoryId);
@@ -87,18 +84,23 @@ export default function NearbyScreen() {
   const loading = isLoading || locationLoading;
   const categoryLabel = selectedCategory?.name;
 
+  const radiusOptions = RADIUS_OPTION_VALUES.map((value) => ({
+    value,
+    label: value == null ? t("nearby.radiusAll") : `${value} km`,
+  }));
+
   return (
     <Screen scroll padded={false} backgroundColor={colors.screenBg}>
       <View style={styles.header}>
-        <Text style={styles.title}>Nearby</Text>
+        <Text style={styles.title}>{t("nearby.title")}</Text>
         <Text style={styles.subtitle}>
           {categoryLabel
             ? coords
-              ? `${categoryLabel} sorted by distance from you`
-              : `${categoryLabel} near you — enable location to sort by distance`
+              ? `${categoryLabel} — ${t("nearby.subtitle")}`
+              : `${categoryLabel} — ${t("nearby.enableLocationSort")}`
             : coords
-              ? "Businesses sorted by distance from you"
-              : "Enable location to sort by distance"}
+              ? t("nearby.subtitle")
+              : t("nearby.enableLocationSort")}
         </Text>
       </View>
 
@@ -109,24 +111,22 @@ export default function NearbyScreen() {
               <Text style={styles.categoryChipText}>{categoryLabel}</Text>
             </View>
             <Pressable onPress={() => setCategoryId(null)} hitSlop={8}>
-              <Text style={styles.clearCategory}>Clear</Text>
+              <Text style={styles.clearCategory}>{t("search.reset")}</Text>
             </Pressable>
           </View>
         ) : null}
         {granted === false ? (
           <View style={styles.banner}>
-            <Text style={styles.bannerText}>
-              Location access is off. Turn it on to sort businesses by distance.
-            </Text>
+            <Text style={styles.bannerText}>{t("nearby.enableLocationText")}</Text>
             <Pressable onPress={refresh} style={styles.bannerBtn}>
-              <Text style={styles.bannerBtnText}>Enable location</Text>
+              <Text style={styles.bannerBtnText}>{t("nearby.enableLocation")}</Text>
             </Pressable>
           </View>
         ) : null}
 
         {coords ? (
           <View style={styles.radiusRow}>
-            {RADIUS_OPTIONS.map((option) => {
+            {radiusOptions.map((option) => {
               const active = radiusKm === option.value;
               return (
                 <Pressable
@@ -144,8 +144,8 @@ export default function NearbyScreen() {
         ) : null}
 
         <SectionHeader
-          title={coords ? "Closest to you" : categoryLabel ? categoryLabel : "Businesses"}
-          actionLabel={isRefetching ? "Updating…" : "Refresh"}
+          title={coords ? t("nearby.closest") : categoryLabel ? categoryLabel : t("nearby.businesses")}
+          actionLabel={isRefetching ? t("common.updating") : t("common.refresh")}
           onAction={() => refetch()}
         />
 
@@ -190,7 +190,7 @@ export default function NearbyScreen() {
 
         {missingLocation.length > 0 && !radiusKm ? (
           <View style={styles.otherSection}>
-            <SectionHeader title="Other businesses" />
+            <SectionHeader title={t("nearby.otherBusinesses")} />
             <Text style={styles.otherHint}>These haven&apos;t set a precise location yet.</Text>
             {missingLocation.map((business: Business, index: number) => (
               <BusinessCard

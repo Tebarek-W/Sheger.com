@@ -7,11 +7,13 @@ import { BookingHeader } from "@/components/ui/BookingHeader";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { getErrorMessage } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 import type { UserRole } from "@/lib/types/database";
 
 export default function SignupScreen() {
+  const { t } = useI18n();
   const [accountType, setAccountType] = useState<"customer" | "business_owner">("customer");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -21,7 +23,7 @@ export default function SignupScreen() {
 
   const onSignup = async () => {
     if (!fullName || !email || !password) {
-      Alert.alert("Missing fields", "Fill in name, email, and password.");
+      Alert.alert(t("auth.missingFields"), t("auth.fillNameEmailPassword"));
       return;
     }
     setLoading(true);
@@ -38,15 +40,15 @@ export default function SignupScreen() {
     });
     setLoading(false);
     if (error) {
-      Alert.alert("Sign up failed", getErrorMessage(error));
+      Alert.alert(t("auth.signUpFailed"), getErrorMessage(error));
       return;
     }
     const message =
       accountType === "business_owner"
-        ? "Sign in to register your business on Sheger."
-        : "You can now sign in.";
-    Alert.alert("Account created", message, [
-      { text: "OK", onPress: () => router.replace("/(auth)/login") },
+        ? t("auth.signInToRegister")
+        : t("auth.canSignInNow");
+    Alert.alert(t("auth.accountCreated"), message, [
+      { text: t("common.ok"), onPress: () => router.replace("/(auth)/login") },
     ]);
   };
 
@@ -54,25 +56,25 @@ export default function SignupScreen() {
     <Screen scroll backgroundColor={colors.screenBg}>
       <View style={styles.header}>
         <Text style={styles.brand}>sheger</Text>
-        <Text style={styles.title}>Create account</Text>
+        <Text style={styles.title}>{t("auth.createAccountTitle")}</Text>
         <Text style={styles.subtitle}>
           {accountType === "business_owner"
-            ? "List your business on Sheger"
-            : "Join Sheger and book services easily"}
+            ? t("auth.listBusiness")
+            : t("auth.joinCustomer")}
         </Text>
       </View>
 
       <View style={styles.card}>
-        <BookingHeader title="Sign up" backTo="/" />
+        <BookingHeader title={t("common.signUp")} backTo="/" />
 
-        <Text style={styles.typeLabel}>I am a</Text>
+        <Text style={styles.typeLabel}>{t("auth.iAmA")}</Text>
         <View style={styles.typeRow}>
           <Pressable
             onPress={() => setAccountType("customer")}
             style={[styles.typeBtn, accountType === "customer" && styles.typeBtnActive]}
           >
             <Text style={[styles.typeText, accountType === "customer" && styles.typeTextActive]}>
-              Customer
+              {t("common.customer")}
             </Text>
           </Pressable>
           <Pressable
@@ -82,23 +84,51 @@ export default function SignupScreen() {
             <Text
               style={[styles.typeText, accountType === "business_owner" && styles.typeTextActive]}
             >
-              Business owner
+              {t("common.businessOwner")}
             </Text>
           </Pressable>
         </View>
 
         <View style={styles.form}>
-          <Input label="Full name" value={fullName} onChangeText={setFullName} placeholder="Your name" />
-          <Input label="Phone" value={phone} onChangeText={setPhone} placeholder="+251..." keyboardType="phone-pad" />
-          <Input label="Email" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} placeholder="you@example.com" />
-          <Input label="Password" secureTextEntry value={password} onChangeText={setPassword} placeholder="Min. 6 characters" />
+          <Input
+            label={t("auth.fullName")}
+            value={fullName}
+            onChangeText={setFullName}
+            placeholder={t("auth.namePlaceholder")}
+          />
+          <Input
+            label={t("auth.phone")}
+            value={phone}
+            onChangeText={setPhone}
+            placeholder={t("auth.phonePlaceholder")}
+            keyboardType="phone-pad"
+          />
+          <Input
+            label={t("auth.email")}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            placeholder={t("auth.emailPlaceholder")}
+          />
+          <Input
+            label={t("auth.password")}
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            placeholder={t("auth.passwordPlaceholder")}
+          />
           <Button
-            title={accountType === "business_owner" ? "Create business account" : "Create account"}
+            title={
+              accountType === "business_owner"
+                ? t("auth.createBusinessAccount")
+                : t("common.createAccount")
+            }
             onPress={onSignup}
             loading={loading}
           />
           <Pressable onPress={() => router.push("/(auth)/login")}>
-            <Text style={styles.link}>Already have an account? Sign in</Text>
+            <Text style={styles.link}>{t("auth.hasAccount")}</Text>
           </Pressable>
         </View>
       </View>

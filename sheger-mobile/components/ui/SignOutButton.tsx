@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text } from "react-native";
 
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 
 type SignOutButtonProps = {
   onPress: () => void;
@@ -9,6 +10,7 @@ type SignOutButtonProps = {
 };
 
 export function SignOutButton({ onPress, variant = "default" }: SignOutButtonProps) {
+  const { t } = useI18n();
   const isLight = variant === "light";
 
   return (
@@ -20,7 +22,7 @@ export function SignOutButton({ onPress, variant = "default" }: SignOutButtonPro
         pressed && styles.pressed,
       ]}
       accessibilityRole="button"
-      accessibilityLabel="Sign out"
+      accessibilityLabel={t("common.signOut")}
     >
       <Ionicons
         name="log-out-outline"
@@ -28,7 +30,7 @@ export function SignOutButton({ onPress, variant = "default" }: SignOutButtonPro
         color={isLight ? colors.white : colors.primary}
       />
       <Text style={[styles.label, isLight ? styles.labelLight : styles.labelDefault]}>
-        Sign out
+        {t("common.signOut")}
       </Text>
     </Pressable>
   );

@@ -18,6 +18,7 @@ import { formatRating } from "@/components/customer/StarRating";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
 import { fetchAllBusinessRatings } from "@/lib/api/reviews";
@@ -32,6 +33,7 @@ import { formatDistance } from "@/lib/location";
 type ViewMode = "list" | "map";
 
 export default function SearchScreen() {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_FILTERS);
   const [center, setCenter] = useState<LocationCenter | null>(null);
@@ -97,14 +99,14 @@ export default function SearchScreen() {
   return (
     <Screen scroll padded={false} backgroundColor={colors.screenBg}>
       <View style={styles.header}>
-        <Text style={styles.title}>Discover</Text>
+        <Text style={styles.title}>{t("search.discover")}</Text>
 
         <View style={styles.searchBar}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search businesses or services…"
+            placeholder={t("search.placeholder")}
             placeholderTextColor={colors.textTertiary}
             style={styles.searchInput}
             returnKeyType="search"
@@ -121,7 +123,7 @@ export default function SearchScreen() {
 
       <View style={styles.controls}>
         <Pressable style={styles.filterBtn} onPress={() => setFilterOpen(true)}>
-          <Text style={styles.filterBtnText}>Filters</Text>
+          <Text style={styles.filterBtnText}>{t("search.filters")}</Text>
           {filterCount > 0 ? (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{filterCount}</Text>
@@ -135,7 +137,7 @@ export default function SearchScreen() {
             style={[styles.toggleItem, view === "list" && styles.toggleItemActive]}
           >
             <Text style={[styles.toggleText, view === "list" && styles.toggleTextActive]}>
-              List
+              {t("search.list")}
             </Text>
           </Pressable>
           <Pressable
@@ -143,7 +145,7 @@ export default function SearchScreen() {
             style={[styles.toggleItem, view === "map" && styles.toggleItemActive]}
           >
             <Text style={[styles.toggleText, view === "map" && styles.toggleTextActive]}>
-              Map
+              {t("search.map")}
             </Text>
           </Pressable>
         </View>
@@ -151,8 +153,10 @@ export default function SearchScreen() {
 
       <View style={styles.body}>
         <SectionHeader
-          title={`${results.length} ${results.length === 1 ? "result" : "results"}`}
-          actionLabel={hasActiveFilters ? "Reset" : undefined}
+          title={t(results.length === 1 ? "search.result" : "search.results", {
+            count: results.length,
+          })}
+          actionLabel={hasActiveFilters ? t("search.reset") : undefined}
           onAction={hasActiveFilters ? resetAll : undefined}
         />
 

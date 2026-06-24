@@ -13,17 +13,20 @@ import { BusinessCard } from "@/components/customer/BusinessCard";
 import { CategoryGrid } from "@/components/customer/CategoryGrid";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
-import { colors, getTimeGreeting, radius } from "@/constants/theme";
+import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
 import { fetchAllBusinessRatings } from "@/lib/api/reviews";
 import { compareFeaturedFirst } from "@/lib/business/discovery";
+import { getTimeGreetingKey } from "@/lib/i18n";
 import { useDiscoveryStore } from "@/stores/discoveryStore";
 
 export default function HomeScreen() {
   const { session, profile } = useAuth();
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const categoryFilter = useDiscoveryStore((s) => s.categoryId);
   const setCategoryFilter = useDiscoveryStore((s) => s.setCategoryId);
@@ -63,15 +66,15 @@ export default function HomeScreen() {
 
   const { data: unreadCount = 0 } = useUnreadNotifications(session?.user.id);
 
-  const firstName = profile?.full_name?.split(" ")[0] ?? "there";
-  const displayName = session ? `${firstName} 👋` : "Guest 👋";
+  const firstName = profile?.full_name?.split(" ")[0] ?? t("common.there");
+  const displayName = session ? `${firstName} 👋` : `${t("common.guest")} 👋`;
 
   return (
     <Screen scroll padded={false} backgroundColor={colors.screenBg}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.greeting}>{getTimeGreeting()}</Text>
+            <Text style={styles.greeting}>{t(getTimeGreetingKey())}</Text>
             <Text style={styles.name}>{displayName}</Text>
           </View>
           <Pressable
@@ -88,12 +91,12 @@ export default function HomeScreen() {
           onPress={() => router.push("/(app)/(tabs)/search")}
         >
           <Text style={styles.searchIcon}>🔍</Text>
-          <Text style={styles.searchPlaceholder}>Search salons, clinics, gyms…</Text>
+          <Text style={styles.searchPlaceholder}>{t("home.searchPlaceholder")}</Text>
         </Pressable>
       </View>
 
       <View style={styles.body}>
-        <SectionHeader title="Categories" />
+        <SectionHeader title={t("home.categories")} />
         {categories ? (
           <CategoryGrid
             categories={categories}
@@ -103,32 +106,32 @@ export default function HomeScreen() {
         ) : null}
 
         <SectionHeader
-          title="Near you in Addis"
-          actionLabel={isRefetching ? "Updating…" : "Refresh"}
+          title={t("home.nearAddis")}
+          actionLabel={isRefetching ? t("common.updating") : t("common.refresh")}
           onAction={() => refetch()}
         />
 
         {isLoading ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading businesses…</Text>
+            <Text style={styles.loadingText}>{t("home.loadingBusinesses")}</Text>
           </View>
         ) : error ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Could not load businesses</Text>
-            <Text style={styles.emptyText}>Check your connection and try again.</Text>
+            <Text style={styles.emptyTitle}>{t("home.loadErrorTitle")}</Text>
+            <Text style={styles.emptyText}>{t("home.loadErrorText")}</Text>
             <Pressable onPress={() => refetch()} style={styles.retryBtn}>
-              <Text style={styles.retryText}>Try again</Text>
+              <Text style={styles.retryText}>{t("common.tryAgain")}</Text>
             </Pressable>
           </View>
         ) : filtered.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🏪</Text>
-            <Text style={styles.emptyTitle}>No businesses found</Text>
+            <Text style={styles.emptyTitle}>{t("home.noBusinessesTitle")}</Text>
             <Text style={styles.emptyText}>
               {search || categoryFilter
-                ? "Try a different search or category."
-                : "Approved businesses will appear here soon."}
+                ? t("home.noBusinessesFilter")
+                : t("home.noBusinessesEmpty")}
             </Text>
           </View>
         ) : (

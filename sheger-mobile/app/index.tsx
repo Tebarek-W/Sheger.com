@@ -4,10 +4,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { CUSTOMER_HOME, getHomeRouteForRole } from "@/lib/routing";
 
 export default function Index() {
   const { session, profile, loading } = useAuth();
+  const { t } = useI18n();
 
   if (loading) {
     return (
@@ -28,20 +30,20 @@ export default function Index() {
           <Text style={styles.logoIcon}>📅</Text>
         </View>
         <Text style={styles.wordmark}>sheger</Text>
-        <Text style={styles.tagline}>Service Booking · Ethiopia</Text>
+        <Text style={styles.tagline}>{t("welcome.tagline")}</Text>
 
         <Pressable style={styles.cta} onPress={() => router.push("/(auth)/signup")}>
-          <Text style={styles.ctaText}>Get started</Text>
+          <Text style={styles.ctaText}>{t("welcome.getStarted")}</Text>
         </Pressable>
 
-        <Text style={styles.divider}>or</Text>
+        <Text style={styles.divider}>{t("welcome.or")}</Text>
 
         <Pressable style={styles.ctaOutline} onPress={() => router.push("/(auth)/login")}>
-          <Text style={styles.ctaOutlineText}>Sign in</Text>
+          <Text style={styles.ctaOutlineText}>{t("common.signIn")}</Text>
         </Pressable>
 
         <Pressable onPress={() => router.replace(CUSTOMER_HOME)} style={styles.guestLink}>
-          <Text style={styles.guestText}>Browse as guest</Text>
+          <Text style={styles.guestText}>{t("welcome.browseGuest")}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

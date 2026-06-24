@@ -6,6 +6,7 @@ import { useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-gesture-handler";
 
+import { LocaleHydrator } from "@/components/i18n/LocaleHydrator";
 import { colors } from "@/constants/theme";
 import { AuthProvider } from "@/hooks/useAuth";
 
@@ -28,6 +29,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <LocaleHydrator />
           <Stack
             screenOptions={{
               headerShown: false,
