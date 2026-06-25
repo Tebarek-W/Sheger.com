@@ -396,6 +396,53 @@ export interface Database {
         ]
       >;
       reviews: TableDef<Review, Partial<Review> & { booking_id: string; customer_id: string; business_id: string; rating: number }>;
+      subscription_plans: TableDef<SubscriptionPlan>;
+      business_subscriptions: TableDef<
+        BusinessSubscription,
+        Partial<BusinessSubscription> & { business_id: string },
+        Partial<BusinessSubscription>,
+        [
+          {
+            foreignKeyName: "business_subscriptions_business_id_fkey";
+            columns: ["business_id"];
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "business_subscriptions_plan_id_fkey";
+            columns: ["plan_id"];
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
+      subscription_payments: TableDef<
+        SubscriptionPayment,
+        Partial<SubscriptionPayment> & {
+          business_id: string;
+          billing_interval: BillingInterval;
+          amount_etb: number;
+          payment_method: string;
+          reference_code: string;
+          period_start: string;
+          period_end: string;
+        },
+        Partial<SubscriptionPayment>,
+        [
+          {
+            foreignKeyName: "subscription_payments_business_id_fkey";
+            columns: ["business_id"];
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "subscription_payments_plan_id_fkey";
+            columns: ["plan_id"];
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+        ]
+      >;
       business_documents: TableDef<
         BusinessDocument,
         Partial<BusinessDocument> & {
