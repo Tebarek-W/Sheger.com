@@ -98,6 +98,7 @@ export const am: TranslationTree = {
       confirmed: "ተረጋግጧል",
       cancelled: "ተሰርዟል",
       completed: "ተጠናቋል",
+      passed: "አልፏል",
     },
   },
   search: {

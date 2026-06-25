@@ -37,6 +37,10 @@ const STATUS_COLORS: Record<BookingStatus, string> = {
   completed: colors.primaryDark,
 };
 
+function isPassedPendingBooking(booking: { status: BookingStatus; scheduled_at: string }) {
+  return booking.status === "pending" && new Date(booking.scheduled_at).getTime() < Date.now();
+}
+
 function customerDisplayName(booking: OwnerBooking) {
   const name = booking.profiles?.full_name?.trim();
   if (name) return name;
@@ -145,60 +149,66 @@ export default function OwnerBookingsScreen() {
       {isLoading ? <Text style={styles.muted}>Loading bookings...</Text> : null}
 
       <View style={styles.list}>
-        {bookings?.map((booking) => (
-          <View key={booking.id} style={styles.card}>
-            <View style={styles.cardTop}>
-              <View style={styles.customerBlock}>
-                <Text style={styles.customer}>{customerDisplayName(booking)}</Text>
-                {booking.profiles?.phone?.trim() && booking.profiles?.full_name?.trim() ? (
-                  <Text style={styles.customerPhone}>{booking.profiles.phone}</Text>
+        {bookings?.map((booking) => {
+          const isPassed = isPassedPendingBooking(booking);
+          const statusLabel = isPassed ? "Passed" : booking.status;
+          const statusColor = isPassed ? colors.textMuted : STATUS_COLORS[booking.status];
+
+          return (
+            <View key={booking.id} style={styles.card}>
+              <View style={styles.cardTop}>
+                <View style={styles.customerBlock}>
+                  <Text style={styles.customer}>{customerDisplayName(booking)}</Text>
+                  {booking.profiles?.phone?.trim() && booking.profiles?.full_name?.trim() ? (
+                    <Text style={styles.customerPhone}>{booking.profiles.phone}</Text>
+                  ) : null}
+                </View>
+                <Text style={[styles.status, { color: statusColor }]}>
+                  {statusLabel}
+                </Text>
+              </View>
+              <Text style={styles.service}>
+                {booking.services?.name ?? "Service"} · {formatBookingPrice(booking)}
+              </Text>
+              <DualDateTime iso={booking.scheduled_at} compact />
+
+              <View style={styles.actions}>
+                {booking.status === "pending" ? (
+                  <>
+                    <Pressable
+                      style={styles.actionBtn}
+                      onPress={() => act(booking.id, "confirmed")}
+                    >
+                      <Text style={styles.actionPrimary}>Confirm</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.actionBtnOutline}
+                      onPress={() => act(booking.id, "cancelled")}
+                    >
+                      <Text style={styles.actionOutline}>Cancel</Text>
+                    </Pressable>
+                  </>
+                ) : null}
+                {booking.status === "confirmed" ? (
+                  <>
+                    <Pressable
+                      style={styles.actionBtn}
+                      onPress={() => openComplete(booking)}
+                    >
+                      <Text style={styles.actionPrimary}>Complete</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.actionBtnOutline}
+                      onPress={() => act(booking.id, "cancelled")}
+                    >
+                      <Text style={styles.actionOutline}>Cancel</Text>
+                    </Pressable>
+                  </>
                 ) : null}
               </View>
-              <Text style={[styles.status, { color: STATUS_COLORS[booking.status] }]}>
-                {booking.status}
-              </Text>
             </View>
-            <Text style={styles.service}>
-              {booking.services?.name ?? "Service"} · {formatBookingPrice(booking)}
-            </Text>
-            <DualDateTime iso={booking.scheduled_at} compact />
-
-            <View style={styles.actions}>
-              {booking.status === "pending" ? (
-                <>
-                  <Pressable
-                    style={styles.actionBtn}
-                    onPress={() => act(booking.id, "confirmed")}
-                  >
-                    <Text style={styles.actionPrimary}>Confirm</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.actionBtnOutline}
-                    onPress={() => act(booking.id, "cancelled")}
-                  >
-                    <Text style={styles.actionOutline}>Cancel</Text>
-                  </Pressable>
-                </>
-              ) : null}
-              {booking.status === "confirmed" ? (
-                <>
-                  <Pressable
-                    style={styles.actionBtn}
-                    onPress={() => openComplete(booking)}
-                  >
-                    <Text style={styles.actionPrimary}>Complete</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.actionBtnOutline}
-                    onPress={() => act(booking.id, "cancelled")}
-                  >
-                    <Text style={styles.actionOutline}>Cancel</Text>
-                  </Pressable>
-                </>
-              ) : null}
-            </View>
-          </View>
-        ))}
+          );
+        })}
         {!bookings?.length && !isLoading ? (
           <Text style={styles.muted}>No bookings yet.</Text>
         ) : null}

@@ -96,6 +96,7 @@ export const en = {
       confirmed: "Confirmed",
       cancelled: "Cancelled",
       completed: "Completed",
+      passed: "Passed",
     },
   },
   search: {

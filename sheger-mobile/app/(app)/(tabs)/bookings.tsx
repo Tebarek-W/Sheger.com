@@ -25,6 +25,12 @@ const STATUS_STYLES: Record<BookingStatus, { bg: string; text: string }> = {
   completed: { bg: "#e6f1fb", text: "#185fa5" },
 };
 
+const PASSED_STATUS_STYLE = { bg: "#f3f4f6", text: "#6b7280" };
+
+function isPassedPendingBooking(booking: { status: BookingStatus; scheduled_at: string }) {
+  return booking.status === "pending" && new Date(booking.scheduled_at).getTime() < Date.now();
+}
+
 export default function BookingsScreen() {
   const { session, user } = useAuth();
   const { t } = useI18n();
@@ -88,7 +94,8 @@ export default function BookingsScreen() {
           </View>
         ) : (
           bookings.map((booking) => {
-            const statusStyle = STATUS_STYLES[booking.status];
+            const isPassed = isPassedPendingBooking(booking);
+            const statusStyle = isPassed ? PASSED_STATUS_STYLE : STATUS_STYLES[booking.status];
             const canReview =
               booking.status === "completed" && !reviewedIds?.has(booking.id);
             const showingReview = reviewBookingId === booking.id;
@@ -101,7 +108,7 @@ export default function BookingsScreen() {
                   </Text>
                   <View style={[styles.badge, { backgroundColor: statusStyle.bg }]}>
                     <Text style={[styles.badgeText, { color: statusStyle.text }]}>
-                      {t(`bookings.status.${booking.status}`)}
+                      {isPassed ? t("bookings.status.passed") : t(`bookings.status.${booking.status}`)}
                     </Text>
                   </View>
                 </View>
