@@ -86,15 +86,46 @@ export type CustomerBooking = Booking & {
   services: { name: string; price: number } | null;
 };
 
-export async function fetchCustomerBookings(customerId: string) {
+type BookingCardsPage = {
+  rows: CustomerBooking[];
+  next_cursor: { scheduled_at: string; id: string } | null;
+  limit: number;
+};
+
+async function fetchCustomerBookingsDirect(customerId: string) {
   const { data, error } = await supabase
     .from("bookings")
     .select("*, businesses(name, address, city, cancellation_hours), services(name, price)")
     .eq("customer_id", customerId)
-    .order("scheduled_at", { ascending: false });
+    .order("scheduled_at", { ascending: false })
+    .limit(50);
 
   if (error) throw error;
   return (data ?? []) as CustomerBooking[];
+}
+
+export async function fetchCustomerBookings(customerId: string) {
+  const { data, error } = await supabase.rpc("list_customer_booking_cards_page", {
+    p_limit: 50,
+    p_cursor_scheduled_at: null,
+    p_cursor_id: null,
+  });
+
+  if (!error && data && typeof data === "object" && "rows" in data) {
+    const page = data as BookingCardsPage;
+    if (Array.isArray(page.rows)) {
+      return page.rows;
+    }
+  }
+
+  if (__DEV__ && error) {
+    console.warn(
+      "[Sheger] list_customer_booking_cards_page failed, using direct query:",
+      error.message ?? error,
+    );
+  }
+
+  return fetchCustomerBookingsDirect(customerId);
 }
 
 export async function cancelCustomerBooking(bookingId: string) {

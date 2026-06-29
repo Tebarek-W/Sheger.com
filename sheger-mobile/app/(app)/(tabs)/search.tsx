@@ -19,18 +19,39 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
-import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
+import {
+  fetchMarketplaceBusinessesPage,
+  type MarketplaceBusiness,
+} from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
-import { fetchAllBusinessRatings } from "@/lib/api/reviews";
 import {
   activeFilterCount,
-  applyDiscovery,
   DEFAULT_FILTERS,
   type DiscoveryFilters,
 } from "@/lib/business/discovery";
 import { formatDistance } from "@/lib/location";
 
 type ViewMode = "list" | "map";
+
+function sortResults(rows: MarketplaceBusiness[], sort: DiscoveryFilters["sort"]) {
+  const list = [...rows];
+  switch (sort) {
+    case "nearest":
+      return list.sort((a, b) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity));
+    case "rating":
+      return list.sort(
+        (a, b) =>
+          (b.rating_average ?? -1) - (a.rating_average ?? -1) ||
+          b.rating_count - a.rating_count,
+      );
+    case "price_low":
+      return list.sort((a, b) => (a.from_price ?? Infinity) - (b.from_price ?? Infinity));
+    case "price_high":
+      return list.sort((a, b) => (b.from_price ?? -1) - (a.from_price ?? -1));
+    default:
+      return list;
+  }
+}
 
 export default function SearchScreen() {
   const { t } = useI18n();
@@ -41,8 +62,41 @@ export default function SearchScreen() {
   const [view, setView] = useState<ViewMode>("list");
 
   const { data: businesses, isLoading } = useQuery({
-    queryKey: ["home-businesses"],
-    queryFn: fetchApprovedBusinessesWithDetails,
+    queryKey: [
+      "search-businesses",
+      query,
+      filters.categoryId,
+      filters.priceRangeId,
+      filters.minRating,
+      filters.radiusKm,
+      filters.sort,
+      center?.coords.latitude,
+      center?.coords.longitude,
+    ],
+    queryFn: async () => {
+      const priceRange =
+        filters.priceRangeId === "any"
+          ? null
+          : {
+              lt200: { min: null, max: 200 },
+              "200-500": { min: 200, max: 500 },
+              "500-1000": { min: 500, max: 1000 },
+              gt1000: { min: 1000, max: null },
+            }[filters.priceRangeId] ?? null;
+
+      const page = await fetchMarketplaceBusinessesPage({
+        limit: 40,
+        categoryId: filters.categoryId,
+        query,
+        minRating: filters.minRating,
+        priceMin: priceRange?.min ?? null,
+        priceMax: priceRange?.max ?? null,
+        latitude: center?.coords.latitude ?? null,
+        longitude: center?.coords.longitude ?? null,
+        radiusKm: filters.radiusKm,
+      });
+      return sortResults(page.rows, center ? filters.sort : filters.sort === "nearest" ? "relevance" : filters.sort);
+    },
   });
 
   const { data: categories } = useQuery({
@@ -50,38 +104,27 @@ export default function SearchScreen() {
     queryFn: fetchCategories,
   });
 
-  const { data: ratings } = useQuery({
-    queryKey: ["business-ratings"],
-    queryFn: fetchAllBusinessRatings,
-  });
-
   const effectiveFilters = useMemo<DiscoveryFilters>(
     () => ({ ...filters, query }),
     [filters, query],
   );
 
-  const results = useMemo(
-    () =>
-      applyDiscovery(
-        businesses ?? [],
-        ratings ?? {},
-        center?.coords ?? null,
-        effectiveFilters,
-      ),
-    [businesses, ratings, center, effectiveFilters],
-  );
+  const results = useMemo(() => businesses ?? [], [businesses]);
 
   const mapBusinesses = useMemo<MapBusiness[]>(
     () =>
       results
-        .filter((r) => r.business.latitude != null && r.business.longitude != null)
-        .map((r) => ({
-          id: r.business.id,
-          name: r.business.name,
-          latitude: r.business.latitude as number,
-          longitude: r.business.longitude as number,
-          ratingLabel: r.rating.count ? `★ ${formatRating(r.rating.average, r.rating.count)}` : undefined,
-          distanceLabel: r.km != null ? formatDistance(r.km) : undefined,
+        .filter((business) => business.latitude != null && business.longitude != null)
+        .map((business) => ({
+          id: business.id,
+          name: business.name,
+          latitude: business.latitude as number,
+          longitude: business.longitude as number,
+          ratingLabel: business.rating_count
+            ? `★ ${formatRating(business.rating_average, business.rating_count)}`
+            : undefined,
+          distanceLabel:
+            business.distance_km != null ? formatDistance(business.distance_km) : undefined,
         })),
     [results],
   );
@@ -192,14 +235,16 @@ export default function SearchScreen() {
             />
           )
         ) : (
-          results.map(({ business, km, rating, fromPrice }, index) => (
+          results.map((business, index) => (
             <BusinessCard
               key={business.id}
               business={business}
               themeIndex={index}
-              rating={rating}
-              fromPrice={fromPrice}
-              distanceLabel={km != null ? formatDistance(km) : undefined}
+              rating={{ average: business.rating_average, count: business.rating_count }}
+              fromPrice={business.from_price}
+              distanceLabel={
+                business.distance_km != null ? formatDistance(business.distance_km) : undefined
+              }
               onPress={() => openBusiness(business.id)}
             />
           ))

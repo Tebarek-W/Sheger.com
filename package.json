@@ -6,6 +6,8 @@
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
     "db:seed": "supabase db execute --file supabase/seed.sql",
+    "db:types": "supabase gen types typescript --linked > supabase/types/database.ts && node scripts/sync-database-types.mjs",
+    "db:types:sync": "node scripts/sync-database-types.mjs",
     "ci:mobile": "cd sheger-mobile && npm ci && npx tsc --noEmit",
     "ci:admin": "cd sheger-admin && npm ci && npm run build",
     "ci": "npm run ci:mobile && npm run ci:admin"

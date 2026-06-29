@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Header } from "@/components/ui/Header";
@@ -65,52 +65,51 @@ export function NotificationInbox({
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
+      <FlatList
+        data={notifications ?? []}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
-      >
-        <Header title={title} subtitle="Booking updates and reminders" showBack={showBack} />
-
-      {unreadCount > 0 ? (
-        <Pressable
-          style={styles.markAll}
-          onPress={() => markAllMutation.mutate()}
-          disabled={markAllMutation.isPending}
-        >
-          <Text style={styles.markAllText}>Mark all as read</Text>
-        </Pressable>
-      ) : null}
-
-      {isLoading || !userId ? (
-        <Text style={styles.muted}>Loading notifications…</Text>
-      ) : !notifications?.length ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>No notifications yet</Text>
-          <Text style={styles.emptyText}>
-            You will see booking confirmations, reminders, and cancellations here.
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.list}>
-          {notifications.map((item) => (
-            <Pressable
-              key={item.id}
-              style={[styles.item, !item.read_at && styles.itemUnread]}
-              onPress={() => onPressItem(item)}
-            >
-              <View style={styles.itemHeader}>
-                <Text style={styles.itemTitle}>{item.title}</Text>
-                {!item.read_at ? <View style={styles.dot} /> : null}
-              </View>
-              <Text style={styles.itemBody}>{item.body}</Text>
-              <Text style={styles.itemTime}>
-                {new Date(item.created_at).toLocaleString()}
+        ListHeaderComponent={
+          <>
+            <Header title={title} subtitle="Booking updates and reminders" showBack={showBack} />
+            {unreadCount > 0 ? (
+              <Pressable
+                style={styles.markAll}
+                onPress={() => markAllMutation.mutate()}
+                disabled={markAllMutation.isPending}
+              >
+                <Text style={styles.markAllText}>Mark all as read</Text>
+              </Pressable>
+            ) : null}
+            {isLoading || !userId ? <Text style={styles.muted}>Loading notifications…</Text> : null}
+          </>
+        }
+        ListEmptyComponent={
+          !isLoading && userId ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>No notifications yet</Text>
+              <Text style={styles.emptyText}>
+                You will see booking confirmations, reminders, and cancellations here.
               </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-      </ScrollView>
+            </View>
+          ) : null
+        }
+        renderItem={({ item }) => (
+          <Pressable
+            style={[styles.item, !item.read_at && styles.itemUnread]}
+            onPress={() => onPressItem(item)}
+          >
+            <View style={styles.itemHeader}>
+              <Text style={styles.itemTitle}>{item.title}</Text>
+              {!item.read_at ? <View style={styles.dot} /> : null}
+            </View>
+            <Text style={styles.itemBody}>{item.body}</Text>
+            <Text style={styles.itemTime}>{new Date(item.created_at).toLocaleString()}</Text>
+          </Pressable>
+        )}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+      />
     </SafeAreaView>
   );
 }
@@ -132,7 +131,6 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 18, fontWeight: "700", color: colors.primaryDarker },
   emptyText: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
-  list: { gap: 10, paddingBottom: 24 },
   item: {
     backgroundColor: colors.white,
     borderRadius: radius.md,
@@ -156,4 +154,5 @@ const styles = StyleSheet.create({
   },
   itemBody: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
   itemTime: { fontSize: 12, color: colors.textMuted },
+  separator: { height: 10 },
 });

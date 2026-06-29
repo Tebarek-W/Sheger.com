@@ -3,47 +3,21 @@ import { createClient } from "@/lib/supabase/server";
 async function getReportData() {
   const supabase = await createClient();
 
-  const [byStatus, recent, topBusinesses] = await Promise.all([
-    supabase.from("bookings").select("status"),
-    supabase
-      .from("bookings")
-      .select("created_at")
-      .gte(
-        "created_at",
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      ),
-    supabase
-      .from("bookings")
-      .select("business_id, businesses(name)")
-      .limit(500),
-  ]);
-
-  const statusCounts: Record<string, number> = {};
-  (byStatus.data ?? []).forEach((row) => {
-    statusCounts[row.status] = (statusCounts[row.status] ?? 0) + 1;
-  });
-
-  const businessCounts: Record<string, { name: string; count: number }> = {};
-  (topBusinesses.data ?? []).forEach((row) => {
-    const name =
-      (row.businesses as { name: string } | null)?.name ?? "Unknown";
-    const key = row.business_id;
-    if (!businessCounts[key]) {
-      businessCounts[key] = { name, count: 0 };
+  const { data, error } = await supabase.rpc("get_admin_reports_snapshot");
+  if (error) throw error;
+  return (
+    (data as {
+      statusCounts: Record<string, number>;
+      last30Days: number;
+      top: { name: string; count: number }[];
+      total: number;
+    } | null) ?? {
+      statusCounts: {},
+      last30Days: 0,
+      top: [],
+      total: 0,
     }
-    businessCounts[key].count += 1;
-  });
-
-  const top = Object.values(businessCounts)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-
-  return {
-    statusCounts,
-    last30Days: recent.data?.length ?? 0,
-    top,
-    total: byStatus.data?.length ?? 0,
-  };
+  );
 }
 
 export default async function ReportsPage() {

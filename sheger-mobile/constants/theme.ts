@@ -4,6 +4,8 @@ export const colors = {
   primaryDark: "#1a5c1a",
   primaryDarker: "#0d4d0d",
   accentLime: "#6ee86e",
+  gold: "#e8b84a",
+  goldMuted: "#d4a853",
   primaryLight: "#e4f5e4",
   screenBg: "#f5f9f5",
   background: "#ffffff",

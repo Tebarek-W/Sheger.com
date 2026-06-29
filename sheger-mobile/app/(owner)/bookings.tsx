@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   Alert,
+  FlatList,
   Modal,
   Pressable,
   StyleSheet,
@@ -13,7 +14,6 @@ import { DualDateTime } from "@/components/ui/DualDateTime";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
-import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
@@ -135,27 +135,29 @@ export default function OwnerBookingsScreen() {
   };
 
   return (
-    <Screen scroll>
-      <Header
-        title="Bookings"
-        subtitle="Manage incoming appointments"
-        showBack
-      />
-
-      <Pressable onPress={() => refetch()} style={styles.refresh}>
-        <Text style={styles.refreshText}>↻ Refresh availability</Text>
-      </Pressable>
-
-      {isLoading ? <Text style={styles.muted}>Loading bookings...</Text> : null}
-
-      <View style={styles.list}>
-        {bookings?.map((booking) => {
+    <>
+      <FlatList
+        data={bookings ?? []}
+        keyExtractor={(item) => item.id}
+        style={styles.listScreen}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <>
+            <Header title="Bookings" subtitle="Manage incoming appointments" showBack />
+            <Pressable onPress={() => refetch()} style={styles.refresh}>
+              <Text style={styles.refreshText}>↻ Refresh availability</Text>
+            </Pressable>
+            {isLoading ? <Text style={styles.muted}>Loading bookings...</Text> : null}
+          </>
+        }
+        ListEmptyComponent={!isLoading ? <Text style={styles.muted}>No bookings yet.</Text> : null}
+        renderItem={({ item: booking }) => {
           const isPassed = isPassedPendingBooking(booking);
           const statusLabel = isPassed ? "Passed" : booking.status;
           const statusColor = isPassed ? colors.textMuted : STATUS_COLORS[booking.status];
 
           return (
-            <View key={booking.id} style={styles.card}>
+            <View style={styles.card}>
               <View style={styles.cardTop}>
                 <View style={styles.customerBlock}>
                   <Text style={styles.customer}>{customerDisplayName(booking)}</Text>
@@ -163,9 +165,7 @@ export default function OwnerBookingsScreen() {
                     <Text style={styles.customerPhone}>{booking.profiles.phone}</Text>
                   ) : null}
                 </View>
-                <Text style={[styles.status, { color: statusColor }]}>
-                  {statusLabel}
-                </Text>
+                <Text style={[styles.status, { color: statusColor }]}>{statusLabel}</Text>
               </View>
               <Text style={styles.service}>
                 {booking.services?.name ?? "Service"} · {formatBookingPrice(booking)}
@@ -208,11 +208,8 @@ export default function OwnerBookingsScreen() {
               </View>
             </View>
           );
-        })}
-        {!bookings?.length && !isLoading ? (
-          <Text style={styles.muted}>No bookings yet.</Text>
-        ) : null}
-      </View>
+        }}
+      />
 
       <Modal
         visible={Boolean(completingBooking)}
@@ -253,13 +250,14 @@ export default function OwnerBookingsScreen() {
           </View>
         </View>
       </Modal>
-    </Screen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   refresh: { marginBottom: 16 },
   refreshText: { color: colors.primary, fontWeight: "600", fontSize: 14 },
+  listScreen: { flex: 1 },
   list: { gap: 12, paddingBottom: 24 },
   card: {
     backgroundColor: colors.white,

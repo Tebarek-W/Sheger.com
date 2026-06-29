@@ -25,6 +25,8 @@ export const en = {
     profile: "Profile",
   },
   welcome: {
+    serviceBooking: "Service booking",
+    inEthiopia: "In Ethiopia",
     tagline: "Service Booking · Ethiopia",
     getStarted: "Get started",
     or: "or",

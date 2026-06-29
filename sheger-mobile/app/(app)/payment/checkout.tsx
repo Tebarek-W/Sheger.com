@@ -9,7 +9,7 @@ import { BookingHeader } from "@/components/ui/BookingHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors } from "@/constants/theme";
 import { RequireAuth } from "@/hooks/useRequireAuth";
-import { getChapaReturnUrlPrefix } from "@/lib/chapa/return-url";
+import { getChapaHttpsReturnUrlPrefix } from "@/lib/chapa/return-url";
 import {
   cancelChapaPayment,
   initializeChapaBookingPayment,
@@ -79,37 +79,34 @@ function PaymentCheckoutContent() {
 
     (async () => {
       try {
+        const chapaReturnPrefix = getChapaHttpsReturnUrlPrefix();
         const result = await initializeChapaBookingPayment(bookingId);
         if (!active) return;
 
         setTxRef(result.tx_ref);
         setBookingId(bookingId);
         setStatus("browser");
-        setMessage("Complete payment in the browser window.");
+        setMessage("Complete payment in the Chapa checkout.");
 
         const session = await WebBrowser.openAuthSessionAsync(
           result.checkout_url,
-          getChapaReturnUrlPrefix(),
+          chapaReturnPrefix,
         );
 
         if (!active) return;
 
-        const paymentTxRef =
-          (session.type === "success" && session.url
-            ? parseTxRefFromUrl(session.url)
-            : null) ?? result.tx_ref;
-
-        try {
-          await finishPaidBooking(paymentTxRef);
-          return;
-        } catch {
-          // Payment may still be processing, or the user closed the browser early.
+        if (session.type === "success" && session.url) {
+          const paymentTxRef = parseTxRefFromUrl(session.url) ?? result.tx_ref;
+          try {
+            await finishPaidBooking(paymentTxRef);
+            return;
+          } catch {
+            // Payment may still be processing on Chapa's side.
+          }
         }
 
         setStatus("confirm");
-        setMessage(
-          "If you finished paying, close the browser and tap Confirm payment below.",
-        );
+        setMessage("If you finished paying, tap Confirm payment below.");
       } catch (error) {
         if (!active) return;
         setStatus("error");
@@ -180,17 +177,7 @@ function PaymentCheckoutContent() {
           <Text style={status === "error" ? styles.errorText : styles.statusText}>{message}</Text>
 
           {status === "confirm" ? (
-            <>
-              <Text style={styles.hint}>
-                You may see a short &quot;Payment complete&quot; page in the browser. That is
-                normal — close it and confirm here.
-              </Text>
-              <Button
-                title="Confirm payment"
-                onPress={confirmPayment}
-                loading={false}
-              />
-            </>
+            <Button title="Confirm payment" onPress={confirmPayment} loading={false} />
           ) : null}
 
           {status === "error" ? (
@@ -232,12 +219,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
-  },
-  hint: {
-    color: colors.textTertiary,
-    fontSize: 12,
-    textAlign: "center",
-    lineHeight: 18,
   },
   errorText: {
     color: colors.text,

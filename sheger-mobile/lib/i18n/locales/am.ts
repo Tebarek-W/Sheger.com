@@ -27,6 +27,8 @@ export const am: TranslationTree = {
     profile: "መገለጫ",
   },
   welcome: {
+    serviceBooking: "የአገልግሎት ቀጠሮ",
+    inEthiopia: "በኢትዮጵያ",
     tagline: "የአገልግሎት ቀጠሮ · ኢትዮጵያ",
     getStarted: "ጀምር",
     or: "ወይም",

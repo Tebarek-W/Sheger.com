@@ -4,18 +4,18 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { BusinessCard } from "@/components/customer/BusinessCard";
+import { CustomerTabTitleHeader } from "@/components/navigation/CustomerTabHeader";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
-import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
+import { fetchMarketplaceBusinessesPage } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
-import { fetchAllBusinessRatings } from "@/lib/api/reviews";
 import { distanceKm, formatDistance, useUserLocation } from "@/lib/location";
 import { compareFeaturedFirst } from "@/lib/business/discovery";
 import { useDiscoveryStore } from "@/stores/discoveryStore";
 
-type Business = Awaited<ReturnType<typeof fetchApprovedBusinessesWithDetails>>[number];
+type Business = Awaited<ReturnType<typeof fetchMarketplaceBusinessesPage>>["rows"][number];
 
 const RADIUS_OPTION_VALUES = [null, 5, 10, 25] as const;
 
@@ -27,8 +27,17 @@ export default function NearbyScreen() {
   const setCategoryId = useDiscoveryStore((s) => s.setCategoryId);
 
   const { data: businesses, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["home-businesses"],
-    queryFn: fetchApprovedBusinessesWithDetails,
+    queryKey: ["nearby-businesses", categoryId, coords?.latitude, coords?.longitude, radiusKm],
+    queryFn: async () =>
+      (
+        await fetchMarketplaceBusinessesPage({
+          limit: 40,
+          categoryId,
+          latitude: coords?.latitude ?? null,
+          longitude: coords?.longitude ?? null,
+          radiusKm,
+        })
+      ).rows,
   });
 
   const { data: categories } = useQuery({
@@ -36,18 +45,9 @@ export default function NearbyScreen() {
     queryFn: fetchCategories,
   });
 
-  const { data: ratings } = useQuery({
-    queryKey: ["business-ratings"],
-    queryFn: fetchAllBusinessRatings,
-  });
-
   const selectedCategory = categories?.find((c) => c.id === categoryId);
 
-  const categoryBusinesses = useMemo(() => {
-    const all = businesses ?? [];
-    if (!categoryId) return all;
-    return all.filter((b) => b.category_id === categoryId);
-  }, [businesses, categoryId]);
+  const categoryBusinesses = useMemo(() => businesses ?? [], [businesses]);
 
   const { located, missingLocation } = useMemo(() => {
     const withCoords = categoryBusinesses.filter((b) => b.latitude != null && b.longitude != null);
@@ -91,18 +91,18 @@ export default function NearbyScreen() {
 
   return (
     <Screen scroll padded={false} backgroundColor={colors.screenBg}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t("nearby.title")}</Text>
-        <Text style={styles.subtitle}>
-          {categoryLabel
+      <CustomerTabTitleHeader
+        title={t("nearby.title")}
+        subtitle={
+          categoryLabel
             ? coords
               ? `${categoryLabel} — ${t("nearby.subtitle")}`
               : `${categoryLabel} — ${t("nearby.enableLocationSort")}`
             : coords
               ? t("nearby.subtitle")
-              : t("nearby.enableLocationSort")}
-        </Text>
-      </View>
+              : t("nearby.enableLocationSort")
+        }
+      />
 
       <View style={styles.body}>
         {categoryLabel ? (
@@ -181,7 +181,8 @@ export default function NearbyScreen() {
               key={business.id}
               business={business}
               themeIndex={index}
-              rating={ratings?.[business.id]}
+              rating={{ average: business.rating_average, count: business.rating_count }}
+              fromPrice={business.from_price}
               distanceLabel={km != null ? formatDistance(km) : undefined}
               onPress={() => router.push(`/(app)/business/${business.id}`)}
             />
@@ -197,7 +198,8 @@ export default function NearbyScreen() {
                 key={business.id}
                 business={business}
                 themeIndex={index}
-                rating={ratings?.[business.id]}
+                rating={{ average: business.rating_average, count: business.rating_count }}
+                fromPrice={business.from_price}
                 onPress={() => router.push(`/(app)/business/${business.id}`)}
               />
             ))}
@@ -209,16 +211,6 @@ export default function NearbyScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: colors.brandDark,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-  },
-  title: { fontSize: 22, fontWeight: "500", color: colors.white },
-  subtitle: { fontSize: 13, color: "rgba(255,255,255,0.65)", marginTop: 4, lineHeight: 18 },
   body: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 24 },
   categoryRow: {
     flexDirection: "row",

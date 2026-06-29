@@ -1,4 +1,5 @@
 import {
+  buildChapaReturnUrl,
   chapaInitialize,
   chapaMode,
   formatChapaAmount,
@@ -96,7 +97,7 @@ Deno.serve(async (req) => {
         return jsonResponse({
           checkout_url: checkoutMeta.checkout_url,
           tx_ref: existingTxn.tx_ref,
-          return_url: `${functionsBase}/chapa-return?tx_ref=${encodeURIComponent(existingTxn.tx_ref)}`,
+          return_url: buildChapaReturnUrl(functionsBase, existingTxn.tx_ref),
           reused: true,
         });
       }
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
     const email = authUser.user?.email ?? `customer+${user.id.slice(0, 8)}@sheger.app`;
     const names = splitFullName(profile?.full_name);
     const txRef = makeTxRef(bookingId);
-    const returnUrl = `${functionsBase}/chapa-return?tx_ref=${encodeURIComponent(txRef)}`;
+    const returnUrl = buildChapaReturnUrl(functionsBase, txRef);
 
     const initResult = await chapaInitialize({
       amount: formatChapaAmount(amount),

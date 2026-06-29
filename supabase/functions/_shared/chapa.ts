@@ -51,6 +51,14 @@ export function supabaseFunctionsBaseUrl(): string {
   return `${url}/functions/v1`;
 }
 
+export function buildChapaReturnUrl(functionsBase: string, txRef: string): string {
+  return `${functionsBase}/chapa-return?tx_ref=${encodeURIComponent(txRef)}`;
+}
+
+export function appDeepLinkReturnUrl(txRef: string): string {
+  return `sheger://payment/return?tx_ref=${encodeURIComponent(txRef)}`;
+}
+
 export async function chapaInitialize(
   payload: ChapaInitializePayload,
 ): Promise<ChapaInitializeResult> {

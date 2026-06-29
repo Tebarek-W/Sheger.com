@@ -57,6 +57,7 @@ export type OwnerStats = {
   completedBookings: number;
   totalRevenue: number;
   last30DaysRevenue: number;
+  byStatus?: Record<BookingStatus, number>;
 };
 
 export type CompleteBookingInput = {
@@ -270,13 +271,19 @@ export type OwnerBooking = Booking & {
   services: Service | null;
 };
 
-export async function fetchMyBookings(businessId: string) {
+type OwnerBookingPage = {
+  rows: OwnerBooking[];
+  next_cursor: { scheduled_at: string; id: string } | null;
+  limit: number;
+};
+
+async function fetchMyBookingsDirect(businessId: string) {
   const { data: bookings, error } = await supabase
     .from("bookings")
     .select("*, services(*)")
     .eq("business_id", businessId)
-    .order("created_at", { ascending: false })
-    .limit(100);
+    .order("scheduled_at", { ascending: false })
+    .limit(50);
 
   if (error) throw error;
   if (!bookings?.length) return [] as OwnerBooking[];
@@ -297,6 +304,31 @@ export async function fetchMyBookings(businessId: string) {
     ...booking,
     profiles: profileById.get(booking.customer_id) ?? null,
   })) as OwnerBooking[];
+}
+
+export async function fetchMyBookings(businessId: string) {
+  const { data, error } = await supabase.rpc("list_business_booking_cards_page", {
+    p_business_id: businessId,
+    p_limit: 50,
+    p_cursor_scheduled_at: null,
+    p_cursor_id: null,
+  });
+
+  if (!error && data && typeof data === "object" && "rows" in data) {
+    const page = data as OwnerBookingPage;
+    if (Array.isArray(page.rows)) {
+      return page.rows;
+    }
+  }
+
+  if (__DEV__ && error) {
+    console.warn(
+      "[Sheger] list_business_booking_cards_page failed, using direct query:",
+      error.message ?? error,
+    );
+  }
+
+  return fetchMyBookingsDirect(businessId);
 }
 
 export async function updateOwnerBookingStatus(bookingId: string, status: BookingStatus) {
@@ -328,40 +360,23 @@ export async function completeOwnerBooking(bookingId: string, input: CompleteBoo
 }
 
 export async function fetchOwnerStats(businessId: string): Promise<OwnerStats> {
-  const { data: bookings, error } = await supabase
-    .from("bookings")
-    .select(
-      "status, scheduled_at, final_price, listed_price, listed_price_min, pricing_model, services(price)",
-    )
-    .eq("business_id", businessId);
+  const rpc = (supabase.rpc as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: (OwnerStats & { byStatus?: Record<string, number> }) | null; error: unknown }>);
+
+  const { data, error } = await rpc("get_owner_booking_stats", {
+    p_business_id: businessId,
+  });
 
   if (error) throw error;
 
-  const rows = bookings ?? [];
-  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-
-  let totalRevenue = 0;
-  let last30DaysRevenue = 0;
-  let pendingBookings = 0;
-  let completedBookings = 0;
-
-  rows.forEach((row) => {
-    if (row.status === "pending") pendingBookings += 1;
-    if (row.status === "completed") {
-      completedBookings += 1;
-      const amount = getBookingRevenueAmount(row as Booking & { services?: { price: number } | null });
-      totalRevenue += amount;
-      if (new Date(row.scheduled_at).getTime() >= thirtyDaysAgo) {
-        last30DaysRevenue += amount;
-      }
-    }
-  });
-
   return {
-    totalBookings: rows.length,
-    pendingBookings,
-    completedBookings,
-    totalRevenue,
-    last30DaysRevenue,
+    totalBookings: data?.totalBookings ?? 0,
+    pendingBookings: data?.pendingBookings ?? 0,
+    completedBookings: data?.completedBookings ?? 0,
+    totalRevenue: data?.totalRevenue ?? 0,
+    last30DaysRevenue: data?.last30DaysRevenue ?? 0,
+    byStatus: data?.byStatus,
   };
 }

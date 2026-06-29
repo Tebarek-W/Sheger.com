@@ -15,8 +15,6 @@ export type NotificationPayload = {
   data?: Record<string, unknown>;
 };
 
-const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
-
 function formatAddisDateTime(iso: string): string {
   try {
     const date = new Date(iso);
@@ -60,38 +58,20 @@ export async function deliverNotification(
     throw error;
   }
 
-  const { data: tokens } = await supabase
-    .from("push_tokens")
-    .select("expo_push_token")
-    .eq("user_id", payload.userId);
-
-  const pushTokens = (tokens ?? []).map((t) => t.expo_push_token).filter(Boolean);
-  if (!pushTokens.length) return;
-
-  const messages = pushTokens.map((token) => ({
-    to: token,
-    sound: "default",
-    title: payload.title,
-    body: payload.body,
-    data: {
+  const { error: queueError } = await supabase.rpc("enqueue_notification_deliveries", {
+    p_notification_id: row.id,
+    p_user_id: payload.userId,
+    p_title: payload.title,
+    p_body: payload.body,
+    p_data: {
       notificationId: row.id,
       type: payload.type,
       ...(payload.data ?? {}),
     },
-  }));
-
-  const response = await fetch(EXPO_PUSH_URL, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Accept-Encoding": "gzip, deflate",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(messages),
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    console.error("Expo push failed", response.status, text);
+  if (queueError) {
+    console.error("Failed to queue push deliveries", queueError);
+    throw queueError;
   }
 }

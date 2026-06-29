@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,15 +11,15 @@ import {
 
 import { BusinessCard } from "@/components/customer/BusinessCard";
 import { CategoryGrid } from "@/components/customer/CategoryGrid";
+import { customerTabHeaderContainerStyle } from "@/components/navigation/CustomerTabHeader";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
-import { fetchApprovedBusinessesWithDetails } from "@/lib/api/businesses";
+import { fetchMarketplaceBusinessesPage } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
-import { fetchAllBusinessRatings } from "@/lib/api/reviews";
 import { compareFeaturedFirst } from "@/lib/business/discovery";
 import { getTimeGreetingKey } from "@/lib/i18n";
 import { useDiscoveryStore } from "@/stores/discoveryStore";
@@ -27,13 +27,13 @@ import { useDiscoveryStore } from "@/stores/discoveryStore";
 export default function HomeScreen() {
   const { session, profile } = useAuth();
   const { t } = useI18n();
-  const [search, setSearch] = useState("");
   const categoryFilter = useDiscoveryStore((s) => s.categoryId);
   const setCategoryFilter = useDiscoveryStore((s) => s.setCategoryId);
 
   const { data: businesses, isLoading, error, refetch, isRefetching } = useQuery({
-    queryKey: ["home-businesses"],
-    queryFn: fetchApprovedBusinessesWithDetails,
+    queryKey: ["home-businesses", categoryFilter],
+    queryFn: async () =>
+      (await fetchMarketplaceBusinessesPage({ limit: 20, categoryId: categoryFilter })).rows,
   });
 
   const { data: categories } = useQuery({
@@ -41,28 +41,9 @@ export default function HomeScreen() {
     queryFn: fetchCategories,
   });
 
-  const { data: ratings } = useQuery({
-    queryKey: ["business-ratings"],
-    queryFn: fetchAllBusinessRatings,
-  });
-
   const filtered = useMemo(() => {
-    let list = businesses ?? [];
-    if (categoryFilter) {
-      list = list.filter((b) => b.category_id === categoryFilter);
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter(
-        (b) =>
-          b.name.toLowerCase().includes(q) ||
-          b.description?.toLowerCase().includes(q) ||
-          b.city?.toLowerCase().includes(q) ||
-          b.categories?.name.toLowerCase().includes(q),
-      );
-    }
-    return [...list].sort(compareFeaturedFirst);
-  }, [businesses, categoryFilter, search]);
+    return [...(businesses ?? [])].sort(compareFeaturedFirst);
+  }, [businesses]);
 
   const { data: unreadCount = 0 } = useUnreadNotifications(session?.user.id);
 
@@ -129,7 +110,7 @@ export default function HomeScreen() {
             <Text style={styles.emptyEmoji}>🏪</Text>
             <Text style={styles.emptyTitle}>{t("home.noBusinessesTitle")}</Text>
             <Text style={styles.emptyText}>
-              {search || categoryFilter
+              {categoryFilter
                 ? t("home.noBusinessesFilter")
                 : t("home.noBusinessesEmpty")}
             </Text>
@@ -140,7 +121,8 @@ export default function HomeScreen() {
               key={business.id}
               business={business}
               themeIndex={index}
-              rating={ratings?.[business.id]}
+              rating={{ average: business.rating_average, count: business.rating_count }}
+              fromPrice={business.from_price}
               onPress={() => router.push(`/(app)/business/${business.id}`)}
             />
           ))
@@ -151,14 +133,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: colors.brandDark,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-  },
+  header: customerTabHeaderContainerStyle,
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",

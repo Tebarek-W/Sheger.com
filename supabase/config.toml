@@ -14,5 +14,17 @@ verify_jwt = false
 [functions.chapa-return]
 verify_jwt = false
 
+[functions.booking-notifications]
+verify_jwt = false
+
+[functions.send-booking-reminders]
+verify_jwt = false
+
+[functions.check-subscription-expiry]
+verify_jwt = false
+
+[functions.send-push-queue]
+verify_jwt = false
+
 [functions.expire-unpaid-bookings]
 verify_jwt = false

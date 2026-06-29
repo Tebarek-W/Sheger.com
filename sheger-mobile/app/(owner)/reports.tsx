@@ -5,7 +5,7 @@ import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
-import { fetchMyBookings, fetchOwnerStats } from "@/lib/api/owner";
+import { fetchOwnerStats } from "@/lib/api/owner";
 import type { BookingStatus } from "@/lib/types/database";
 
 export default function OwnerReportsScreen() {
@@ -17,22 +17,12 @@ export default function OwnerReportsScreen() {
     enabled: Boolean(business?.id),
   });
 
-  const { data: bookings } = useQuery({
-    queryKey: ["owner-bookings", business?.id],
-    queryFn: () => fetchMyBookings(business!.id),
-    enabled: Boolean(business?.id),
-  });
-
   const byStatus: Record<BookingStatus, number> = {
-    pending: 0,
-    confirmed: 0,
-    cancelled: 0,
-    completed: 0,
+    pending: (stats as { byStatus?: Record<BookingStatus, number> } | undefined)?.byStatus?.pending ?? 0,
+    confirmed: (stats as { byStatus?: Record<BookingStatus, number> } | undefined)?.byStatus?.confirmed ?? 0,
+    cancelled: (stats as { byStatus?: Record<BookingStatus, number> } | undefined)?.byStatus?.cancelled ?? 0,
+    completed: (stats as { byStatus?: Record<BookingStatus, number> } | undefined)?.byStatus?.completed ?? 0,
   };
-
-  bookings?.forEach((b) => {
-    byStatus[b.status] += 1;
-  });
 
   const maxStatus = Math.max(...Object.values(byStatus), 1);
 

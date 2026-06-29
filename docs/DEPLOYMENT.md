@@ -26,6 +26,8 @@ Create GitHub **environments** named `staging` and `production` (optional; used 
 | `main` | Production Supabase project |
 
 - Migrations: `supabase/migrations/`
+- Backend conventions: [supabase/BACKEND.md](../supabase/BACKEND.md)
+- Edge function ops: [supabase/ops/EDGE_FUNCTIONS.md](../supabase/ops/EDGE_FUNCTIONS.md)
 - Auto-deploy: `.github/workflows/deploy-db.yml` on push when migrations change
 - Manual: see [supabase/STAGING.md](../supabase/STAGING.md)
 
@@ -178,4 +180,5 @@ Schedule: `0 */6 * * *` (every 6 hours). Marks expired `active` subscriptions as
 
 - [ ] `git status` shows no `.env` files
 - [ ] `npm run ci` passes locally
+- [ ] After schema changes: `npm run db:push` then `npm run db:types` (requires `supabase link`)
 - [ ] Migrations tested on staging before merging to `main`

@@ -1,10 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ReviewForm } from "@/components/customer/ReviewForm";
 import { BookingCancelAction } from "@/components/customer/BookingCancelAction";
+import { CustomerTabTitleHeader } from "@/components/navigation/CustomerTabHeader";
 import { Button } from "@/components/ui/Button";
 import { DualDateTime } from "@/components/ui/DualDateTime";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -37,7 +39,7 @@ export default function BookingsScreen() {
   const queryClient = useQueryClient();
   const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
 
-  const { data: bookings, isLoading, refetch, isRefetching } = useQuery({
+  const { data: bookings, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ["customer-bookings", user?.id],
     queryFn: () => fetchCustomerBookings(user!.id),
     enabled: Boolean(user?.id),
@@ -68,121 +70,118 @@ export default function BookingsScreen() {
   }
 
   return (
-    <Screen scroll padded={false} backgroundColor={colors.screenBg}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t("bookings.title")}</Text>
-        <Text style={styles.subtitle}>{t("bookings.subtitle")}</Text>
-      </View>
-
-      <View style={styles.body}>
-        <SectionHeader
-          title={t("bookings.allAppointments")}
-          actionLabel={isRefetching ? t("common.updating") : t("common.refresh")}
-          onAction={() => refetch()}
-        />
-
-        {isLoading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : !bookings?.length ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>📋</Text>
-            <Text style={styles.emptyTitle}>{t("bookings.emptyTitle")}</Text>
-            <Text style={styles.emptyText}>{t("bookings.emptyText")}</Text>
-            <Button title={t("bookings.exploreServices")} onPress={() => router.push("/(app)/(tabs)")} />
-          </View>
-        ) : (
-          bookings.map((booking) => {
-            const isPassed = isPassedPendingBooking(booking);
-            const statusStyle = isPassed ? PASSED_STATUS_STYLE : STATUS_STYLES[booking.status];
-            const canReview =
-              booking.status === "completed" && !reviewedIds?.has(booking.id);
-            const showingReview = reviewBookingId === booking.id;
-
-            return (
-              <View key={booking.id} style={styles.card}>
-                <View style={styles.cardTop}>
-                  <Text style={styles.serviceName}>
-                    {booking.services?.name ?? "Service"}
-                  </Text>
-                  <View style={[styles.badge, { backgroundColor: statusStyle.bg }]}>
-                    <Text style={[styles.badgeText, { color: statusStyle.text }]}>
-                      {isPassed ? t("bookings.status.passed") : t(`bookings.status.${booking.status}`)}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.businessName}>
-                  {booking.businesses?.name ?? "Business"}
-                </Text>
-                <DualDateTime iso={booking.scheduled_at} compact />
-                {booking.businesses?.address || booking.businesses?.city ? (
-                  <Text style={styles.meta}>
-                    📍 {booking.businesses.address ?? booking.businesses.city}
-                  </Text>
-                ) : null}
-                <Text style={styles.price}>{formatBookingPrice(booking)}</Text>
-
-                {canReview && showingReview && user ? (
-                  <ReviewForm
-                    businessId={booking.business_id}
-                    customerId={user.id}
-                    bookingId={booking.id}
-                    serviceLabel={booking.services?.name ?? undefined}
-                    onSuccess={() => {
-                      setReviewBookingId(null);
-                      queryClient.invalidateQueries({ queryKey: ["reviewed-booking-ids"] });
-                      queryClient.invalidateQueries({ queryKey: ["business-reviews"] });
-                      queryClient.invalidateQueries({ queryKey: ["business-review-summary"] });
-                      refetch();
-                    }}
-                  />
-                ) : null}
-
-                {canReview && !showingReview ? (
-                  <Button
-                    title={t("bookings.leaveReview")}
-                    variant="outline"
-                    onPress={() => setReviewBookingId(booking.id)}
-                    style={styles.reviewBtn}
-                  />
-                ) : null}
-
-                <BookingCancelAction
-                  bookingId={booking.id}
-                  scheduledAt={booking.scheduled_at}
-                  status={booking.status}
-                  businessName={booking.businesses?.name ?? "Business"}
-                  cancellationHours={
-                    booking.businesses?.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS
-                  }
-                  onCancelled={() => {
-                    queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
-                    queryClient.invalidateQueries({ queryKey: ["available-slots"] });
-                    refetch();
-                  }}
-                />
+    <SafeAreaView style={styles.listScreen} edges={["top"]}>
+      <FlatList
+        data={bookings ?? []}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+      ListHeaderComponent={
+        <>
+          <CustomerTabTitleHeader title={t("bookings.title")} subtitle={t("bookings.subtitle")} />
+          <View style={styles.body}>
+            <SectionHeader
+              title={t("bookings.allAppointments")}
+              actionLabel={isRefetching ? t("common.updating") : t("common.refresh")}
+              onAction={() => refetch()}
+            />
+            {isLoading ? (
+              <View style={styles.center}>
+                <ActivityIndicator size="large" color={colors.primary} />
               </View>
-            );
-          })
-        )}
-      </View>
-    </Screen>
+            ) : null}
+          </View>
+        </>
+      }
+      ListEmptyComponent={
+        !isLoading ? (
+          error ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>{t("home.loadErrorTitle")}</Text>
+              <Text style={styles.emptyText}>{t("home.loadErrorText")}</Text>
+              <Button title={t("common.tryAgain")} onPress={() => refetch()} />
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Text style={styles.emptyEmoji}>📋</Text>
+              <Text style={styles.emptyTitle}>{t("bookings.emptyTitle")}</Text>
+              <Text style={styles.emptyText}>{t("bookings.emptyText")}</Text>
+              <Button title={t("bookings.exploreServices")} onPress={() => router.push("/(app)/(tabs)")} />
+            </View>
+          )
+        ) : null
+      }
+      renderItem={({ item: booking }) => {
+        const isPassed = isPassedPendingBooking(booking);
+        const statusStyle = isPassed ? PASSED_STATUS_STYLE : STATUS_STYLES[booking.status];
+        const canReview = booking.status === "completed" && !reviewedIds?.has(booking.id);
+        const showingReview = reviewBookingId === booking.id;
+
+        return (
+          <View style={styles.card}>
+            <View style={styles.cardTop}>
+              <Text style={styles.serviceName}>{booking.services?.name ?? "Service"}</Text>
+              <View style={[styles.badge, { backgroundColor: statusStyle.bg }]}>
+                <Text style={[styles.badgeText, { color: statusStyle.text }]}>
+                  {isPassed ? t("bookings.status.passed") : t(`bookings.status.${booking.status}`)}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.businessName}>{booking.businesses?.name ?? "Business"}</Text>
+            <DualDateTime iso={booking.scheduled_at} compact />
+            {booking.businesses?.address || booking.businesses?.city ? (
+              <Text style={styles.meta}>📍 {booking.businesses.address ?? booking.businesses.city}</Text>
+            ) : null}
+            <Text style={styles.price}>{formatBookingPrice(booking)}</Text>
+
+            {canReview && showingReview && user ? (
+              <ReviewForm
+                businessId={booking.business_id}
+                customerId={user.id}
+                bookingId={booking.id}
+                serviceLabel={booking.services?.name ?? undefined}
+                onSuccess={() => {
+                  setReviewBookingId(null);
+                  queryClient.invalidateQueries({ queryKey: ["reviewed-booking-ids"] });
+                  queryClient.invalidateQueries({ queryKey: ["business-reviews"] });
+                  queryClient.invalidateQueries({ queryKey: ["business-review-summary"] });
+                  refetch();
+                }}
+              />
+            ) : null}
+
+            {canReview && !showingReview ? (
+              <Button
+                title={t("bookings.leaveReview")}
+                variant="outline"
+                onPress={() => setReviewBookingId(booking.id)}
+                style={styles.reviewBtn}
+              />
+            ) : null}
+
+            <BookingCancelAction
+              bookingId={booking.id}
+              scheduledAt={booking.scheduled_at}
+              status={booking.status}
+              businessName={booking.businesses?.name ?? "Business"}
+              cancellationHours={booking.businesses?.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS}
+              onCancelled={() => {
+                queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
+                queryClient.invalidateQueries({ queryKey: ["available-slots"] });
+                refetch();
+              }}
+            />
+          </View>
+        );
+      }}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: colors.brandDark,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-  },
-  title: { fontSize: 22, fontWeight: "500", color: colors.white },
-  subtitle: { fontSize: 13, color: "rgba(255,255,255,0.65)", marginTop: 4 },
   body: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 24 },
+  listScreen: { flex: 1, backgroundColor: colors.screenBg },
+  listContent: { paddingBottom: 24, flexGrow: 1 },
   guest: {
     flex: 1,
     justifyContent: "center",
@@ -205,6 +204,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 16,
     marginBottom: 12,
+    marginHorizontal: 16,
     gap: 4,
   },
   cardTop: {
