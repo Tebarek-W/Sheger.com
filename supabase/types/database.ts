@@ -2,6 +2,13 @@
 
 export type UserRole = "customer" | "business_owner" | "admin";
 export type BookingStatus = "pending" | "confirmed" | "cancelled" | "completed";
+export type BookingPaymentStatus =
+  | "not_required"
+  | "awaiting_payment"
+  | "paid"
+  | "failed";
+export type PaymentTransactionStatus = "initialized" | "success" | "failed" | "cancelled";
+export type PaymentPurpose = "booking" | "subscription";
 export type BusinessStatus = "pending" | "approved" | "rejected" | "suspended";
 export type BusinessDocumentType = "trade_license" | "health_facility_license";
 export type BusinessDocumentStatus = "pending_review" | "approved" | "rejected";
@@ -200,8 +207,28 @@ export interface Booking {
   final_price: number | null;
   actual_duration_minutes: number | null;
   status: BookingStatus;
+  payment_status: BookingPaymentStatus;
+  paid_amount_etb: number | null;
+  payment_expires_at: string | null;
   payment_method: string | null;
   notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  purpose: PaymentPurpose;
+  booking_id: string | null;
+  tx_ref: string;
+  chapa_reference: string | null;
+  amount_etb: number;
+  currency: string;
+  status: PaymentTransactionStatus;
+  payment_method: string | null;
+  chapa_mode: string;
+  metadata: Record<string, unknown>;
+  verified_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -270,6 +297,7 @@ export type BookingInsert = {
   scheduled_at: string;
   duration_minutes: number;
   status?: BookingStatus;
+  payment_status?: BookingPaymentStatus;
   payment_method?: string | null;
   notes?: string | null;
 };
@@ -395,6 +423,7 @@ export interface Database {
           },
         ]
       >;
+      payment_transactions: TableDef<PaymentTransaction>;
       reviews: TableDef<Review, Partial<Review> & { booking_id: string; customer_id: string; business_id: string; rating: number }>;
       subscription_plans: TableDef<SubscriptionPlan>;
       business_subscriptions: TableDef<

@@ -53,6 +53,7 @@ module.exports = {
   },
   plugins: [
     "expo-router",
+    "expo-web-browser",
     "expo-localization",
     "expo-secure-store",
     [

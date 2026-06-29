@@ -7,6 +7,7 @@ type BookingRow = {
   business_id: string;
   service_id: string;
   status: string;
+  payment_status?: string;
   scheduled_at: string;
 };
 
@@ -53,6 +54,10 @@ Deno.serve(async (req) => {
     };
 
     if (payload.type === "INSERT" && booking.status === "pending" && ctx.ownerId) {
+      const paymentStatus = booking.payment_status ?? "not_required";
+      if (paymentStatus === "awaiting_payment") {
+        return jsonResponse({ ok: true, skipped: true, reason: "awaiting payment" });
+      }
       await deliverNotification(supabase, {
         userId: ctx.ownerId,
         type: "booking_new",
@@ -64,6 +69,25 @@ Deno.serve(async (req) => {
     }
 
     if (payload.type === "UPDATE") {
+      const oldPaymentStatus = oldBooking?.payment_status ?? "not_required";
+      const newPaymentStatus = booking.payment_status ?? "not_required";
+
+      if (
+        oldPaymentStatus === "awaiting_payment" &&
+        newPaymentStatus === "paid" &&
+        booking.status === "pending" &&
+        ctx.ownerId
+      ) {
+        await deliverNotification(supabase, {
+          userId: ctx.ownerId,
+          type: "booking_new",
+          title: "New booking request",
+          body: `New paid ${ctx.serviceName} booking at ${ctx.businessName} for ${ctx.when}.`,
+          data,
+        });
+        return jsonResponse({ ok: true, event: "booking_new_paid" });
+      }
+
       if (oldBooking?.status === "pending" && booking.status === "confirmed") {
         await deliverNotification(supabase, {
           userId: booking.customer_id,

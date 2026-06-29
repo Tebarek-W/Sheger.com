@@ -44,6 +44,9 @@ function ConfirmationScreenContent() {
         <Text style={styles.subtitle}>
           Your appointment is pending confirmation from the business. You&apos;ll receive a
           notification once it&apos;s approved.
+          {paymentMethod && paymentMethod !== "Cash on arrival"
+            ? " Your payment has been received."
+            : ""}
         </Text>
         <Text style={styles.policy}>
           {getCancellationPolicyText(

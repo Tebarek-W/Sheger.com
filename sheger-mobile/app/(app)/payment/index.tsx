@@ -12,6 +12,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import { createBooking } from "@/lib/api/bookings";
 import { DEFAULT_CANCELLATION_HOURS, getCancellationPolicyText } from "@/lib/booking/cancellation";
+import {
+  bookingPaymentStatusForMethod,
+  isChapaOnlineMethod,
+} from "@/lib/chapa/methods";
 import { getErrorMessage } from "@/lib/errors";
 import {
   formatServiceDuration,
@@ -54,22 +58,25 @@ function PaymentScreenContent() {
   const submittingRef = useRef(false);
 
   const checkoutPrice = service ? getCheckoutPriceLabel(service) : null;
+  const onlinePayAvailable = checkoutPrice?.showExactTotal ?? false;
 
   useEffect(() => {
-    if (service?.pricing_model === "variable") {
+    if (!onlinePayAvailable) {
+      setMethod("cash");
+    } else if (service?.pricing_model === "variable") {
       setMethod("cash");
     }
-  }, [service?.pricing_model]);
+  }, [onlinePayAvailable, service?.pricing_model]);
 
   const confirm = async () => {
     if (!user || !business || !service || !scheduledAt) return;
-    // Synchronous guard: state updates are async, so a fast double-tap could
-    // otherwise enter this handler twice and create duplicate bookings.
     if (submittingRef.current) return;
     submittingRef.current = true;
     setLoading(true);
     try {
+      const usesChapa = onlinePayAvailable && isChapaOnlineMethod(method);
       setPaymentMethod(METHOD_LABELS[method] ?? method);
+
       const booking = await createBooking({
         customerId: user.id,
         businessId: business.id,
@@ -77,10 +84,22 @@ function PaymentScreenContent() {
         scheduledAt,
         durationMinutes: service.duration_minutes,
         paymentMethod: method,
+        paymentStatus: bookingPaymentStatusForMethod(method),
       });
+
       setBookingId(booking.id);
       queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
       queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
+
+      if (usesChapa) {
+        submittingRef.current = false;
+        router.push({
+          pathname: "/(app)/payment/checkout",
+          params: { bookingId: booking.id },
+        });
+        return;
+      }
+
       router.replace("/(app)/confirmation");
     } catch (error) {
       Alert.alert("Booking failed", getErrorMessage(error));
@@ -102,6 +121,7 @@ function PaymentScreenContent() {
   }
 
   const price = checkoutPrice?.primary ?? "—";
+  const usesChapa = onlinePayAvailable && isChapaOnlineMethod(method);
 
   return (
     <Screen scroll padded={false}>
@@ -150,18 +170,30 @@ function PaymentScreenContent() {
         <View style={styles.methods}>
           {PAYMENT_METHODS.map((item) => {
             const active = method === item.id;
+            const disabled = !onlinePayAvailable && item.id !== "cash";
             return (
               <Pressable
                 key={item.id}
-                style={[styles.method, active && styles.methodActive]}
-                onPress={() => setMethod(item.id)}
+                style={[
+                  styles.method,
+                  active && styles.methodActive,
+                  disabled && styles.methodDisabled,
+                ]}
+                onPress={() => {
+                  if (disabled) return;
+                  setMethod(item.id);
+                }}
               >
                 <View style={[styles.methodIcon, { backgroundColor: item.color }]}>
                   <Text style={styles.methodEmoji}>{item.icon}</Text>
                 </View>
                 <View style={styles.methodText}>
-                  <Text style={styles.methodName}>{item.label}</Text>
-                  <Text style={styles.methodSub}>{item.desc}</Text>
+                  <Text style={[styles.methodName, disabled && styles.methodNameDisabled]}>
+                    {item.label}
+                  </Text>
+                  <Text style={styles.methodSub}>
+                    {disabled ? "Not available for this service" : item.desc}
+                  </Text>
                 </View>
                 <View style={[styles.radio, active && styles.radioOn]}>
                   {active ? <View style={styles.radioDot} /> : null}
@@ -171,7 +203,18 @@ function PaymentScreenContent() {
           })}
         </View>
 
-        <Button title="Confirm booking" onPress={confirm} loading={loading} />
+        {usesChapa ? (
+          <Text style={styles.chapaNote}>
+            You will complete payment securely via Chapa (test mode). Your slot is held for 15
+            minutes.
+          </Text>
+        ) : null}
+
+        <Button
+          title={usesChapa ? "Continue to payment" : "Confirm booking"}
+          onPress={confirm}
+          loading={loading}
+        />
       </View>
     </Screen>
   );
@@ -229,7 +272,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     marginBottom: 12,
   },
-  methods: { gap: 10, marginBottom: 24 },
+  methods: { gap: 10, marginBottom: 16 },
   method: {
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -244,6 +287,9 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: colors.screenBg,
   },
+  methodDisabled: {
+    opacity: 0.45,
+  },
   methodIcon: {
     width: 36,
     height: 36,
@@ -254,6 +300,7 @@ const styles = StyleSheet.create({
   methodEmoji: { fontSize: 18 },
   methodText: { flex: 1, gap: 2 },
   methodName: { fontSize: 14, fontWeight: "500", color: colors.text },
+  methodNameDisabled: { color: colors.textMuted },
   methodSub: { fontSize: 11, color: colors.textSecondary },
   radio: {
     width: 18,
@@ -270,6 +317,12 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 4,
     backgroundColor: colors.white,
+  },
+  chapaNote: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 16,
   },
   muted: { color: colors.textMuted },
 });

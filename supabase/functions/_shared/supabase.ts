@@ -24,3 +24,23 @@ export function handleCors(req: Request) {
   }
   return null;
 }
+
+export function userClient(req: Request) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    throw new Error("Missing authorization header");
+  }
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  return createClient(url, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+}
+
+export async function requireUser(req: Request) {
+  const client = userClient(req);
+  const { data, error } = await client.auth.getUser();
+  if (error) throw error;
+  if (!data.user) throw new Error("Unauthorized");
+  return { client, user: data.user };
+}

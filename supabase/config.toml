@@ -7,3 +7,12 @@ major_version = 15
 
 [api]
 enabled = true
+
+[functions.chapa-webhook]
+verify_jwt = false
+
+[functions.chapa-return]
+verify_jwt = false
+
+[functions.expire-unpaid-bookings]
+verify_jwt = false

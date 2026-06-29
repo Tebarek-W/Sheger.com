@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { Booking, WorkingHours } from "@/lib/types/database";
+import type { Booking, BookingPaymentStatus, WorkingHours } from "@/lib/types/database";
 
 export async function fetchWorkingHours(businessId: string, dayOfWeek: number) {
   const { data, error } = await supabase
@@ -39,6 +39,7 @@ export type CreateBookingInput = {
   scheduledAt: string;
   durationMinutes: number;
   paymentMethod: string;
+  paymentStatus?: BookingPaymentStatus;
   notes?: string;
 };
 
@@ -53,6 +54,7 @@ export async function createBooking(input: CreateBookingInput) {
       scheduled_at: input.scheduledAt,
       duration_minutes: input.durationMinutes,
       payment_method: input.paymentMethod,
+      payment_status: input.paymentStatus ?? "not_required",
       status: "pending",
       notes: input.notes ?? null,
     })
