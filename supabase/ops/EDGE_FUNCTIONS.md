@@ -17,6 +17,7 @@ supabase functions deploy expire-unpaid-bookings
 supabase functions deploy chapa-initialize
 supabase functions deploy chapa-verify
 supabase functions deploy chapa-cancel
+supabase functions deploy chapa-callback
 supabase functions deploy chapa-webhook
 supabase functions deploy chapa-return
 ```
@@ -41,8 +42,9 @@ supabase secrets set CHAPA_MODE=test
 | `check-subscription-expiry` | false | Cron |
 | `send-push-queue` | false | Cron/worker |
 | `expire-unpaid-bookings` | false | Cron |
-| `chapa-webhook` | false | Chapa HMAC signature |
-| `chapa-return` | false | Browser redirect (GET) |
+| `chapa-webhook` | false | Chapa dashboard webhook (POST + HMAC) |
+| `chapa-callback` | false | Chapa initialize `callback_url` (GET + server verify) |
+| `chapa-return` | false | Browser redirect after payment (GET) |
 
 Dashboard deploy: use `--no-verify-jwt` for functions marked false above.
 
@@ -82,13 +84,25 @@ No `Authorization` header required when `verify_jwt` is false.
 
 ## Chapa
 
-| Setting | Value |
-|---------|--------|
-| Webhook URL | `https://YOUR_PROJECT_REF.supabase.co/functions/v1/chapa-webhook` |
-| Return URL (Chapa API, HTTPS only) | `https://YOUR_PROJECT_REF.supabase.co/functions/v1/chapa-return?tx_ref=…` |
-| After redirect | `chapa-return` sends the user to `sheger://payment/return?tx_ref=…` |
+Per [Accept Payment](https://developer.chapa.co/integrations/accept-payments) and [Verify Payment](https://developer.chapa.co/integrations/verify-payments):
 
-Webhook secret must match `CHAPA_WEBHOOK_SECRET`.
+| Role | URL | Method | Handler |
+|------|-----|--------|---------|
+| `callback_url` (in initialize) | `https://YOUR_PROJECT_REF.supabase.co/functions/v1/chapa-callback` | GET | Server verifies via Chapa API, then finalizes booking |
+| `return_url` (in initialize) | `https://YOUR_PROJECT_REF.supabase.co/functions/v1/chapa-return?tx_ref=…` | GET | Redirects user back to the app |
+| Dashboard webhook | `https://YOUR_PROJECT_REF.supabase.co/functions/v1/chapa-webhook` | POST | `charge.success` events; re-verifies via API (idempotent) |
+| Mobile confirm | `chapa-verify` edge function | POST | Client-triggered verify after browser return |
+| User / cron cancel | `chapa-cancel` + `expire-unpaid-bookings` | POST | `PUT` cancel on Chapa API to expire checkout links |
+
+### Verify ([docs](https://developer.chapa.co/integrations/verify-payments))
+
+All finalize paths call `GET https://api.chapa.co/v1/transaction/verify/<tx_ref>` server-side before marking a booking paid.
+
+### Cancel ([docs](https://developer.chapa.co/integrations/transaction-cancel))
+
+`chapa-cancel` and `expire-unpaid-bookings` call `PUT https://api.chapa.co/v1/transaction/cancel/<tx_ref>` for active transactions before updating Sheger records.
+
+Webhook secret in the Chapa dashboard must match `CHAPA_WEBHOOK_SECRET`.
 
 ## Checklist (new environment)
 

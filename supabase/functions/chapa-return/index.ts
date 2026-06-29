@@ -1,21 +1,23 @@
-import { appDeepLinkReturnUrl } from "../_shared/chapa.ts";
-import { handleCors, jsonResponse } from "../_shared/supabase.ts";
+import {
+  appDeepLinkReturnUrl,
+  buildChapaReceiptUrl,
+} from "../_shared/chapa.ts";
+import { finalizeVerifiedPayment } from "../_shared/finalize-payment.ts";
+import { handleCors } from "../_shared/supabase.ts";
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
+/**
+ * Chapa return_url handler — no HTML page (avoids in-app browser showing raw source).
+ * Verifies payment server-side, then redirects into the Sheger app.
+ *
+ * @see https://developer.chapa.co/integrations/accept-payments
+ * @see https://developer.chapa.co/integrations/chapa-receipt
+ */
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
   if (req.method !== "GET" && req.method !== "HEAD") {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+    return new Response("Method not allowed", { status: 405 });
   }
 
   const requestUrl = new URL(req.url);
@@ -23,43 +25,41 @@ Deno.serve(async (req) => {
     requestUrl.searchParams.get("tx_ref")?.trim() ??
     requestUrl.searchParams.get("trx_ref")?.trim() ??
     "";
-  const appUrl = appDeepLinkReturnUrl(txRef);
-  const safeAppUrl = escapeHtml(appUrl);
+
+  let chapaReference: string | null = null;
+
+  if (txRef) {
+    try {
+      const result = await finalizeVerifiedPayment(txRef);
+      if (result.ok && result.chapa_reference) {
+        chapaReference = result.chapa_reference;
+      }
+    } catch (error) {
+      console.error("chapa-return verify:", txRef, error);
+    }
+  }
+
+  const appUrl = appDeepLinkReturnUrl(txRef, chapaReference);
 
   if (req.method === "HEAD") {
     return new Response(null, {
       status: 302,
       headers: {
         Location: appUrl,
-        "Cache-Control": "no-store",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
       },
     });
   }
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta http-equiv="refresh" content="0;url=${safeAppUrl}" />
-  <title>Returning to Sheger</title>
-  <style>
-    body { font-family: system-ui, sans-serif; text-align: center; padding: 48px 20px; color: #1a1a1a; }
-    a { color: #0d4d0d; font-weight: 600; }
-  </style>
-</head>
-<body>
-  <p>Payment complete. Returning to the Sheger app…</p>
-  <p><a href="${safeAppUrl}">Open Sheger</a> if you are not redirected automatically.</p>
-  <script>window.location.replace(${JSON.stringify(appUrl)});</script>
-</body>
-</html>`;
+  // Prefer HTTP redirect — never render an HTML bridge page in the payment browser.
+  const receiptUrl = chapaReference ? buildChapaReceiptUrl(chapaReference) : null;
 
-  return new Response(html, {
-    status: 200,
+  return new Response(null, {
+    status: 302,
     headers: {
-      "Content-Type": "text/html; charset=UTF-8",
-      "Cache-Control": "no-store",
+      Location: appUrl,
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      ...(receiptUrl ? { "X-Chapa-Receipt-Url": receiptUrl } : {}),
     },
   });
 });

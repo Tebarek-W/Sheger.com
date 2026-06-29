@@ -10,6 +10,7 @@ import { Screen } from "@/components/ui/Screen";
 import { colors } from "@/constants/theme";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import { getChapaHttpsReturnUrlPrefix } from "@/lib/chapa/return-url";
+import { buildChapaReceiptUrl, parseChapaReferenceFromUrl } from "@/lib/chapa/receipt";
 import {
   cancelChapaPayment,
   initializeChapaBookingPayment,
@@ -40,22 +41,29 @@ function PaymentCheckoutContent() {
   const queryClient = useQueryClient();
   const business = useBookingStore((s) => s.business);
   const setBookingId = useBookingStore((s) => s.setBookingId);
+  const setChapaReceiptUrl = useBookingStore((s) => s.setChapaReceiptUrl);
 
   const [status, setStatus] = useState<CheckoutStatus>("preparing");
   const [message, setMessage] = useState("Preparing secure checkout...");
   const [txRef, setTxRef] = useState<string | null>(null);
   const startedRef = useRef(false);
 
-  const finishPaidBooking = useCallback(async (paymentTxRef: string) => {
+  const finishPaidBooking = useCallback(async (paymentTxRef: string, returnUrl?: string | null) => {
     setStatus("verifying");
     setMessage("Confirming your payment...");
-    await verifyChapaPayment(paymentTxRef);
+    const verified = await verifyChapaPayment(paymentTxRef);
+    const chapaRef =
+      verified.chapa_reference ??
+      (returnUrl ? parseChapaReferenceFromUrl(returnUrl) : null);
+    if (chapaRef) {
+      setChapaReceiptUrl(buildChapaReceiptUrl(chapaRef));
+    }
     if (business?.id) {
       queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
     }
     queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
     router.replace("/(app)/confirmation");
-  }, [business?.id, queryClient]);
+  }, [business?.id, queryClient, setChapaReceiptUrl]);
 
   const confirmPayment = useCallback(async () => {
     if (!txRef) return;
@@ -95,10 +103,15 @@ function PaymentCheckoutContent() {
 
         if (!active) return;
 
-        if (session.type === "success" && session.url) {
-          const paymentTxRef = parseTxRefFromUrl(session.url) ?? result.tx_ref;
+        const sessionUrl =
+          session.type === "success" && session.url && !session.url.trimStart().startsWith("<!")
+            ? session.url
+            : null;
+
+        if (session.type === "success" || sessionUrl) {
+          const paymentTxRef = parseTxRefFromUrl(sessionUrl ?? "") ?? result.tx_ref;
           try {
-            await finishPaidBooking(paymentTxRef);
+            await finishPaidBooking(paymentTxRef, sessionUrl);
             return;
           } catch {
             // Payment may still be processing on Chapa's side.
@@ -136,7 +149,14 @@ function PaymentCheckoutContent() {
           onPress: async () => {
             WebBrowser.dismissBrowser();
             try {
-              await cancelChapaPayment({ bookingId: bookingId!, txRef: txRef ?? undefined });
+              const result = await cancelChapaPayment({
+                bookingId: bookingId!,
+                txRef: txRef ?? undefined,
+              });
+              if (result?.paid && txRef) {
+                await finishPaidBooking(txRef);
+                return;
+              }
             } catch {
               // Ignore cleanup errors on manual cancel.
             }

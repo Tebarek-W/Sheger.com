@@ -1,4 +1,5 @@
-import { chapaCancel } from "../_shared/chapa.ts";
+import { chapaCancel, chapaVerify, isChapaSuccessfulStatus } from "../_shared/chapa.ts";
+import { finalizeVerifiedPayment } from "../_shared/finalize-payment.ts";
 import {
   adminClient,
   handleCors,
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
     let txnQuery = supabase
       .from("payment_transactions")
       .select("id, tx_ref, booking_id, status")
-      .eq("status", "initialized");
+      .in("status", ["initialized", "failed"]);
 
     if (txRef) {
       txnQuery = txnQuery.eq("tx_ref", txRef);
@@ -59,11 +60,30 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Not authorized" }, 403);
     }
 
+    // If payment already succeeded on Chapa, finalize instead of cancelling.
+    // @see https://developer.chapa.co/integrations/verify-payments
+    try {
+      const verified = await chapaVerify(txn.tx_ref);
+      if (isChapaSuccessfulStatus(verified.status)) {
+        const paid = await finalizeVerifiedPayment(txn.tx_ref);
+        if (paid.ok) {
+          return jsonResponse({
+            ok: true,
+            paid: true,
+            booking_id: paid.booking_id,
+            payment_status: paid.payment_status,
+            already_finalized: paid.already_finalized,
+          });
+        }
+      }
+    } catch (verifyError) {
+      console.warn("chapa-cancel verify:", verifyError);
+    }
+
     if (txn.status === "initialized") {
-      try {
-        await chapaCancel(txn.tx_ref);
-      } catch (cancelError) {
-        console.warn("chapa-cancel api:", cancelError);
+      const chapaResult = await chapaCancel(txn.tx_ref);
+      if (!chapaResult.cancelled && !chapaResult.skipped) {
+        throw new Error(chapaResult.reason ?? "Could not cancel Chapa transaction");
       }
 
       await supabase
@@ -82,7 +102,12 @@ Deno.serve(async (req) => {
         .eq("id", booking.id);
     }
 
-    return jsonResponse({ ok: true, booking_id: booking.id, cancelled: true });
+    return jsonResponse({
+      ok: true,
+      booking_id: booking.id,
+      cancelled: true,
+      chapa_checkout_expired: true,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("chapa-cancel:", message);

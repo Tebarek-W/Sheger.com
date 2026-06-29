@@ -28,6 +28,16 @@ export type ChapaVerifyResult = {
   mode?: string;
 };
 
+export type ChapaCancelResult = {
+  cancelled: boolean;
+  skipped?: boolean;
+  reason?: string;
+};
+
+export function isChapaSuccessfulStatus(status: string): boolean {
+  return status.trim().toLowerCase() === "success";
+}
+
 export function chapaSecretKey(): string {
   const key = Deno.env.get("CHAPA_SECRET_KEY");
   if (!key) {
@@ -51,12 +61,36 @@ export function supabaseFunctionsBaseUrl(): string {
   return `${url}/functions/v1`;
 }
 
-export function buildChapaReturnUrl(functionsBase: string, txRef: string): string {
-  return `${functionsBase}/chapa-return?tx_ref=${encodeURIComponent(txRef)}`;
+export function buildChapaReturnUrl(
+  functionsBase: string,
+  txRef: string,
+  anonKey?: string,
+): string {
+  const params = new URLSearchParams({ tx_ref: txRef });
+  if (anonKey?.trim()) {
+    params.set("apikey", anonKey.trim());
+  }
+  return `${functionsBase}/chapa-return?${params.toString()}`;
 }
 
-export function appDeepLinkReturnUrl(txRef: string): string {
-  return `sheger://payment/return?tx_ref=${encodeURIComponent(txRef)}`;
+export function buildChapaCallbackUrl(functionsBase: string): string {
+  return `${functionsBase}/chapa-callback`;
+}
+
+export function appDeepLinkReturnUrl(
+  txRef: string,
+  chapaReference?: string | null,
+): string {
+  const params = new URLSearchParams({ tx_ref: txRef });
+  if (chapaReference?.trim()) {
+    params.set("chapa_reference", chapaReference.trim());
+  }
+  return `sheger://payment/return?${params.toString()}`;
+}
+
+/** @see https://developer.chapa.co/integrations/chapa-receipt */
+export function buildChapaReceiptUrl(chapaReference: string): string {
+  return `https://chapa.link/payment-receipt/${encodeURIComponent(chapaReference)}`;
 }
 
 export async function chapaInitialize(
@@ -73,8 +107,7 @@ export async function chapaInitialize(
 
   const body = await res.json();
   if (!res.ok) {
-    const message = body?.message ?? body?.error ?? `Chapa initialize failed (${res.status})`;
-    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+    throw new Error(formatChapaApiError(body, `Chapa initialize failed (${res.status})`));
   }
 
   const checkoutUrl = body?.data?.checkout_url;
@@ -95,13 +128,14 @@ export async function chapaVerify(txRef: string): Promise<ChapaVerifyResult> {
 
   const body = await res.json();
   if (!res.ok) {
-    const message = body?.message ?? body?.error ?? `Chapa verify failed (${res.status})`;
-    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+    throw new Error(formatChapaApiError(body, `Chapa verify failed (${res.status})`));
   }
 
   const data = body?.data ?? body;
+  const status = String(data?.status ?? "").trim().toLowerCase();
+
   return {
-    status: String(data?.status ?? ""),
+    status,
     amount: Number(data?.amount ?? 0),
     currency: String(data?.currency ?? "ETB"),
     tx_ref: String(data?.tx_ref ?? txRef),
@@ -111,7 +145,11 @@ export async function chapaVerify(txRef: string): Promise<ChapaVerifyResult> {
   };
 }
 
-export async function chapaCancel(txRef: string): Promise<void> {
+/**
+ * Cancel an active Chapa transaction (expires checkout link).
+ * @see https://developer.chapa.co/integrations/transaction-cancel
+ */
+export async function chapaCancel(txRef: string): Promise<ChapaCancelResult> {
   const res = await fetch(`${CHAPA_API}/transaction/cancel/${encodeURIComponent(txRef)}`, {
     method: "PUT",
     headers: {
@@ -119,13 +157,28 @@ export async function chapaCancel(txRef: string): Promise<void> {
     },
   });
 
-  if (res.status === 404) return;
-
   const body = await res.json().catch(() => ({}));
-  if (!res.ok && res.status !== 400) {
-    const message = body?.message ?? body?.error ?? `Chapa cancel failed (${res.status})`;
-    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+
+  if (res.ok) {
+    return { cancelled: true };
   }
+
+  const message = formatChapaApiError(body, `Chapa cancel failed (${res.status})`);
+  const lower = message.toLowerCase();
+
+  // Already cancelled, completed, or not found — checkout is no longer active.
+  if (
+    res.status === 404 ||
+    res.status === 400 ||
+    lower.includes("already") ||
+    lower.includes("not found") ||
+    lower.includes("completed") ||
+    lower.includes("successful")
+  ) {
+    return { cancelled: false, skipped: true, reason: message };
+  }
+
+  throw new Error(message);
 }
 
 export async function isValidChapaWebhookSignature(
@@ -176,6 +229,40 @@ export function splitFullName(fullName: string | null | undefined): {
 
 export function formatChapaAmount(amount: number): string {
   return Number(amount).toFixed(2);
+}
+
+/** Chapa expects 09xxxxxxxx or 07xxxxxxxx when phone_number is provided. */
+export function normalizeChapaPhone(phone: string | null | undefined): string | undefined {
+  if (!phone) return undefined;
+
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("251")) {
+    const local = `0${digits.slice(3)}`;
+    if (/^0[79]\d{8}$/.test(local)) return local;
+  }
+  if (digits.length === 10 && /^0[79]\d{8}$/.test(digits)) {
+    return digits;
+  }
+
+  return undefined;
+}
+
+function formatChapaApiError(body: unknown, fallback: string): string {
+  if (!body || typeof body !== "object") return fallback;
+
+  const record = body as Record<string, unknown>;
+  const message = record.message ?? record.error;
+  if (typeof message === "string" && message.trim()) return message;
+  if (typeof message === "object" && message !== null) {
+    return JSON.stringify(message);
+  }
+
+  const fieldErrors = Object.entries(record)
+    .filter(([, value]) => Array.isArray(value))
+    .map(([field, value]) => `${field}: ${(value as string[]).join(", ")}`);
+  if (fieldErrors.length > 0) return fieldErrors.join("; ");
+
+  return fallback;
 }
 
 /** Chapa allows only letters, numbers, hyphens, underscores, spaces, and dots. */

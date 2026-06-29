@@ -13,6 +13,9 @@ type ChapaVerifyResponse = {
   booking_id?: string;
   payment_status?: string;
   status?: string;
+  chapa_status?: string;
+  chapa_reference?: string | null;
+  chapa_payment_method?: string | null;
   already_finalized?: boolean;
   error?: string;
 };
@@ -20,7 +23,10 @@ type ChapaVerifyResponse = {
 type ChapaCancelResponse = {
   ok: boolean;
   cancelled?: boolean;
+  paid?: boolean;
+  chapa_checkout_expired?: boolean;
   skipped?: boolean;
+  reason?: string;
   error?: string;
 };
 
@@ -74,7 +80,14 @@ export async function verifyChapaPayment(txRef: string) {
   }
 
   if (!data?.ok) {
-    throw new Error(data?.status ? `Payment ${data.status}` : "Payment not completed");
+    const status = data?.chapa_status ?? data?.status;
+    if (status === "pending") {
+      throw new Error("Payment is still processing. Try again in a moment.");
+    }
+    if (status === "cancelled") {
+      throw new Error("This payment was cancelled.");
+    }
+    throw new Error(status ? `Payment ${status}` : "Payment not completed");
   }
 
   return data;

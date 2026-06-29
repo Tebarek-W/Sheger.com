@@ -1,12 +1,17 @@
-import { chapaMode, chapaVerify } from "./chapa.ts";
+import { chapaMode, chapaVerify, isChapaSuccessfulStatus } from "./chapa.ts";
 import { adminClient } from "./supabase.ts";
 
 export async function finalizeVerifiedPayment(txRef: string) {
   const supabase = adminClient();
   const verified = await chapaVerify(txRef);
 
-  if (verified.status !== "success") {
-    return { ok: false as const, status: verified.status };
+  if (!isChapaSuccessfulStatus(verified.status)) {
+    return {
+      ok: false as const,
+      status: verified.status,
+      chapa_reference: verified.reference ?? null,
+      chapa_payment_method: verified.payment_method ?? null,
+    };
   }
 
   const expectedMode = chapaMode();
@@ -47,6 +52,9 @@ export async function finalizeVerifiedPayment(txRef: string) {
     ok: true as const,
     booking_id: txn.booking_id,
     payment_status: "paid",
+    chapa_status: verified.status,
+    chapa_reference: verified.reference ?? null,
+    chapa_payment_method: verified.payment_method ?? null,
     already_finalized: Boolean(
       finalizeResult && typeof finalizeResult === "object" &&
         "already_finalized" in finalizeResult &&

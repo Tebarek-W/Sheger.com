@@ -1,13 +1,13 @@
-import type { BookingPaymentStatus } from "@/lib/types/database";
+export {
+  PAYMENT_METHOD_CHAPA,
+  PAYMENT_METHOD_CASH,
+  ONLINE_PAYMENT_METHODS,
+  bookingPaymentStatusForMethod,
+  isCashPaymentMethod,
+  isChapaOnlineMethod,
+  paymentMethodLabel,
+  type OnlinePaymentMethod,
+} from "@/lib/payment/methods";
 
-export const CHAPA_ONLINE_METHODS = ["telebirr", "cbe_birr", "card"] as const;
-
-export type ChapaOnlineMethod = (typeof CHAPA_ONLINE_METHODS)[number];
-
-export function isChapaOnlineMethod(method: string): method is ChapaOnlineMethod {
-  return (CHAPA_ONLINE_METHODS as readonly string[]).includes(method);
-}
-
-export function bookingPaymentStatusForMethod(method: string): BookingPaymentStatus {
-  return isChapaOnlineMethod(method) ? "awaiting_payment" : "not_required";
-}
+/** @deprecated Use ONLINE_PAYMENT_METHODS */
+export const CHAPA_ONLINE_METHODS = ["chapa", "telebirr", "cbe_birr", "card"] as const;

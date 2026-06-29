@@ -11,6 +11,9 @@ enabled = true
 [functions.chapa-webhook]
 verify_jwt = false
 
+[functions.chapa-callback]
+verify_jwt = false
+
 [functions.chapa-return]
 verify_jwt = false
 

@@ -9,13 +9,16 @@ import { DualDateTime } from "@/components/ui/DualDateTime";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import { createBooking } from "@/lib/api/bookings";
 import { DEFAULT_CANCELLATION_HOURS, getCancellationPolicyText } from "@/lib/booking/cancellation";
 import {
   bookingPaymentStatusForMethod,
   isChapaOnlineMethod,
-} from "@/lib/chapa/methods";
+  PAYMENT_METHOD_CASH,
+  PAYMENT_METHOD_CHAPA,
+} from "@/lib/payment/methods";
 import { getErrorMessage } from "@/lib/errors";
 import {
   formatServiceDuration,
@@ -23,19 +26,22 @@ import {
 } from "@/lib/services/pricing";
 import { useBookingStore } from "@/stores/bookingStore";
 
-const PAYMENT_METHODS = [
-  { id: "telebirr", label: "Telebirr", desc: "Pay with mobile money", icon: "📱", color: "#e4f5e4" },
-  { id: "cbe_birr", label: "CBE Birr", desc: "Commercial Bank of Ethiopia", icon: "🏦", color: "#e6f1fb" },
-  { id: "cash", label: "Cash on arrival", desc: "Pay at the business", icon: "💵", color: "#faeeda" },
-  { id: "card", label: "Bank card", desc: "Visa / Mastercard", icon: "💳", color: "#eeedfe" },
+const PAYMENT_OPTIONS = [
+  {
+    id: PAYMENT_METHOD_CHAPA,
+    labelKey: "payment.chapa" as const,
+    descKey: "payment.chapaDesc" as const,
+    icon: "💳",
+    color: "#e4f5e4",
+  },
+  {
+    id: PAYMENT_METHOD_CASH,
+    labelKey: "payment.cash" as const,
+    descKey: "payment.cashDesc" as const,
+    icon: "💵",
+    color: "#faeeda",
+  },
 ];
-
-const METHOD_LABELS: Record<string, string> = {
-  telebirr: "Telebirr",
-  cbe_birr: "CBE Birr",
-  cash: "Cash on arrival",
-  card: "Bank card",
-};
 
 export default function PaymentScreen() {
   return (
@@ -47,13 +53,14 @@ export default function PaymentScreen() {
 
 function PaymentScreenContent() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const business = useBookingStore((s) => s.business);
   const service = useBookingStore((s) => s.service);
   const scheduledAt = useBookingStore((s) => s.scheduledAt);
   const setPaymentMethod = useBookingStore((s) => s.setPaymentMethod);
   const setBookingId = useBookingStore((s) => s.setBookingId);
-  const [method, setMethod] = useState("telebirr");
+  const [method, setMethod] = useState(PAYMENT_METHOD_CHAPA);
   const [loading, setLoading] = useState(false);
   const submittingRef = useRef(false);
 
@@ -62,11 +69,9 @@ function PaymentScreenContent() {
 
   useEffect(() => {
     if (!onlinePayAvailable) {
-      setMethod("cash");
-    } else if (service?.pricing_model === "variable") {
-      setMethod("cash");
+      setMethod(PAYMENT_METHOD_CASH);
     }
-  }, [onlinePayAvailable, service?.pricing_model]);
+  }, [onlinePayAvailable]);
 
   const confirm = async () => {
     if (!user || !business || !service || !scheduledAt) return;
@@ -75,7 +80,7 @@ function PaymentScreenContent() {
     setLoading(true);
     try {
       const usesChapa = onlinePayAvailable && isChapaOnlineMethod(method);
-      setPaymentMethod(METHOD_LABELS[method] ?? method);
+      setPaymentMethod(method);
 
       const booking = await createBooking({
         customerId: user.id,
@@ -102,7 +107,7 @@ function PaymentScreenContent() {
 
       router.replace("/(app)/confirmation");
     } catch (error) {
-      Alert.alert("Booking failed", getErrorMessage(error));
+      Alert.alert(t("payment.bookingFailed"), getErrorMessage(error));
       submittingRef.current = false;
     } finally {
       setLoading(false);
@@ -113,8 +118,8 @@ function PaymentScreenContent() {
     return (
       <Screen padded={false}>
         <View style={styles.pad}>
-          <BookingHeader title="Payment" />
-          <Text style={styles.muted}>Complete booking details first.</Text>
+          <BookingHeader title={t("payment.title")} />
+          <Text style={styles.muted}>{t("payment.incomplete")}</Text>
         </View>
       </Screen>
     );
@@ -126,29 +131,29 @@ function PaymentScreenContent() {
   return (
     <Screen scroll padded={false}>
       <View style={styles.pad}>
-        <BookingHeader title="Payment" />
+        <BookingHeader title={t("payment.title")} />
 
         <View style={styles.summary}>
           <View style={styles.payRow}>
-            <Text style={styles.payLabel}>Service</Text>
+            <Text style={styles.payLabel}>{t("payment.service")}</Text>
             <Text style={styles.payValue}>{service.name}</Text>
           </View>
           <View style={styles.payRow}>
-            <Text style={styles.payLabel}>Business</Text>
+            <Text style={styles.payLabel}>{t("payment.business")}</Text>
             <Text style={styles.payValue}>{business.name}</Text>
           </View>
           <View style={styles.payRow}>
-            <Text style={styles.payLabel}>Duration</Text>
+            <Text style={styles.payLabel}>{t("payment.duration")}</Text>
             <Text style={styles.payValue}>{formatServiceDuration(service)}</Text>
           </View>
           <View style={styles.dateBlock}>
-            <Text style={styles.payLabel}>Date & time</Text>
+            <Text style={styles.payLabel}>{t("payment.dateTime")}</Text>
             <DualDateTime iso={scheduledAt} compact />
           </View>
           <View style={styles.divider} />
           <View style={styles.payRow}>
             <Text style={styles.totalLabel}>
-              {checkoutPrice?.showExactTotal ? "Total" : "Price"}
+              {checkoutPrice?.showExactTotal ? t("payment.total") : t("payment.price")}
             </Text>
             <Text style={styles.totalValue}>{price}</Text>
           </View>
@@ -158,7 +163,7 @@ function PaymentScreenContent() {
         </View>
 
         <View style={styles.policyBox}>
-          <Text style={styles.policyTitle}>Cancellation policy</Text>
+          <Text style={styles.policyTitle}>{t("payment.cancellationPolicy")}</Text>
           <Text style={styles.policyText}>
             {getCancellationPolicyText(
               business.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS,
@@ -166,11 +171,11 @@ function PaymentScreenContent() {
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel}>Payment method</Text>
+        <Text style={styles.sectionLabel}>{t("payment.methodSection")}</Text>
         <View style={styles.methods}>
-          {PAYMENT_METHODS.map((item) => {
+          {PAYMENT_OPTIONS.map((item) => {
             const active = method === item.id;
-            const disabled = !onlinePayAvailable && item.id !== "cash";
+            const disabled = !onlinePayAvailable && item.id !== PAYMENT_METHOD_CASH;
             return (
               <Pressable
                 key={item.id}
@@ -189,10 +194,10 @@ function PaymentScreenContent() {
                 </View>
                 <View style={styles.methodText}>
                   <Text style={[styles.methodName, disabled && styles.methodNameDisabled]}>
-                    {item.label}
+                    {t(item.labelKey)}
                   </Text>
                   <Text style={styles.methodSub}>
-                    {disabled ? "Not available for this service" : item.desc}
+                    {disabled ? t("payment.notAvailable") : t(item.descKey)}
                   </Text>
                 </View>
                 <View style={[styles.radio, active && styles.radioOn]}>
@@ -203,15 +208,10 @@ function PaymentScreenContent() {
           })}
         </View>
 
-        {usesChapa ? (
-          <Text style={styles.chapaNote}>
-            You will complete payment securely via Chapa (test mode). Your slot is held for 15
-            minutes.
-          </Text>
-        ) : null}
+        {usesChapa ? <Text style={styles.chapaNote}>{t("payment.chapaNote")}</Text> : null}
 
         <Button
-          title={usesChapa ? "Continue to payment" : "Confirm booking"}
+          title={usesChapa ? t("payment.continueToPayment") : t("payment.confirmBooking")}
           onPress={confirm}
           loading={loading}
         />

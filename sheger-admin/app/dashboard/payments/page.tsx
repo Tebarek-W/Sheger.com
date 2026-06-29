@@ -1,4 +1,5 @@
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { paymentMethodLabel } from "@/lib/payment/methods";
 import { formatBookingPrice, getBookingRevenueAmount } from "@/lib/services/pricing";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,7 +19,7 @@ export default async function PaymentsPage() {
     <div>
       <h1 className="text-3xl font-bold text-[var(--primary-dark)]">Payments</h1>
       <p className="mt-2 text-[var(--muted)]">
-        Payment methods recorded at booking time (MVP — no live gateway).
+        Booking payment methods: Chapa (online) or cash on arrival.
       </p>
 
       <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
@@ -54,8 +55,8 @@ export default async function PaymentsPage() {
                 <td className="px-4 py-3 font-semibold text-[var(--primary-dark)]">
                   {formatBookingPrice(booking)}
                 </td>
-                <td className="px-4 py-3 capitalize text-[var(--muted)]">
-                  {booking.payment_method?.replace("_", " ") ?? "—"}
+                <td className="px-4 py-3 text-[var(--muted)]">
+                  {paymentMethodLabel(booking.payment_method)}
                 </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={booking.status} />

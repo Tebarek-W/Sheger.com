@@ -7,6 +7,7 @@ import { Screen } from "@/components/ui/Screen";
 import { colors } from "@/constants/theme";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import { verifyChapaPayment } from "@/lib/api/chapa";
+import { buildChapaReceiptUrl } from "@/lib/chapa/receipt";
 import { getErrorMessage } from "@/lib/errors";
 import { useBookingStore } from "@/stores/bookingStore";
 
@@ -19,12 +20,20 @@ export default function PaymentReturnScreen() {
 }
 
 function PaymentReturnContent() {
-  const params = useLocalSearchParams<{ txRef?: string | string[]; tx_ref?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    txRef?: string | string[];
+    tx_ref?: string | string[];
+    chapa_reference?: string | string[];
+  }>();
   const txRef = Array.isArray(params.txRef)
     ? params.txRef[0]
     : params.txRef ?? (Array.isArray(params.tx_ref) ? params.tx_ref[0] : params.tx_ref);
+  const chapaReference = Array.isArray(params.chapa_reference)
+    ? params.chapa_reference[0]
+    : params.chapa_reference;
   const queryClient = useQueryClient();
   const business = useBookingStore((s) => s.business);
+  const setChapaReceiptUrl = useBookingStore((s) => s.setChapaReceiptUrl);
   const [message, setMessage] = useState("Confirming your payment…");
   const startedRef = useRef(false);
 
@@ -39,7 +48,11 @@ function PaymentReturnContent() {
       }
 
       try {
-        await verifyChapaPayment(txRef);
+        const verified = await verifyChapaPayment(txRef);
+        const receiptRef = verified.chapa_reference ?? chapaReference ?? null;
+        if (receiptRef) {
+          setChapaReceiptUrl(buildChapaReceiptUrl(receiptRef));
+        }
         if (business?.id) {
           queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
         }
@@ -49,7 +62,7 @@ function PaymentReturnContent() {
         setMessage(getErrorMessage(error));
       }
     })();
-  }, [business?.id, queryClient, txRef]);
+  }, [business?.id, chapaReference, queryClient, setChapaReceiptUrl, txRef]);
 
   return (
     <Screen>

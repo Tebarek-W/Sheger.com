@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -6,8 +7,10 @@ import { DualDateTime } from "@/components/ui/DualDateTime";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { RequireAuth } from "@/hooks/useRequireAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { CUSTOMER_HOME } from "@/lib/routing";
 import { DEFAULT_CANCELLATION_HOURS, getCancellationPolicyText } from "@/lib/booking/cancellation";
+import { isChapaOnlineMethod, paymentMethodLabel } from "@/lib/payment/methods";
 import { formatServiceDuration, getCheckoutPriceLabel } from "@/lib/services/pricing";
 import { useBookingStore } from "@/stores/bookingStore";
 
@@ -20,14 +23,18 @@ export default function ConfirmationScreen() {
 }
 
 function ConfirmationScreenContent() {
+  const { t } = useI18n();
   const business = useBookingStore((s) => s.business);
   const service = useBookingStore((s) => s.service);
   const scheduledAt = useBookingStore((s) => s.scheduledAt);
   const paymentMethod = useBookingStore((s) => s.paymentMethod);
   const bookingId = useBookingStore((s) => s.bookingId);
+  const chapaReceiptUrl = useBookingStore((s) => s.chapaReceiptUrl);
   const reset = useBookingStore((s) => s.reset);
 
   const checkoutPrice = service ? getCheckoutPriceLabel(service) : null;
+  const paymentLabel = paymentMethodLabel(paymentMethod);
+  const paidOnline = paymentMethod ? isChapaOnlineMethod(paymentMethod) : false;
 
   const done = () => {
     reset();
@@ -40,42 +47,50 @@ function ConfirmationScreenContent() {
         <View style={styles.check}>
           <Text style={styles.checkMark}>✓</Text>
         </View>
-        <Text style={styles.title}>Booking confirmed!</Text>
+        <Text style={styles.title}>{t("confirmation.title")}</Text>
         <Text style={styles.subtitle}>
-          Your appointment is pending confirmation from the business. You&apos;ll receive a
-          notification once it&apos;s approved.
-          {paymentMethod && paymentMethod !== "Cash on arrival"
-            ? " Your payment has been received."
-            : ""}
+          {t("confirmation.subtitle")}
+          {paidOnline ? t("confirmation.paidNote") : ""}
         </Text>
         <Text style={styles.policy}>
           {getCancellationPolicyText(
             business?.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS,
           )}{" "}
-          Manage cancellations from My bookings.
+          {t("confirmation.policySuffix")}
         </Text>
 
         <View style={styles.card}>
-          <Row label="Service" value={service?.name ?? "—"} />
-          <Row label="Business" value={business?.name ?? "—"} />
-          {service ? <Row label="Duration" value={formatServiceDuration(service)} /> : null}
-          {checkoutPrice ? <Row label="Price" value={checkoutPrice.primary} /> : null}
+          <Row label={t("confirmation.service")} value={service?.name ?? "—"} />
+          <Row label={t("confirmation.business")} value={business?.name ?? "—"} />
+          {service ? (
+            <Row label={t("confirmation.duration")} value={formatServiceDuration(service)} />
+          ) : null}
+          {checkoutPrice ? (
+            <Row label={t("confirmation.price")} value={checkoutPrice.primary} />
+          ) : null}
           {scheduledAt ? (
             <View style={styles.whenBlock}>
-              <Text style={styles.rowLabel}>When</Text>
+              <Text style={styles.rowLabel}>{t("confirmation.when")}</Text>
               <DualDateTime iso={scheduledAt} variant="dark" compact />
             </View>
           ) : (
-            <Row label="When" value="—" />
+            <Row label={t("confirmation.when")} value="—" />
           )}
-          <Row label="Payment" value={paymentMethod ?? "—"} />
-          <Row label="Status" value="Pending" />
+          <Row label={t("confirmation.payment")} value={paymentLabel} />
+          <Row label={t("confirmation.status")} value={t("confirmation.statusPending")} />
           {bookingId ? (
-            <Row label="Reference" value={bookingId.slice(0, 8).toUpperCase()} />
+            <Row label={t("confirmation.reference")} value={bookingId.slice(0, 8).toUpperCase()} />
           ) : null}
         </View>
 
-        <Button title="Back to home" variant="accent" onPress={done} />
+        <Button title={t("confirmation.backHome")} variant="accent" onPress={done} />
+        {paidOnline && chapaReceiptUrl ? (
+          <Button
+            title={t("confirmation.viewReceipt")}
+            variant="outline"
+            onPress={() => WebBrowser.openBrowserAsync(chapaReceiptUrl)}
+          />
+        ) : null}
       </View>
     </Screen>
   );

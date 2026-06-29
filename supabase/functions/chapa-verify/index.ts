@@ -10,6 +10,10 @@ type VerifyBody = {
   txRef?: string;
 };
 
+/**
+ * Client-triggered payment verification.
+ * @see https://developer.chapa.co/integrations/verify-payments
+ */
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
@@ -30,7 +34,7 @@ Deno.serve(async (req) => {
     const supabase = adminClient();
     const { data: txn, error: txnError } = await supabase
       .from("payment_transactions")
-      .select("booking_id, metadata")
+      .select("booking_id, status, metadata")
       .eq("tx_ref", txRef)
       .single();
 
@@ -49,9 +53,36 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (txn.status === "success") {
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select("id, payment_status")
+        .eq("id", txn.booking_id)
+        .single();
+
+      return jsonResponse({
+        ok: true,
+        booking_id: txn.booking_id,
+        payment_status: booking?.payment_status ?? "paid",
+        already_finalized: true,
+        chapa_status: "success",
+      });
+    }
+
+    if (txn.status === "cancelled") {
+      return jsonResponse({ ok: false, status: "cancelled" }, 410);
+    }
+
     const result = await finalizeVerifiedPayment(txRef);
+
     if (!result.ok) {
-      return jsonResponse({ ok: false, status: result.status }, 402);
+      return jsonResponse({
+        ok: false,
+        status: result.status,
+        chapa_status: result.status,
+        chapa_reference: result.chapa_reference ?? null,
+        chapa_payment_method: result.chapa_payment_method ?? null,
+      }, result.status === "pending" ? 202 : 402);
     }
 
     return jsonResponse(result);

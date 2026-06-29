@@ -9,6 +9,7 @@ type BookingDraft = {
   scheduledAt: string | null;
   paymentMethod: string | null;
   bookingId: string | null;
+  chapaReceiptUrl: string | null;
 };
 
 type BookingStore = BookingDraft & {
@@ -18,6 +19,7 @@ type BookingStore = BookingDraft & {
   setScheduledAt: (scheduledAt: string | null) => void;
   setPaymentMethod: (paymentMethod: string) => void;
   setBookingId: (bookingId: string) => void;
+  setChapaReceiptUrl: (chapaReceiptUrl: string | null) => void;
   reset: () => void;
 };
 
@@ -28,6 +30,7 @@ const initial: BookingDraft = {
   scheduledAt: null,
   paymentMethod: null,
   bookingId: null,
+  chapaReceiptUrl: null,
 };
 
 export const useBookingStore = create<BookingStore>((set) => ({
@@ -38,5 +41,6 @@ export const useBookingStore = create<BookingStore>((set) => ({
   setScheduledAt: (scheduledAt) => set({ scheduledAt }),
   setPaymentMethod: (paymentMethod) => set({ paymentMethod }),
   setBookingId: (bookingId) => set({ bookingId }),
+  setChapaReceiptUrl: (chapaReceiptUrl) => set({ chapaReceiptUrl }),
   reset: () => set(initial),
 }));

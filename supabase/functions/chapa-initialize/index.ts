@@ -1,8 +1,10 @@
 import {
+  buildChapaCallbackUrl,
   buildChapaReturnUrl,
   chapaInitialize,
   chapaMode,
   formatChapaAmount,
+  normalizeChapaPhone,
   sanitizeChapaText,
   splitFullName,
   supabaseFunctionsBaseUrl,
@@ -97,7 +99,11 @@ Deno.serve(async (req) => {
         return jsonResponse({
           checkout_url: checkoutMeta.checkout_url,
           tx_ref: existingTxn.tx_ref,
-          return_url: buildChapaReturnUrl(functionsBase, existingTxn.tx_ref),
+          return_url: buildChapaReturnUrl(
+            functionsBase,
+            existingTxn.tx_ref,
+            Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          ),
           reused: true,
         });
       }
@@ -107,7 +113,11 @@ Deno.serve(async (req) => {
     const email = authUser.user?.email ?? `customer+${user.id.slice(0, 8)}@sheger.app`;
     const names = splitFullName(profile?.full_name);
     const txRef = makeTxRef(bookingId);
-    const returnUrl = buildChapaReturnUrl(functionsBase, txRef);
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const returnUrl = buildChapaReturnUrl(functionsBase, txRef, anonKey);
+    const callbackUrl = buildChapaCallbackUrl(functionsBase);
+    const serviceLabel = sanitizeChapaText(service?.name, "Service", 50);
+    const businessLabel = sanitizeChapaText(business?.name, "Business", 50);
 
     const initResult = await chapaInitialize({
       amount: formatChapaAmount(amount),
@@ -116,13 +126,13 @@ Deno.serve(async (req) => {
       first_name: sanitizeChapaText(names.first_name, "Sheger", 50),
       last_name: sanitizeChapaText(names.last_name, "Customer", 50),
       tx_ref: txRef,
-      phone_number: profile?.phone ?? undefined,
-      callback_url: `${functionsBase}/chapa-webhook`,
+      phone_number: normalizeChapaPhone(profile?.phone),
+      callback_url: callbackUrl,
       return_url: returnUrl,
       customization: {
         title: "Sheger",
         description: sanitizeChapaText(
-          `${service?.name ?? "Service"} at ${business?.name ?? "Business"}`,
+          `${serviceLabel} at ${businessLabel}`,
           "Sheger booking payment",
         ),
       },
@@ -130,6 +140,14 @@ Deno.serve(async (req) => {
         booking_id: bookingId,
         customer_id: user.id,
         purpose: "booking",
+        payment_reason: sanitizeChapaText(
+          `Sheger booking — ${serviceLabel}`,
+          "Sheger booking payment",
+        ),
+        invoices: [
+          { key: serviceLabel, value: "1 appointment" },
+          { key: businessLabel, value: formatChapaAmount(amount) + " ETB" },
+        ],
       },
     });
 
