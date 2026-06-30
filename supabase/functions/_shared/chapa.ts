@@ -1,5 +1,11 @@
 const CHAPA_API = "https://api.chapa.co/v1";
 
+export type ChapaSplitSubaccount = {
+  id: string;
+  split_type?: "percentage" | "flat";
+  split_value?: number;
+};
+
 export type ChapaInitializePayload = {
   amount: string;
   currency: string;
@@ -12,6 +18,27 @@ export type ChapaInitializePayload = {
   return_url?: string;
   customization?: { title?: string; description?: string };
   meta?: Record<string, unknown>;
+  /** @see https://developer.chapa.co/integrations/split-payment */
+  subaccounts?: ChapaSplitSubaccount;
+};
+
+export type ChapaBank = {
+  id: number;
+  name: string;
+  slug?: string;
+};
+
+export type ChapaSubaccountPayload = {
+  account_name: string;
+  bank_code: number;
+  account_number: string;
+  business_name?: string;
+  split_type: "percentage" | "flat";
+  split_value: number;
+};
+
+export type ChapaSubaccountResult = {
+  id: string;
 };
 
 export type ChapaInitializeResult = {
@@ -32,6 +59,47 @@ export type ChapaCancelResult = {
   cancelled: boolean;
   skipped?: boolean;
   reason?: string;
+};
+
+export type ChapaDirectChargeType = "telebirr" | "cbebirr" | "mpesa" | "ebirr";
+
+export const CHAPA_DIRECT_CHARGE_TYPES: ChapaDirectChargeType[] = [
+  "telebirr",
+  "cbebirr",
+  "mpesa",
+  "ebirr",
+];
+
+export function isChapaDirectChargeType(value: string): value is ChapaDirectChargeType {
+  return (CHAPA_DIRECT_CHARGE_TYPES as readonly string[]).includes(value);
+}
+
+export type ChapaDirectChargePayload = {
+  amount: string;
+  currency: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  tx_ref: string;
+  mobile: string;
+  subaccounts?: ChapaSplitSubaccount;
+};
+
+export type ChapaDirectChargeResult = {
+  reference: string;
+  status: string;
+  auth_required: boolean;
+  meta?: Record<string, unknown>;
+};
+
+export type ChapaAuthorizeDirectChargePayload = {
+  reference: string;
+  client?: string;
+};
+
+export type ChapaAuthorizeDirectChargeResult = {
+  status: string;
+  trx_ref?: string;
 };
 
 export function isChapaSuccessfulStatus(status: string): boolean {
@@ -142,6 +210,201 @@ export async function chapaVerify(txRef: string): Promise<ChapaVerifyResult> {
     reference: data?.reference ? String(data.reference) : undefined,
     payment_method: data?.payment_method ? String(data.payment_method) : undefined,
     mode: data?.mode ? String(data.mode) : undefined,
+  };
+}
+
+function parseChapaBankId(row: Record<string, unknown>): number | null {
+  const raw = row.id ?? row.bank_code ?? row.code;
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (/^\d+$/.test(trimmed)) return Number(trimmed);
+  }
+  return null;
+}
+
+/** @see https://developer.chapa.co/transfer/list-banks */
+export async function chapaListBanks(): Promise<ChapaBank[]> {
+  const res = await fetch(`${CHAPA_API}/banks`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${chapaSecretKey()}`,
+    },
+  });
+
+  const body = await res.json();
+  if (!res.ok) {
+    throw new Error(formatChapaApiError(body, `Chapa banks failed (${res.status})`));
+  }
+
+  const rows = body?.data ?? body;
+  if (!Array.isArray(rows)) {
+    throw new Error("Chapa did not return a bank list");
+  }
+
+  const banks = rows
+    .map((row: Record<string, unknown>) => {
+      const id = parseChapaBankId(row);
+      const name = String(row.name ?? "").trim();
+      if (id == null || !name) return null;
+
+      const currency = row.currency ? String(row.currency).toUpperCase() : "ETB";
+      if (currency !== "ETB") return null;
+
+      return {
+        id,
+        name,
+        slug: row.slug ? String(row.slug) : undefined,
+      } satisfies ChapaBank;
+    })
+    .filter((bank): bank is ChapaBank => bank !== null);
+
+  banks.sort((a, b) => a.name.localeCompare(b.name));
+  return banks;
+}
+
+/** @see https://developer.chapa.co/integrations/split-payment */
+export async function chapaCreateSubaccount(
+  payload: ChapaSubaccountPayload,
+): Promise<ChapaSubaccountResult> {
+  const res = await fetch(`${CHAPA_API}/subaccount`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${chapaSecretKey()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const body = await res.json();
+  if (!res.ok) {
+    throw new Error(formatChapaApiError(body, `Chapa subaccount failed (${res.status})`));
+  }
+
+  const id = body?.data?.id ?? body?.data?.subaccount_id ?? body?.id;
+  if (!id) {
+    throw new Error("Chapa did not return a subaccount id");
+  }
+
+  return { id: String(id) };
+}
+
+function buildMultipartForm(fields: Record<string, string>): { body: Uint8Array; contentType: string } {
+  const boundary = `----ChapaForm${crypto.randomUUID().replace(/-/g, "")}`;
+  const chunks: string[] = [];
+
+  for (const [name, value] of Object.entries(fields)) {
+    chunks.push(`--${boundary}`);
+    chunks.push(`Content-Disposition: form-data; name="${name}"`);
+    chunks.push("");
+    chunks.push(value);
+  }
+
+  chunks.push(`--${boundary}--`);
+  chunks.push("");
+
+  const body = new TextEncoder().encode(chunks.join("\r\n"));
+  return {
+    body,
+    contentType: `multipart/form-data; boundary=${boundary}`,
+  };
+}
+
+/** @see https://developer.chapa.co/charge/initiate-payments */
+export async function chapaDirectCharge(
+  chargeType: ChapaDirectChargeType,
+  payload: ChapaDirectChargePayload,
+): Promise<ChapaDirectChargeResult> {
+  const fields: Record<string, string> = {
+    amount: payload.amount,
+    currency: payload.currency,
+    email: payload.email,
+    first_name: payload.first_name,
+    last_name: payload.last_name,
+    tx_ref: payload.tx_ref,
+    mobile: payload.mobile,
+  };
+
+  if (payload.subaccounts) {
+    fields["subaccounts[id]"] = payload.subaccounts.id;
+    if (payload.subaccounts.split_type) {
+      fields["subaccounts[split_type]"] = payload.subaccounts.split_type;
+    }
+    if (payload.subaccounts.split_value != null) {
+      fields["subaccounts[split_value]"] = String(payload.subaccounts.split_value);
+    }
+  }
+
+  const { body, contentType } = buildMultipartForm(fields);
+  const res = await fetch(
+    `${CHAPA_API}/charges?type=${encodeURIComponent(chargeType)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${chapaSecretKey()}`,
+        "Content-Type": contentType,
+      },
+      body,
+    },
+  );
+
+  const responseBody = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(formatChapaApiError(responseBody, `Chapa direct charge failed (${res.status})`));
+  }
+
+  const data = (responseBody as { data?: Record<string, unknown> })?.data ?? responseBody;
+  const record = data as Record<string, unknown>;
+  const reference = String(record.reference ?? record.ref_id ?? "");
+  const status = String(record.status ?? "pending").toLowerCase();
+
+  if (!reference) {
+    throw new Error("Chapa did not return a charge reference");
+  }
+
+  const authRequired = status === "pending" || Boolean(record.auth_type ?? record.requires_auth);
+
+  return {
+    reference,
+    status,
+    auth_required: authRequired,
+    meta: record,
+  };
+}
+
+/** @see https://developer.chapa.co/charge/authorize-payments */
+export async function chapaAuthorizeDirectCharge(
+  chargeType: ChapaDirectChargeType,
+  payload: ChapaAuthorizeDirectChargePayload,
+): Promise<ChapaAuthorizeDirectChargeResult> {
+  const { body, contentType } = buildMultipartForm({
+    reference: payload.reference,
+    client: payload.client ?? "",
+  });
+
+  const res = await fetch(
+    `${CHAPA_API}/validate?type=${encodeURIComponent(chargeType)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${chapaSecretKey()}`,
+        "Content-Type": contentType,
+      },
+      body,
+    },
+  );
+
+  const responseBody = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(formatChapaApiError(responseBody, `Chapa authorize failed (${res.status})`));
+  }
+
+  const data = (responseBody as { data?: Record<string, unknown> })?.data ?? responseBody;
+  const record = data as Record<string, unknown>;
+
+  return {
+    status: String(record.status ?? responseBody.status ?? "success").toLowerCase(),
+    trx_ref: record.trx_ref ? String(record.trx_ref) : undefined,
   };
 }
 

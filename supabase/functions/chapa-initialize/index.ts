@@ -1,12 +1,14 @@
 import {
-  buildChapaCallbackUrl,
+  BookingPaymentError,
+  findInitializedBookingTxn,
+  insertBookingPaymentTransaction,
+  prepareBookingChapaPayment,
+} from "../_shared/chapa-booking-payment.ts";
+import {
   buildChapaReturnUrl,
   chapaInitialize,
-  chapaMode,
   formatChapaAmount,
   normalizeChapaPhone,
-  sanitizeChapaText,
-  splitFullName,
   supabaseFunctionsBaseUrl,
 } from "../_shared/chapa.ts";
 import {
@@ -19,12 +21,6 @@ import {
 type InitializeBody = {
   bookingId?: string;
 };
-
-function makeTxRef(bookingId: string): string {
-  const stamp = Date.now().toString(36);
-  const shortId = bookingId.replace(/-/g, "").slice(0, 8);
-  return `sheger-bkg-${shortId}-${stamp}`;
-}
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
@@ -44,135 +40,76 @@ Deno.serve(async (req) => {
     }
 
     const supabase = adminClient();
-
-    const { data: booking, error: bookingError } = await supabase
-      .from("bookings")
-      .select(
-        "id, customer_id, business_id, service_id, payment_status, pricing_model, listed_price, status",
-      )
-      .eq("id", bookingId)
-      .single();
-
-    if (bookingError) throw bookingError;
-    if (!booking) return jsonResponse({ error: "Booking not found" }, 404);
-    if (booking.customer_id !== user.id) {
-      return jsonResponse({ error: "Not authorized for this booking" }, 403);
-    }
-    if (booking.status !== "pending") {
-      return jsonResponse({ error: "Booking is not payable" }, 400);
-    }
-    if (booking.payment_status === "paid") {
-      return jsonResponse({ error: "Booking is already paid" }, 400);
-    }
-    if (booking.payment_status !== "awaiting_payment") {
-      return jsonResponse({ error: "Booking does not require online payment" }, 400);
-    }
-    if (booking.pricing_model !== "fixed" || booking.listed_price == null) {
-      return jsonResponse({ error: "Only fixed-price services can be paid online" }, 400);
-    }
-
-    const amount = Number(booking.listed_price);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return jsonResponse({ error: "Invalid booking amount" }, 400);
-    }
-
     const functionsBase = supabaseFunctionsBaseUrl();
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-    const [{ data: profile }, { data: business }, { data: service }, { data: existingTxn }] =
-      await Promise.all([
-        supabase.from("profiles").select("full_name, phone").eq("id", user.id).single(),
-        supabase.from("businesses").select("name").eq("id", booking.business_id).single(),
-        supabase.from("services").select("name").eq("id", booking.service_id).single(),
-        supabase
-          .from("payment_transactions")
-          .select("tx_ref, status, metadata")
-          .eq("booking_id", bookingId)
-          .eq("status", "initialized")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-
-    if (existingTxn?.tx_ref) {
-      const checkoutMeta = existingTxn.metadata as { checkout_url?: string } | null;
-      if (checkoutMeta?.checkout_url) {
-        return jsonResponse({
-          checkout_url: checkoutMeta.checkout_url,
-          tx_ref: existingTxn.tx_ref,
-          return_url: buildChapaReturnUrl(
-            functionsBase,
-            existingTxn.tx_ref,
-            Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-          ),
-          reused: true,
-        });
-      }
+    const reusable = await findInitializedBookingTxn(supabase, bookingId);
+    if (reusable?.metadata?.checkout_url) {
+      return jsonResponse({
+        checkout_url: reusable.metadata.checkout_url,
+        tx_ref: reusable.txRef,
+        return_url: buildChapaReturnUrl(functionsBase, reusable.txRef, anonKey),
+        reused: true,
+      });
     }
 
-    const { data: authUser } = await supabase.auth.admin.getUserById(user.id);
-    const email = authUser.user?.email ?? `customer+${user.id.slice(0, 8)}@sheger.app`;
-    const names = splitFullName(profile?.full_name);
-    const txRef = makeTxRef(bookingId);
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-    const returnUrl = buildChapaReturnUrl(functionsBase, txRef, anonKey);
-    const callbackUrl = buildChapaCallbackUrl(functionsBase);
-    const serviceLabel = sanitizeChapaText(service?.name, "Service", 50);
-    const businessLabel = sanitizeChapaText(business?.name, "Business", 50);
+    const prepared = await prepareBookingChapaPayment(supabase, user.id, bookingId);
 
     const initResult = await chapaInitialize({
-      amount: formatChapaAmount(amount),
+      amount: formatChapaAmount(prepared.amount),
       currency: "ETB",
-      email,
-      first_name: sanitizeChapaText(names.first_name, "Sheger", 50),
-      last_name: sanitizeChapaText(names.last_name, "Customer", 50),
-      tx_ref: txRef,
-      phone_number: normalizeChapaPhone(profile?.phone),
-      callback_url: callbackUrl,
-      return_url: returnUrl,
+      email: prepared.email,
+      first_name: prepared.firstName,
+      last_name: prepared.lastName,
+      tx_ref: prepared.txRef,
+      phone_number: normalizeChapaPhone(prepared.phone),
+      callback_url: prepared.callbackUrl,
+      return_url: prepared.returnUrl,
       customization: {
         title: "Sheger",
-        description: sanitizeChapaText(
-          `${serviceLabel} at ${businessLabel}`,
-          "Sheger booking payment",
-        ),
+        description: `${prepared.serviceLabel} at ${prepared.businessLabel}`,
       },
       meta: {
-        booking_id: bookingId,
-        customer_id: user.id,
+        booking_id: prepared.bookingId,
+        customer_id: prepared.customerId,
         purpose: "booking",
-        payment_reason: sanitizeChapaText(
-          `Sheger booking — ${serviceLabel}`,
-          "Sheger booking payment",
-        ),
+        payment_reason: `Sheger booking — ${prepared.serviceLabel}`,
         invoices: [
-          { key: serviceLabel, value: "1 appointment" },
-          { key: businessLabel, value: formatChapaAmount(amount) + " ETB" },
+          { key: prepared.serviceLabel, value: "1 appointment" },
+          { key: prepared.businessLabel, value: formatChapaAmount(prepared.amount) + " ETB" },
         ],
+        split: {
+          commission_rate: prepared.split.commission_rate,
+          commission_amount_etb: prepared.split.commission_amount_etb,
+          owner_net_etb: prepared.split.owner_net_etb,
+          chapa_subaccount_id: prepared.chapaSubaccountId,
+        },
+      },
+      subaccounts: {
+        id: prepared.chapaSubaccountId,
+        split_type: "percentage",
+        split_value: prepared.split.commission_rate,
       },
     });
 
-    const { error: insertError } = await supabase.from("payment_transactions").insert({
-      purpose: "booking",
-      booking_id: bookingId,
-      tx_ref: txRef,
-      amount_etb: amount,
-      currency: "ETB",
-      status: "initialized",
-      chapa_mode: chapaMode(),
-      metadata: {
-        checkout_url: initResult.checkout_url,
-        customer_id: user.id,
-      },
+    await insertBookingPaymentTransaction(supabase, prepared, {
+      checkout_url: initResult.checkout_url,
+      payment_flow: "hosted_checkout",
     });
-
-    if (insertError) throw insertError;
 
     return jsonResponse({
       checkout_url: initResult.checkout_url,
-      tx_ref: txRef,
-      return_url: returnUrl,
+      tx_ref: prepared.txRef,
+      return_url: prepared.returnUrl,
     });
   } catch (error) {
+    if (error instanceof BookingPaymentError) {
+      return jsonResponse(
+        { error: error.message, code: error.code },
+        error.status,
+      );
+    }
+
     const message = error instanceof Error ? error.message : String(error);
     console.error("chapa-initialize:", message);
     return jsonResponse({ error: message }, 500);

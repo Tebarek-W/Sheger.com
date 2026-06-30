@@ -20,6 +20,10 @@ supabase functions deploy chapa-cancel
 supabase functions deploy chapa-callback
 supabase functions deploy chapa-webhook
 supabase functions deploy chapa-return
+supabase functions deploy chapa-banks
+supabase functions deploy chapa-subaccount
+supabase functions deploy chapa-charge
+supabase functions deploy chapa-authorize
 ```
 
 Or deploy individually as needed.
@@ -37,6 +41,8 @@ supabase secrets set CHAPA_MODE=test
 | Function | `verify_jwt` | Why |
 |----------|--------------|-----|
 | `chapa-initialize`, `chapa-verify`, `chapa-cancel` | default (true) | User JWT required |
+| `chapa-banks`, `chapa-subaccount` | default (true) | Owner JWT for payout setup |
+| `chapa-charge`, `chapa-authorize` | default (true) | Customer JWT for direct charge checkout |
 | `booking-notifications` | false | Database webhook |
 | `send-booking-reminders` | false | Cron |
 | `check-subscription-expiry` | false | Cron |
@@ -103,6 +109,33 @@ All finalize paths call `GET https://api.chapa.co/v1/transaction/verify/<tx_ref>
 `chapa-cancel` and `expire-unpaid-bookings` call `PUT https://api.chapa.co/v1/transaction/cancel/<tx_ref>` for active transactions before updating Sheger records.
 
 Webhook secret in the Chapa dashboard must match `CHAPA_WEBHOOK_SECRET`.
+
+### Split payments ([docs](https://developer.chapa.co/integrations/split-payment))
+
+| Step | Who | What |
+|------|-----|------|
+| 1 | Business owner | `chapa-banks` → pick bank; `chapa-subaccount` creates Chapa subaccount + saves `business_chapa_subaccounts` |
+| 2 | Customer checkout | `chapa-initialize` attaches `subaccounts` with plan commission rate; platform keeps commission, vendor bank gets the rest |
+| 3 | Verify / webhook | `finalize_chapa_payment` records `booking_financials` (commission + owner net) |
+
+Online Chapa checkout is blocked (`payout_not_configured`) until the business has an active payout account.
+
+### Accept Payment (hosted checkout — customer mobile)
+
+Per [Accept Payment](https://developer.chapa.co/integrations/accept-payments):
+
+| Step | Where | What happens |
+|------|-------|----------------|
+| 1 | Sheger payment screen | Customer selects Chapa and confirms booking |
+| 2 | `chapa-initialize` | Server calls `POST /v1/transaction/initialize`, stores `payment_transactions`, returns `checkout_url` |
+| 3 | Checkout screen | App redirects customer to `checkout_url` (Chapa-hosted UI via in-app browser) |
+| 4 | Chapa | Customer picks Telebirr, CBE Birr, cards, etc. on Chapa's page |
+| 5 | `chapa-return` | Chapa redirects to HTTPS return URL → deep link back to app |
+| 6 | `chapa-verify` | App/server verifies via Chapa API before marking booking paid |
+
+The payment method UI is **hosted by Chapa**, not recreated in Sheger. In **test mode**, Chapa's hosted page may show a simplified **Pay with Test Mode** button; the full method list appears in **live mode**.
+
+`chapa-charge` / `chapa-authorize` (Direct Charge) remain deployed for optional future use but are not the default customer path.
 
 ## Checklist (new environment)
 

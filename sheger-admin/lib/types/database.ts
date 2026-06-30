@@ -282,6 +282,56 @@ export type Database = {
           },
         ]
       }
+      business_chapa_subaccounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_code: number
+          business_id: string
+          business_name: string | null
+          chapa_subaccount_id: string
+          created_at: string
+          split_type: string
+          split_value: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          bank_code: number
+          business_id: string
+          business_name?: string | null
+          chapa_subaccount_id: string
+          created_at?: string
+          split_type?: string
+          split_value: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_code?: number
+          business_id?: string
+          business_name?: string | null
+          chapa_subaccount_id?: string
+          created_at?: string
+          split_type?: string
+          split_value?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_chapa_subaccounts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_documents: {
         Row: {
           business_id: string
@@ -711,10 +761,14 @@ export type Database = {
           booking_id: string | null
           chapa_mode: string
           chapa_reference: string | null
+          chapa_subaccount_id: string | null
+          commission_amount_etb: number | null
+          commission_rate: number | null
           created_at: string
           currency: string
           id: string
           metadata: Json
+          owner_net_etb: number | null
           payment_method: string | null
           purpose: Database["public"]["Enums"]["payment_purpose"]
           status: Database["public"]["Enums"]["payment_transaction_status"]
@@ -727,10 +781,14 @@ export type Database = {
           booking_id?: string | null
           chapa_mode?: string
           chapa_reference?: string | null
+          chapa_subaccount_id?: string | null
+          commission_amount_etb?: number | null
+          commission_rate?: number | null
           created_at?: string
           currency?: string
           id?: string
           metadata?: Json
+          owner_net_etb?: number | null
           payment_method?: string | null
           purpose?: Database["public"]["Enums"]["payment_purpose"]
           status?: Database["public"]["Enums"]["payment_transaction_status"]
@@ -743,10 +801,14 @@ export type Database = {
           booking_id?: string | null
           chapa_mode?: string
           chapa_reference?: string | null
+          chapa_subaccount_id?: string | null
+          commission_amount_etb?: number | null
+          commission_rate?: number | null
           created_at?: string
           currency?: string
           id?: string
           metadata?: Json
+          owner_net_etb?: number | null
           payment_method?: string | null
           purpose?: Database["public"]["Enums"]["payment_purpose"]
           status?: Database["public"]["Enums"]["payment_transaction_status"]
@@ -767,6 +829,7 @@ export type Database = {
       platform_settings: {
         Row: {
           currency: string
+          default_booking_commission_rate: number
           default_max_bookings_per_week: number
           default_max_services: number
           feature_flags: Json
@@ -778,6 +841,7 @@ export type Database = {
         }
         Insert: {
           currency?: string
+          default_booking_commission_rate?: number
           default_max_bookings_per_week?: number
           default_max_services?: number
           feature_flags?: Json
@@ -789,6 +853,7 @@ export type Database = {
         }
         Update: {
           currency?: string
+          default_booking_commission_rate?: number
           default_max_bookings_per_week?: number
           default_max_services?: number
           feature_flags?: Json
@@ -1308,6 +1373,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      compute_booking_split: {
+        Args: { p_amount: number; p_business_id: string }
+        Returns: Json
+      }
       enqueue_notification_deliveries: {
         Args: {
           p_body: string
@@ -1728,3 +1797,48 @@ export const Constants = {
     },
   },
 } as const
+
+/** Convenience row/enum aliases used by sheger-admin and sheger-mobile. */
+export type Profile = Tables<"profiles">
+export type Business = Tables<"businesses">
+export type Category = Tables<"categories">
+export type Employee = Tables<"employees">
+export type Service = Tables<"services">
+export type Booking = Tables<"bookings">
+export type Review = Tables<"reviews">
+export type WorkingHours = Tables<"working_hours">
+export type AppointmentSlot = Tables<"appointment_slots">
+export type BusinessDocument = Tables<"business_documents">
+export type SubscriptionPlan = Tables<"subscription_plans">
+export type SubscriptionPayment = Tables<"subscription_payments">
+export type BusinessSubscription = Tables<"business_subscriptions">
+
+export type UserRole = Enums<"user_role">
+export type BusinessStatus = Enums<"business_status">
+export type BookingStatus = Enums<"booking_status">
+export type BookingPaymentStatus = Enums<"booking_payment_status">
+export type BusinessDocumentStatus = Enums<"business_document_status">
+export type BusinessDocumentType = Enums<"business_document_type">
+export type BillingInterval = Enums<"billing_interval">
+export type ServiceDurationModel = Enums<"service_duration_model">
+export type ServicePricingModel = Enums<"service_pricing_model">
+
+/** JSON shape returned by get_subscription_summary RPC. */
+export type SubscriptionSummary = {
+  subscription: BusinessSubscription | null
+  current_plan: SubscriptionPlan | null
+  plans: SubscriptionPlan[]
+  platform: {
+    currency: string
+    grace_period_days: number
+  }
+  limits: {
+    max_services: number
+    max_bookings_per_week: number
+  }
+  usage: {
+    active_services: number
+    weekly_bookings: number
+  }
+  is_marketplace_live: boolean
+}

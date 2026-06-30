@@ -16,6 +16,10 @@ export const ONLINE_PAYMENT_METHODS = [
 
 export type OnlinePaymentMethod = (typeof ONLINE_PAYMENT_METHODS)[number];
 
+export type CustomerPaymentMethod =
+  | typeof PAYMENT_METHOD_CHAPA
+  | typeof PAYMENT_METHOD_CASH;
+
 export function isChapaOnlineMethod(method: string): method is OnlinePaymentMethod {
   return (ONLINE_PAYMENT_METHODS as readonly string[]).includes(method);
 }

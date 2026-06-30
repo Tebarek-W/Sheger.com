@@ -18,6 +18,7 @@ import {
   isChapaOnlineMethod,
   PAYMENT_METHOD_CASH,
   PAYMENT_METHOD_CHAPA,
+  type CustomerPaymentMethod,
 } from "@/lib/payment/methods";
 import { getErrorMessage } from "@/lib/errors";
 import {
@@ -60,12 +61,13 @@ function PaymentScreenContent() {
   const scheduledAt = useBookingStore((s) => s.scheduledAt);
   const setPaymentMethod = useBookingStore((s) => s.setPaymentMethod);
   const setBookingId = useBookingStore((s) => s.setBookingId);
-  const [method, setMethod] = useState(PAYMENT_METHOD_CHAPA);
+  const [method, setMethod] = useState<CustomerPaymentMethod>(PAYMENT_METHOD_CHAPA);
   const [loading, setLoading] = useState(false);
   const submittingRef = useRef(false);
 
   const checkoutPrice = service ? getCheckoutPriceLabel(service) : null;
   const onlinePayAvailable = checkoutPrice?.showExactTotal ?? false;
+  const usesChapa = onlinePayAvailable && isChapaOnlineMethod(method);
 
   useEffect(() => {
     if (!onlinePayAvailable) {
@@ -79,7 +81,6 @@ function PaymentScreenContent() {
     submittingRef.current = true;
     setLoading(true);
     try {
-      const usesChapa = onlinePayAvailable && isChapaOnlineMethod(method);
       setPaymentMethod(method);
 
       const booking = await createBooking({
@@ -126,7 +127,6 @@ function PaymentScreenContent() {
   }
 
   const price = checkoutPrice?.primary ?? "—";
-  const usesChapa = onlinePayAvailable && isChapaOnlineMethod(method);
 
   return (
     <Screen scroll padded={false}>

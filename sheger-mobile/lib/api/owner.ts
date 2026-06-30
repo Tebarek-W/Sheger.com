@@ -310,8 +310,8 @@ export async function fetchMyBookings(businessId: string) {
   const { data, error } = await supabase.rpc("list_business_booking_cards_page", {
     p_business_id: businessId,
     p_limit: 50,
-    p_cursor_scheduled_at: null,
-    p_cursor_id: null,
+    p_cursor_scheduled_at: undefined,
+    p_cursor_id: undefined,
   });
 
   if (!error && data && typeof data === "object" && "rows" in data) {

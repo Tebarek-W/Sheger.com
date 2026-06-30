@@ -98,7 +98,7 @@ export async function fetchMarketplaceBusinessesPage(
   filters: MarketplaceFilters = {},
 ): Promise<MarketplacePage> {
   const { data, error } = await (
-    supabase.rpc as (
+    supabase.rpc as unknown as (
       fn: "list_marketplace_businesses_page",
       args: {
         p_limit?: number;

@@ -7,16 +7,17 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "rea
 import { Button } from "@/components/ui/Button";
 import { BookingHeader } from "@/components/ui/BookingHeader";
 import { Screen } from "@/components/ui/Screen";
-import { colors } from "@/constants/theme";
+import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { RequireAuth } from "@/hooks/useRequireAuth";
-import { getChapaHttpsReturnUrlPrefix } from "@/lib/chapa/return-url";
-import { buildChapaReceiptUrl, parseChapaReferenceFromUrl } from "@/lib/chapa/receipt";
 import {
   cancelChapaPayment,
   initializeChapaBookingPayment,
   parseTxRefFromUrl,
   verifyChapaPayment,
 } from "@/lib/api/chapa";
+import { getChapaHttpsReturnUrlPrefix } from "@/lib/chapa/return-url";
+import { buildChapaReceiptUrl, parseChapaReferenceFromUrl } from "@/lib/chapa/receipt";
 import { getErrorMessage } from "@/lib/errors";
 import { useBookingStore } from "@/stores/bookingStore";
 
@@ -38,32 +39,37 @@ function resolveBookingId(value: string | string[] | undefined): string | null {
 function PaymentCheckoutContent() {
   const params = useLocalSearchParams<{ bookingId?: string | string[] }>();
   const bookingId = resolveBookingId(params.bookingId);
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const business = useBookingStore((s) => s.business);
   const setBookingId = useBookingStore((s) => s.setBookingId);
   const setChapaReceiptUrl = useBookingStore((s) => s.setChapaReceiptUrl);
 
   const [status, setStatus] = useState<CheckoutStatus>("preparing");
-  const [message, setMessage] = useState("Preparing secure checkout...");
+  const [message, setMessage] = useState(() => t("payment.checkout.preparing"));
   const [txRef, setTxRef] = useState<string | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const startedRef = useRef(false);
 
-  const finishPaidBooking = useCallback(async (paymentTxRef: string, returnUrl?: string | null) => {
-    setStatus("verifying");
-    setMessage("Confirming your payment...");
-    const verified = await verifyChapaPayment(paymentTxRef);
-    const chapaRef =
-      verified.chapa_reference ??
-      (returnUrl ? parseChapaReferenceFromUrl(returnUrl) : null);
-    if (chapaRef) {
-      setChapaReceiptUrl(buildChapaReceiptUrl(chapaRef));
-    }
-    if (business?.id) {
-      queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
-    }
-    queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
-    router.replace("/(app)/confirmation");
-  }, [business?.id, queryClient, setChapaReceiptUrl]);
+  const finishPaidBooking = useCallback(
+    async (paymentTxRef: string, returnUrl?: string | null) => {
+      setStatus("verifying");
+      setMessage(t("payment.checkout.verifying"));
+      const verified = await verifyChapaPayment(paymentTxRef);
+      const chapaRef =
+        verified.chapa_reference ??
+        (returnUrl ? parseChapaReferenceFromUrl(returnUrl) : null);
+      if (chapaRef) {
+        setChapaReceiptUrl(buildChapaReceiptUrl(chapaRef));
+      }
+      if (business?.id) {
+        queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
+      router.replace("/(app)/confirmation");
+    },
+    [business?.id, queryClient, setChapaReceiptUrl, t],
+  );
 
   const confirmPayment = useCallback(async () => {
     if (!txRef) return;
@@ -75,6 +81,58 @@ function PaymentCheckoutContent() {
     }
   }, [finishPaidBooking, txRef]);
 
+  const openChapaCheckout = useCallback(
+    async (url: string, paymentTxRef: string) => {
+      const chapaReturnPrefix = getChapaHttpsReturnUrlPrefix();
+      setStatus("browser");
+      setMessage(t("payment.checkout.browserMessage"));
+
+      const session = await WebBrowser.openAuthSessionAsync(url, chapaReturnPrefix);
+
+      const sessionUrl =
+        session.type === "success" && session.url && !session.url.trimStart().startsWith("<!")
+          ? session.url
+          : null;
+
+      if (session.type === "success" || sessionUrl) {
+        const resolvedTxRef = parseTxRefFromUrl(sessionUrl ?? "") ?? paymentTxRef;
+        try {
+          await finishPaidBooking(resolvedTxRef, sessionUrl);
+          return;
+        } catch {
+          // Payment may still be processing on Chapa's side.
+        }
+      }
+
+      setStatus("confirm");
+      setMessage(t("payment.checkout.confirmHint"));
+    },
+    [finishPaidBooking, t],
+  );
+
+  const startHostedCheckout = useCallback(async () => {
+    if (!bookingId) return;
+
+    setStatus("preparing");
+    setMessage(t("payment.checkout.preparing"));
+
+    try {
+      const result = await initializeChapaBookingPayment(bookingId);
+      setTxRef(result.tx_ref);
+      setCheckoutUrl(result.checkout_url);
+      setBookingId(bookingId);
+      await openChapaCheckout(result.checkout_url, result.tx_ref);
+    } catch (error) {
+      setStatus("error");
+      setMessage(getErrorMessage(error));
+      try {
+        await cancelChapaPayment({ bookingId });
+      } catch {
+        // Booking may already be cancelled server-side.
+      }
+    }
+  }, [bookingId, openChapaCheckout, setBookingId, t]);
+
   useEffect(() => {
     WebBrowser.maybeCompleteAuthSession();
   }, []);
@@ -82,69 +140,17 @@ function PaymentCheckoutContent() {
   useEffect(() => {
     if (!bookingId || startedRef.current) return;
     startedRef.current = true;
-
-    let active = true;
-
-    (async () => {
-      try {
-        const chapaReturnPrefix = getChapaHttpsReturnUrlPrefix();
-        const result = await initializeChapaBookingPayment(bookingId);
-        if (!active) return;
-
-        setTxRef(result.tx_ref);
-        setBookingId(bookingId);
-        setStatus("browser");
-        setMessage("Complete payment in the Chapa checkout.");
-
-        const session = await WebBrowser.openAuthSessionAsync(
-          result.checkout_url,
-          chapaReturnPrefix,
-        );
-
-        if (!active) return;
-
-        const sessionUrl =
-          session.type === "success" && session.url && !session.url.trimStart().startsWith("<!")
-            ? session.url
-            : null;
-
-        if (session.type === "success" || sessionUrl) {
-          const paymentTxRef = parseTxRefFromUrl(sessionUrl ?? "") ?? result.tx_ref;
-          try {
-            await finishPaidBooking(paymentTxRef, sessionUrl);
-            return;
-          } catch {
-            // Payment may still be processing on Chapa's side.
-          }
-        }
-
-        setStatus("confirm");
-        setMessage("If you finished paying, tap Confirm payment below.");
-      } catch (error) {
-        if (!active) return;
-        setStatus("error");
-        setMessage(getErrorMessage(error));
-        try {
-          await cancelChapaPayment({ bookingId });
-        } catch {
-          // Booking may already be cancelled server-side.
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [bookingId, finishPaidBooking, setBookingId]);
+    void startHostedCheckout();
+  }, [bookingId, startHostedCheckout]);
 
   const onCancel = () => {
     Alert.alert(
-      "Cancel payment?",
-      "Your booking will be cancelled and the time slot will be released.",
+      t("payment.checkout.cancelTitle"),
+      t("payment.checkout.cancelMessage"),
       [
-        { text: "Keep paying", style: "cancel" },
+        { text: t("payment.checkout.cancelKeep"), style: "cancel" },
         {
-          text: "Cancel booking",
+          text: t("payment.checkout.cancelConfirm"),
           style: "destructive",
           onPress: async () => {
             WebBrowser.dismissBrowser();
@@ -171,8 +177,8 @@ function PaymentCheckoutContent() {
     return (
       <Screen padded={false} style={styles.screen}>
         <View style={styles.pad}>
-          <BookingHeader title="Secure checkout" />
-          <Text style={styles.errorText}>Booking not found.</Text>
+          <BookingHeader title={t("payment.checkout.title")} />
+          <Text style={styles.errorText}>{t("payment.checkout.bookingNotFound")}</Text>
         </View>
       </Screen>
     );
@@ -182,12 +188,18 @@ function PaymentCheckoutContent() {
     <Screen padded={false} style={styles.screen}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <BookingHeader title="Secure checkout" />
+          <BookingHeader title={t("payment.checkout.title")} />
           {status !== "error" ? (
             <Pressable onPress={onCancel} hitSlop={8}>
-              <Text style={styles.cancelLink}>Cancel</Text>
+              <Text style={styles.cancelLink}>{t("payment.checkout.cancelLink")}</Text>
             </Pressable>
           ) : null}
+        </View>
+
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>{t("payment.checkout.hostedTitle")}</Text>
+          <Text style={styles.infoText}>{t("payment.checkout.hostedText")}</Text>
+          <Text style={styles.infoNote}>{t("payment.checkout.testModeNote")}</Text>
         </View>
 
         <View style={styles.center}>
@@ -196,13 +208,23 @@ function PaymentCheckoutContent() {
           ) : null}
           <Text style={status === "error" ? styles.errorText : styles.statusText}>{message}</Text>
 
-          {status === "confirm" ? (
-            <Button title="Confirm payment" onPress={confirmPayment} loading={false} />
+          {status === "confirm" && checkoutUrl && txRef ? (
+            <>
+              <Button
+                title={t("payment.checkout.openChapa")}
+                onPress={() => openChapaCheckout(checkoutUrl, txRef)}
+              />
+              <Button
+                title={t("payment.checkout.confirmPayment")}
+                variant="outline"
+                onPress={confirmPayment}
+              />
+            </>
           ) : null}
 
           {status === "error" ? (
             <Pressable onPress={() => router.back()}>
-              <Text style={styles.cancelLink}>Go back</Text>
+              <Text style={styles.cancelLink}>{t("payment.checkout.goBack")}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -227,6 +249,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
+  infoCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    gap: 8,
+  },
+  infoTitle: { fontSize: 15, fontWeight: "700", color: colors.primaryDarker },
+  infoText: { fontSize: 14, color: colors.textMuted, lineHeight: 21 },
+  infoNote: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
   center: {
     flex: 1,
     alignItems: "center",

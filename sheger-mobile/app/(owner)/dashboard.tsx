@@ -17,6 +17,7 @@ import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { fetchBusinessDocuments } from "@/lib/api/business-license";
 import { getMissingDocumentTypes } from "@/lib/documents/license-status";
 import { fetchOwnerStats } from "@/lib/api/owner";
+import { fetchBusinessPayoutAccount } from "@/lib/api/payout";
 import { fetchSubscriptionSummary } from "@/lib/api/subscription";
 
 export default function OwnerDashboardScreen() {
@@ -53,6 +54,12 @@ export default function OwnerDashboardScreen() {
     queryKey: ["subscription-summary", business?.id],
     queryFn: () => fetchSubscriptionSummary(business!.id),
     enabled: Boolean(business?.id),
+  });
+
+  const { data: payoutAccount } = useQuery({
+    queryKey: ["business-payout", business?.id],
+    queryFn: () => fetchBusinessPayoutAccount(business!.id),
+    enabled: Boolean(business?.id) && business?.status === "approved",
   });
 
   const subscriptionExpired =
@@ -143,6 +150,13 @@ export default function OwnerDashboardScreen() {
         </Pressable>
       ) : null}
 
+      {business.status === "approved" && !payoutAccount ? (
+        <Pressable style={styles.payoutBanner} onPress={() => router.push("/(owner)/payout")}>
+          <Text style={styles.payoutBannerTitle}>{t("owner.payoutBannerTitle")}</Text>
+          <Text style={styles.payoutBannerText}>{t("owner.payoutBannerText")}</Text>
+        </Pressable>
+      ) : null}
+
       {nearServiceCap && !subscriptionExpired ? (
         <Pressable style={styles.limitBanner} onPress={() => router.push("/(owner)/billing")}>
           <Text style={styles.limitBannerTitle}>{t("owner.serviceLimitTitle")}</Text>
@@ -221,6 +235,12 @@ export default function OwnerDashboardScreen() {
           title={t("owner.menu.billing")}
           subtitle={t("owner.menu.billingSub")}
           onPress={() => router.push("/(owner)/billing")}
+        />
+        <MenuCard
+          icon="🏦"
+          title={t("owner.menu.payout")}
+          subtitle={t("owner.menu.payoutSub")}
+          onPress={() => router.push("/(owner)/payout")}
         />
         <MenuCard
           icon="📊"
@@ -316,6 +336,17 @@ const styles = StyleSheet.create({
   },
   subscriptionBannerTitle: { fontSize: 14, fontWeight: "700", color: colors.error },
   subscriptionBannerText: { fontSize: 13, color: "#991b1b", lineHeight: 19 },
+  payoutBanner: {
+    marginTop: 16,
+    backgroundColor: "#eef5ff",
+    borderRadius: radius.md,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#c7daf5",
+    gap: 4,
+  },
+  payoutBannerTitle: { fontSize: 14, fontWeight: "700", color: "#1e4f8f" },
+  payoutBannerText: { fontSize: 13, color: "#33557f", lineHeight: 19 },
   limitBanner: {
     marginTop: 16,
     backgroundColor: "#faeeda",

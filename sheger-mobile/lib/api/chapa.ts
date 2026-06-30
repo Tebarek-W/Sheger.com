@@ -1,4 +1,24 @@
+import { readSupabaseFunctionError } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
+
+type ChapaDirectChargeResponse = {
+  ok: boolean;
+  tx_ref: string;
+  reference: string;
+  charge_type: string;
+  status: string;
+  auth_required?: boolean;
+  amount_etb?: number;
+  reused?: boolean;
+  error?: string;
+};
+
+type ChapaAuthorizeResponse = {
+  ok: boolean;
+  status?: string;
+  tx_ref?: string;
+  error?: string;
+};
 
 type ChapaInitializeResponse = {
   checkout_url: string;
@@ -30,30 +50,18 @@ type ChapaCancelResponse = {
   error?: string;
 };
 
-type FunctionErrorBody = {
-  error?: string;
-};
-
-async function readFunctionError(
-  data: unknown,
-  error: Error & { context?: Response },
-): Promise<never> {
-  if (data && typeof data === "object" && "error" in data && data.error) {
-    throw new Error(String((data as FunctionErrorBody).error));
+function throwVerifyPaymentFailure(data: ChapaVerifyResponse | null | undefined): never {
+  const status = data?.chapa_status ?? data?.status;
+  if (status === "pending") {
+    throw new Error("Payment is still processing. Try again in a moment.");
   }
-
-  if (error.context) {
-    try {
-      const body = (await error.context.clone().json()) as FunctionErrorBody;
-      if (body?.error) throw new Error(body.error);
-    } catch (parseError) {
-      if (parseError instanceof Error && parseError.message !== error.message) {
-        throw parseError;
-      }
-    }
+  if (status === "cancelled") {
+    throw new Error("This payment was cancelled.");
   }
-
-  throw error;
+  if (typeof data?.error === "string" && data.error.trim()) {
+    throw new Error(data.error.trim());
+  }
+  throw new Error(status ? `Payment ${status}` : "Payment not completed");
 }
 
 export async function initializeChapaBookingPayment(bookingId: string) {
@@ -63,7 +71,42 @@ export async function initializeChapaBookingPayment(bookingId: string) {
   );
 
   if (error || !data?.checkout_url || !data.tx_ref) {
-    await readFunctionError(data, error as Error & { context?: Response });
+    await readSupabaseFunctionError(data, error);
+  }
+
+  return data!;
+}
+
+export async function startChapaDirectCharge(input: {
+  bookingId: string;
+  chargeType: string;
+  mobile: string;
+}) {
+  const { data, error } = await supabase.functions.invoke<ChapaDirectChargeResponse>(
+    "chapa-charge",
+    { body: input },
+  );
+
+  if (error || !data?.ok || !data.tx_ref || !data.reference) {
+    await readSupabaseFunctionError(data, error);
+  }
+
+  return data!;
+}
+
+export async function authorizeChapaDirectCharge(input: {
+  txRef: string;
+  chargeType: string;
+  reference: string;
+  client?: string;
+}) {
+  const { data, error } = await supabase.functions.invoke<ChapaAuthorizeResponse>(
+    "chapa-authorize",
+    { body: input },
+  );
+
+  if (error || !data?.ok) {
+    await readSupabaseFunctionError(data, error);
   }
 
   return data!;
@@ -75,22 +118,20 @@ export async function verifyChapaPayment(txRef: string) {
     { body: { txRef } },
   );
 
+  if (data?.ok) {
+    return data;
+  }
+
+  // chapa-verify returns 402/202 with payment state in the JSON body.
+  if (data && typeof data === "object" && "ok" in data) {
+    throwVerifyPaymentFailure(data);
+  }
+
   if (error) {
-    await readFunctionError(data, error as Error & { context?: Response });
+    await readSupabaseFunctionError(data, error);
   }
 
-  if (!data?.ok) {
-    const status = data?.chapa_status ?? data?.status;
-    if (status === "pending") {
-      throw new Error("Payment is still processing. Try again in a moment.");
-    }
-    if (status === "cancelled") {
-      throw new Error("This payment was cancelled.");
-    }
-    throw new Error(status ? `Payment ${status}` : "Payment not completed");
-  }
-
-  return data;
+  throwVerifyPaymentFailure(data);
 }
 
 export async function cancelChapaPayment(input: { txRef?: string; bookingId?: string }) {
@@ -100,7 +141,7 @@ export async function cancelChapaPayment(input: { txRef?: string; bookingId?: st
   );
 
   if (error) {
-    await readFunctionError(data, error as Error & { context?: Response });
+    await readSupabaseFunctionError(data, error);
   }
 
   return data;
