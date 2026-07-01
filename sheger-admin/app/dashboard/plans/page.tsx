@@ -4,10 +4,14 @@ import type { SubscriptionPlan } from "@/lib/types/database";
 
 export default async function PlansPage() {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("subscription_plans")
-    .select("*")
-    .order("sort_order", { ascending: true });
+  const [{ data, error }, { data: settings }] = await Promise.all([
+    supabase.from("subscription_plans").select("*").order("sort_order", { ascending: true }),
+    supabase
+      .from("platform_settings")
+      .select("default_booking_commission_rate")
+      .eq("id", 1)
+      .maybeSingle(),
+  ]);
 
   if (error) {
     return (
@@ -22,14 +26,19 @@ export default async function PlansPage() {
     );
   }
 
+  const defaultCommissionRate = Number(settings?.default_booking_commission_rate ?? 0.1);
+
   return (
     <div>
       <h1 className="text-3xl font-bold text-[var(--primary-dark)]">Subscription plans</h1>
       <p className="mt-2 text-[var(--muted)]">
-        Create and manage plans (Free, Basic, Premium, etc.). Businesses choose a plan and
-        automatically receive its service and booking limits.
+        Manage subscription plans and the platform commission rate on each online booking. Businesses
+        on a plan use that plan&apos;s commission; others use the default rate.
       </p>
-      <PlanManager plans={(data ?? []) as SubscriptionPlan[]} />
+      <PlanManager
+        plans={(data ?? []) as SubscriptionPlan[]}
+        defaultCommissionRate={defaultCommissionRate}
+      />
     </div>
   );
 }

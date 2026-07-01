@@ -54,6 +54,7 @@ export type WorkingHoursInput = {
 export type OwnerStats = {
   totalBookings: number;
   pendingBookings: number;
+  confirmedBookings: number;
   completedBookings: number;
   totalRevenue: number;
   last30DaysRevenue: number;
@@ -359,24 +360,140 @@ export async function completeOwnerBooking(bookingId: string, input: CompleteBoo
   return data as Booking;
 }
 
-export async function fetchOwnerStats(businessId: string): Promise<OwnerStats> {
-  const rpc = (supabase.rpc as unknown as (
-    fn: string,
-    args: Record<string, unknown>,
-  ) => Promise<{ data: (OwnerStats & { byStatus?: Record<string, number> }) | null; error: unknown }>);
+type OwnerStatsRpcPayload = Partial<OwnerStats> & {
+  byStatus?: Partial<Record<BookingStatus, number>>;
+  by_status?: Partial<Record<BookingStatus, number>>;
+};
 
-  const { data, error } = await rpc("get_owner_booking_stats", {
+function readStatNumber(
+  record: Record<string, unknown>,
+  camel: string,
+  snake: string,
+): number {
+  const value = record[camel] ?? record[snake];
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeOwnerStatsPayload(raw: unknown): OwnerStats | null {
+  const parsed =
+    typeof raw === "string"
+      ? (() => {
+          try {
+            return JSON.parse(raw) as unknown;
+          } catch {
+            return null;
+          }
+        })()
+      : raw;
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return null;
+  }
+
+  const record = parsed as OwnerStatsRpcPayload & Record<string, unknown>;
+  const byStatusRaw = record.byStatus ?? record.by_status;
+
+  return {
+    totalBookings: readStatNumber(record, "totalBookings", "total_bookings"),
+    pendingBookings: readStatNumber(record, "pendingBookings", "pending_bookings"),
+    confirmedBookings: readStatNumber(record, "confirmedBookings", "confirmed_bookings"),
+    completedBookings: readStatNumber(record, "completedBookings", "completed_bookings"),
+    totalRevenue: readStatNumber(record, "totalRevenue", "total_revenue"),
+    last30DaysRevenue: readStatNumber(record, "last30DaysRevenue", "last_30_days_revenue"),
+    byStatus:
+      byStatusRaw && typeof byStatusRaw === "object" && !Array.isArray(byStatusRaw)
+        ? {
+            pending: Number(byStatusRaw.pending ?? 0),
+            confirmed: Number(byStatusRaw.confirmed ?? 0),
+            cancelled: Number(byStatusRaw.cancelled ?? 0),
+            completed: Number(byStatusRaw.completed ?? 0),
+          }
+        : undefined,
+  };
+}
+
+async function fetchOwnerStatsDirect(businessId: string): Promise<OwnerStats> {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const [bookingsRes, financialsRes] = await Promise.all([
+    supabase
+      .from("bookings")
+      .select(
+        "id, status, scheduled_at, payment_status, listed_price, listed_price_min, final_price, services(price)",
+      )
+      .eq("business_id", businessId),
+    supabase
+      .from("booking_financials")
+      .select("booking_id, owner_net_etb")
+      .eq("business_id", businessId),
+  ]);
+
+  if (bookingsRes.error) throw bookingsRes.error;
+  if (financialsRes.error) throw financialsRes.error;
+
+  const ownerNetByBooking = new Map(
+    (financialsRes.data ?? []).map((row) => [row.booking_id, Number(row.owner_net_etb)]),
+  );
+
+  const bookings = bookingsRes.data ?? [];
+  const byStatus: Record<BookingStatus, number> = {
+    pending: 0,
+    confirmed: 0,
+    cancelled: 0,
+    completed: 0,
+  };
+
+  let totalRevenue = 0;
+  let last30DaysRevenue = 0;
+
+  for (const booking of bookings) {
+    const status = booking.status as BookingStatus;
+    byStatus[status] = (byStatus[status] ?? 0) + 1;
+
+    if (status !== "completed") continue;
+
+    const gross = getBookingRevenueAmount(booking);
+    const ownerNet =
+      booking.payment_status === "paid"
+        ? ownerNetByBooking.get(booking.id) ?? gross
+        : gross;
+
+    totalRevenue += ownerNet;
+
+    if (new Date(booking.scheduled_at) >= thirtyDaysAgo) {
+      last30DaysRevenue += ownerNet;
+    }
+  }
+
+  return {
+    totalBookings: bookings.length,
+    pendingBookings: byStatus.pending,
+    confirmedBookings: byStatus.confirmed,
+    completedBookings: byStatus.completed,
+    totalRevenue,
+    last30DaysRevenue,
+    byStatus,
+  };
+}
+
+export async function fetchOwnerStats(businessId: string): Promise<OwnerStats> {
+  const { data, error } = await supabase.rpc("get_owner_booking_stats", {
     p_business_id: businessId,
   });
 
-  if (error) throw error;
+  if (!error && data) {
+    const stats = normalizeOwnerStatsPayload(data);
+    if (stats) return stats;
+  }
 
-  return {
-    totalBookings: data?.totalBookings ?? 0,
-    pendingBookings: data?.pendingBookings ?? 0,
-    completedBookings: data?.completedBookings ?? 0,
-    totalRevenue: data?.totalRevenue ?? 0,
-    last30DaysRevenue: data?.last30DaysRevenue ?? 0,
-    byStatus: data?.byStatus,
-  };
+  if (__DEV__ && error) {
+    console.warn(
+      "[Sheger] get_owner_booking_stats failed, using direct query:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  return fetchOwnerStatsDirect(businessId);
 }

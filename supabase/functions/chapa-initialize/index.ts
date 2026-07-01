@@ -1,6 +1,7 @@
 import {
   BookingPaymentError,
-  findInitializedBookingTxn,
+  cancelStaleInitializedCheckout,
+  findReusableHostedCheckout,
   insertBookingPaymentTransaction,
   prepareBookingChapaPayment,
 } from "../_shared/chapa-booking-payment.ts";
@@ -43,15 +44,33 @@ Deno.serve(async (req) => {
     const functionsBase = supabaseFunctionsBaseUrl();
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-    const reusable = await findInitializedBookingTxn(supabase, bookingId);
-    if (reusable?.metadata?.checkout_url) {
+    const { data: bookingRow, error: bookingRowError } = await supabase
+      .from("bookings")
+      .select("business_id, listed_price")
+      .eq("id", bookingId)
+      .single();
+
+    if (bookingRowError || !bookingRow) {
+      return jsonResponse({ error: "Booking not found" }, 404);
+    }
+
+    const amount = Number(bookingRow.listed_price);
+    const reusable = await findReusableHostedCheckout(
+      supabase,
+      bookingId,
+      bookingRow.business_id,
+      amount,
+    );
+    if (reusable) {
       return jsonResponse({
-        checkout_url: reusable.metadata.checkout_url,
+        checkout_url: reusable.checkoutUrl,
         tx_ref: reusable.txRef,
         return_url: buildChapaReturnUrl(functionsBase, reusable.txRef, anonKey),
         reused: true,
       });
     }
+
+    await cancelStaleInitializedCheckout(supabase, bookingId);
 
     const prepared = await prepareBookingChapaPayment(supabase, user.id, bookingId);
 

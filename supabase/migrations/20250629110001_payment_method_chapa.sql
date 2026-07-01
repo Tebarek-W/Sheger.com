@@ -5,7 +5,9 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  IF lower(coalesce(NEW.payment_method, '')) IN ('chapa', 'telebirr', 'cbe_birr', 'card') THEN
+  IF NEW.payment_status = 'paid' THEN
+    NULL;
+  ELSIF lower(coalesce(NEW.payment_method, '')) IN ('chapa', 'telebirr', 'cbe_birr', 'card') THEN
     NEW.payment_status := 'awaiting_payment';
   ELSIF lower(coalesce(NEW.payment_method, '')) IN ('cash', 'free', '') THEN
     NEW.payment_status := 'not_required';

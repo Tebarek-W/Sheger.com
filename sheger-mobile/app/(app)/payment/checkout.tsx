@@ -102,6 +102,16 @@ function PaymentCheckoutContent() {
         } catch {
           // Payment may still be processing on Chapa's side.
         }
+      } else {
+        // Browser closed without redirect — payment may still have succeeded via webhook.
+        try {
+          setStatus("verifying");
+          setMessage(t("payment.checkout.verifying"));
+          await finishPaidBooking(paymentTxRef);
+          return;
+        } catch {
+          // Fall through to manual confirm UI.
+        }
       }
 
       setStatus("confirm");

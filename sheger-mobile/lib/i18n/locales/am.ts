@@ -223,6 +223,7 @@ export const am: TranslationTree = {
     bookingLimitTitle: "የሳምንት ቀጠሮ ገደብ ሊሞላ ነው",
     bookingLimitText: "{{used}} / {{max}} ቀጠሮዎች በዚህ ሳምንት።",
     pending: "በመጠባበቅ",
+    confirmed: "ተረጋግጧል",
     completed: "ተጠናቋል",
     revenue30d: "ብር (30 ቀን)",
     manage: "አስተዳድር",

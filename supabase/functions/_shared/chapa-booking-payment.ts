@@ -2,6 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1
 import {
   buildChapaCallbackUrl,
   buildChapaReturnUrl,
+  chapaCancel,
   chapaMode,
   sanitizeChapaText,
   splitFullName,
@@ -199,7 +200,7 @@ export async function findInitializedBookingTxn(
 ) {
   const { data: existingTxn } = await supabase
     .from("payment_transactions")
-    .select("tx_ref, status, metadata")
+    .select("tx_ref, status, metadata, chapa_subaccount_id, commission_rate, amount_etb")
     .eq("booking_id", bookingId)
     .eq("status", "initialized")
     .order("created_at", { ascending: false })
@@ -212,11 +213,90 @@ export async function findInitializedBookingTxn(
     checkout_url?: string;
     charge_type?: string;
     chapa_reference?: string;
+    payment_flow?: string;
   } | null;
 
   if (chargeType && meta?.charge_type && meta.charge_type !== chargeType) {
     return null;
   }
 
-  return { txRef: existingTxn.tx_ref, metadata: meta };
+  return {
+    txRef: existingTxn.tx_ref,
+    metadata: meta,
+    chapaSubaccountId: existingTxn.chapa_subaccount_id as string | null,
+    commissionRate: existingTxn.commission_rate != null
+      ? Number(existingTxn.commission_rate)
+      : null,
+    amountEtb: Number(existingTxn.amount_etb),
+  };
+}
+
+/**
+ * Reuse a hosted checkout only when payout account, amount, and commission
+ * still match what was sent to Chapa (per-transaction split override).
+ * @see https://developer.chapa.co/integrations/split-payment
+ */
+export async function findReusableHostedCheckout(
+  supabase: SupabaseClient,
+  bookingId: string,
+  businessId: string,
+  amount: number,
+) {
+  const txn = await findInitializedBookingTxn(supabase, bookingId);
+  const checkoutUrl = txn?.metadata?.checkout_url;
+  if (!txn || !checkoutUrl || txn.metadata?.payment_flow === "direct_charge") {
+    return null;
+  }
+
+  const { data: payout } = await supabase
+    .from("business_chapa_subaccounts")
+    .select("chapa_subaccount_id")
+    .eq("business_id", businessId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!payout?.chapa_subaccount_id || payout.chapa_subaccount_id !== txn.chapaSubaccountId) {
+    return null;
+  }
+
+  if (!Number.isFinite(txn.amountEtb) || txn.amountEtb !== amount) {
+    return null;
+  }
+
+  const { data: split, error: splitError } = await supabase.rpc("compute_booking_split", {
+    p_amount: amount,
+    p_business_id: businessId,
+  });
+  if (splitError) throw splitError;
+
+  const currentRate = Number((split as Record<string, unknown> | null)?.commission_rate);
+  if (!Number.isFinite(currentRate) || txn.commissionRate !== currentRate) {
+    return null;
+  }
+
+  return { txRef: txn.txRef, checkoutUrl };
+}
+
+/** Cancel stale initialized checkout before creating a new split payment. */
+export async function cancelStaleInitializedCheckout(
+  supabase: SupabaseClient,
+  bookingId: string,
+) {
+  const txn = await findInitializedBookingTxn(supabase, bookingId);
+  if (!txn?.metadata?.checkout_url) return;
+
+  try {
+    const result = await chapaCancel(txn.txRef);
+    if (!result.cancelled && !result.skipped) {
+      console.warn("cancelStaleInitializedCheckout:", txn.txRef, result.reason);
+    }
+  } catch (error) {
+    console.warn("cancelStaleInitializedCheckout:", txn.txRef, error);
+  }
+
+  await supabase
+    .from("payment_transactions")
+    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+    .eq("booking_id", bookingId)
+    .eq("status", "initialized");
 }

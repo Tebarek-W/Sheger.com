@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 
+import { DefaultCommissionSettings } from "@/components/admin/DefaultCommissionSettings";
 import {
   createSubscriptionPlan,
   deleteSubscriptionPlan,
@@ -9,10 +10,16 @@ import {
   updateSubscriptionPlan,
 } from "@/app/actions/admin";
 import { slugifyCategoryName } from "@/lib/categories";
+import {
+  commissionRateToPercentInput,
+  formatCommissionPercent,
+  parseCommissionPercentInput,
+} from "@/lib/commission";
 import type { SubscriptionPlan } from "@/lib/types/database";
 
 type PlanManagerProps = {
   plans: SubscriptionPlan[];
+  defaultCommissionRate: number;
 };
 
 type FormState = {
@@ -23,6 +30,7 @@ type FormState = {
   yearly_fee_etb: string;
   max_services: string;
   max_bookings_per_week: string;
+  commission_rate_percent: string;
   sort_order: string;
   is_featured_in_search: boolean;
 };
@@ -35,6 +43,7 @@ const emptyForm = (): FormState => ({
   yearly_fee_etb: "0",
   max_services: "10",
   max_bookings_per_week: "50",
+  commission_rate_percent: "10",
   sort_order: "",
   is_featured_in_search: false,
 });
@@ -48,6 +57,7 @@ function toForm(plan: SubscriptionPlan): FormState {
     yearly_fee_etb: String(plan.yearly_fee_etb),
     max_services: String(plan.max_services),
     max_bookings_per_week: String(plan.max_bookings_per_week),
+    commission_rate_percent: commissionRateToPercentInput(Number(plan.commission_rate)),
     sort_order: String(plan.sort_order),
     is_featured_in_search: plan.is_featured_in_search,
   };
@@ -62,12 +72,13 @@ function parseForm(form: FormState) {
     yearly_fee_etb: Number(form.yearly_fee_etb) || 0,
     max_services: Number(form.max_services) || 1,
     max_bookings_per_week: Number(form.max_bookings_per_week) || 1,
+    commission_rate: parseCommissionPercentInput(form.commission_rate_percent),
     sort_order: form.sort_order.trim() ? Number(form.sort_order) : undefined,
     is_featured_in_search: form.is_featured_in_search,
   };
 }
 
-export function PlanManager({ plans }: PlanManagerProps) {
+export function PlanManager({ plans, defaultCommissionRate }: PlanManagerProps) {
   const [addForm, setAddForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState>(emptyForm);
@@ -112,6 +123,8 @@ export function PlanManager({ plans }: PlanManagerProps) {
 
   return (
     <div className="mt-8 space-y-8">
+      <DefaultCommissionSettings defaultRate={defaultCommissionRate} />
+
       <form onSubmit={submitAdd} className="rounded-2xl border border-[var(--border)] bg-white p-6 space-y-4">
         <h2 className="text-lg font-semibold text-[var(--primary-dark)]">Add plan</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -189,6 +202,21 @@ export function PlanManager({ plans }: PlanManagerProps) {
               className="w-full rounded-xl border border-[var(--border)] px-4 py-2.5"
             />
           </label>
+          <label className="block space-y-1">
+            <span className="text-sm font-medium">Platform commission (%)</span>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.1}
+              required
+              value={addForm.commission_rate_percent}
+              onChange={(e) =>
+                setAddForm((prev) => ({ ...prev, commission_rate_percent: e.target.value }))
+              }
+              className="w-full rounded-xl border border-[var(--border)] px-4 py-2.5"
+            />
+          </label>
         </div>
         <label className="flex items-center gap-2 text-sm font-medium">
           <input
@@ -215,6 +243,7 @@ export function PlanManager({ plans }: PlanManagerProps) {
             <tr>
               <th className="px-4 py-3 font-semibold">Plan</th>
               <th className="px-4 py-3 font-semibold">Fees (mo / yr)</th>
+              <th className="px-4 py-3 font-semibold">Commission</th>
               <th className="px-4 py-3 font-semibold">Limits</th>
               <th className="px-4 py-3 font-semibold">Featured</th>
               <th className="px-4 py-3 font-semibold">Status</th>
@@ -225,7 +254,7 @@ export function PlanManager({ plans }: PlanManagerProps) {
             {plans.map((plan) => (
               <tr key={plan.id} className="border-b border-[var(--border)] last:border-0 align-top">
                 {editingId === plan.id ? (
-                  <td colSpan={6} className="px-4 py-4">
+                  <td colSpan={7} className="px-4 py-4">
                     <form onSubmit={submitEdit} className="space-y-4">
                       <div className="grid gap-4 sm:grid-cols-2">
                         <label className="block space-y-1">
@@ -311,6 +340,24 @@ export function PlanManager({ plans }: PlanManagerProps) {
                             className="w-full rounded-xl border border-[var(--border)] px-4 py-2.5"
                           />
                         </label>
+                        <label className="block space-y-1">
+                          <span className="text-sm font-medium">Platform commission (%)</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            required
+                            value={editForm.commission_rate_percent}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                commission_rate_percent: e.target.value,
+                              }))
+                            }
+                            className="w-full rounded-xl border border-[var(--border)] px-4 py-2.5"
+                          />
+                        </label>
                       </div>
                       <label className="flex items-center gap-2 text-sm font-medium">
                         <input
@@ -355,6 +402,9 @@ export function PlanManager({ plans }: PlanManagerProps) {
                     <td className="px-4 py-3">
                       {Number(plan.monthly_fee_etb).toLocaleString()} /{" "}
                       {Number(plan.yearly_fee_etb).toLocaleString()} ETB
+                    </td>
+                    <td className="px-4 py-3 font-medium text-[var(--primary-dark)]">
+                      {formatCommissionPercent(Number(plan.commission_rate))}
                     </td>
                     <td className="px-4 py-3">
                       {plan.max_services} services · {plan.max_bookings_per_week} bookings/wk

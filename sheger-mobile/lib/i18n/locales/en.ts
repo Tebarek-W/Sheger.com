@@ -154,7 +154,8 @@ export const en = {
       preparing: "Preparing secure checkout…",
       verifying: "Confirming your payment…",
       browserMessage: "Complete payment on Chapa's secure page.",
-      confirmHint: "If you finished paying on Chapa, tap Confirm payment below.",
+      confirmHint:
+        "Browser closed. If you finished paying on Chapa, tap Confirm payment to check status.",
       hostedTitle: "Chapa secure checkout",
       hostedText:
         "Chapa hosts the payment page. You will choose your wallet or bank there — Sheger does not recreate that screen.",
@@ -223,6 +224,7 @@ export const en = {
     bookingLimitTitle: "Weekly booking limit almost reached",
     bookingLimitText: "{{used}} / {{max}} bookings this week.",
     pending: "Pending",
+    confirmed: "Confirmed",
     completed: "Completed",
     revenue30d: "ETB (30d)",
     manage: "Manage",

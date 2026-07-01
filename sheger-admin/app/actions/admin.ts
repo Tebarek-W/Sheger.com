@@ -250,12 +250,20 @@ export type SubscriptionPlanInput = {
   yearly_fee_etb: number;
   max_services: number;
   max_bookings_per_week: number;
+  commission_rate: number;
   sort_order?: number;
   is_featured_in_search?: boolean;
 };
 
+function assertCommissionRate(rate: number) {
+  if (!Number.isFinite(rate) || rate < 0 || rate > 1) {
+    throw new Error("Commission rate must be between 0% and 100%");
+  }
+}
+
 function revalidatePlans() {
   revalidatePath("/dashboard/plans");
+  revalidatePath("/dashboard/payments");
 }
 
 export async function createSubscriptionPlan(input: SubscriptionPlanInput) {
@@ -270,6 +278,7 @@ export async function createSubscriptionPlan(input: SubscriptionPlanInput) {
   if (input.monthly_fee_etb < 0 || input.yearly_fee_etb < 0) {
     throw new Error("Fees must be >= 0");
   }
+  assertCommissionRate(input.commission_rate);
 
   const supabase = createAdminClient();
   let sortOrder = input.sort_order;
@@ -291,6 +300,7 @@ export async function createSubscriptionPlan(input: SubscriptionPlanInput) {
     yearly_fee_etb: input.yearly_fee_etb,
     max_services: input.max_services,
     max_bookings_per_week: input.max_bookings_per_week,
+    commission_rate: input.commission_rate,
     sort_order: sortOrder,
     is_active: true,
     is_featured_in_search: input.is_featured_in_search ?? false,
@@ -312,6 +322,7 @@ export async function updateSubscriptionPlan(planId: string, input: Subscription
   if (input.max_services < 1 || input.max_bookings_per_week < 1) {
     throw new Error("Limits must be at least 1");
   }
+  assertCommissionRate(input.commission_rate);
 
   const supabase = createAdminClient();
   const { error } = await supabase
@@ -324,6 +335,7 @@ export async function updateSubscriptionPlan(planId: string, input: Subscription
       yearly_fee_etb: input.yearly_fee_etb,
       max_services: input.max_services,
       max_bookings_per_week: input.max_bookings_per_week,
+      commission_rate: input.commission_rate,
       sort_order: input.sort_order ?? 0,
       is_featured_in_search: input.is_featured_in_search ?? false,
       updated_at: new Date().toISOString(),
@@ -363,6 +375,23 @@ export async function deleteSubscriptionPlan(planId: string) {
   }
 
   const { error } = await supabase.from("subscription_plans").delete().eq("id", planId);
+  if (error) throw error;
+  revalidatePlans();
+}
+
+export async function updateDefaultBookingCommissionRate(commissionRate: number) {
+  await requireAdmin();
+  assertCommissionRate(commissionRate);
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("platform_settings")
+    .update({
+      default_booking_commission_rate: commissionRate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
   if (error) throw error;
   revalidatePlans();
 }

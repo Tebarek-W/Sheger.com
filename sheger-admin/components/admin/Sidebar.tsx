@@ -11,7 +11,7 @@ const links = [
   { href: "/dashboard/businesses", label: "Businesses" },
   { href: "/dashboard/categories", label: "Categories" },
   { href: "/dashboard/bookings", label: "Bookings" },
-  { href: "/dashboard/payments", label: "Booking payments" },
+  { href: "/dashboard/payments", label: "Commissions" },
   { href: "/dashboard/plans", label: "Subscription plans" },
   { href: "/dashboard/reports", label: "Reports" },
 ];

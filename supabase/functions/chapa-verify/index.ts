@@ -1,6 +1,7 @@
 import { finalizeVerifiedPayment } from "../_shared/finalize-payment.ts";
 import {
   adminClient,
+  formatEdgeError,
   handleCors,
   jsonResponse,
   requireUser,
@@ -38,7 +39,9 @@ Deno.serve(async (req) => {
       .eq("tx_ref", txRef)
       .single();
 
-    if (txnError) throw txnError;
+    if (txnError) {
+      return jsonResponse({ error: formatEdgeError(txnError, "Payment lookup failed") }, 500);
+    }
     if (!txn?.booking_id) return jsonResponse({ error: "Payment not found" }, 404);
 
     const metadata = txn.metadata as { customer_id?: string } | null;
@@ -87,8 +90,8 @@ Deno.serve(async (req) => {
 
     return jsonResponse(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("chapa-verify:", message);
+    const message = formatEdgeError(error);
+    console.error("chapa-verify:", message, error);
     return jsonResponse({ error: message }, 500);
   }
 });

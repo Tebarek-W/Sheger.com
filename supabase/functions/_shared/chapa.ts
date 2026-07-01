@@ -178,6 +178,11 @@ export async function chapaInitialize(
     throw new Error(formatChapaApiError(body, `Chapa initialize failed (${res.status})`));
   }
 
+  const status = String(body?.status ?? "success").trim().toLowerCase();
+  if (status !== "success") {
+    throw new Error(formatChapaApiError(body, "Chapa initialize failed"));
+  }
+
   const checkoutUrl = body?.data?.checkout_url;
   if (!checkoutUrl) {
     throw new Error("Chapa did not return a checkout URL");
@@ -279,6 +284,11 @@ export async function chapaCreateSubaccount(
   const body = await res.json();
   if (!res.ok) {
     throw new Error(formatChapaApiError(body, `Chapa subaccount failed (${res.status})`));
+  }
+
+  const status = String(body?.status ?? "success").trim().toLowerCase();
+  if (status !== "success") {
+    throw new Error(formatChapaApiError(body, "Chapa subaccount failed"));
   }
 
   const id = body?.data?.id ?? body?.data?.subaccount_id ?? body?.id;

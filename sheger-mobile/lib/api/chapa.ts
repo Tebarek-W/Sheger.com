@@ -1,4 +1,8 @@
-import { readSupabaseFunctionError } from "@/lib/errors";
+import {
+  formatUnknownError,
+  readSupabaseFunctionError,
+  readSupabaseFunctionResponseBody,
+} from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 
 type ChapaDirectChargeResponse = {
@@ -50,18 +54,64 @@ type ChapaCancelResponse = {
   error?: string;
 };
 
+function coerceChapaStatus(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim().toLowerCase();
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value).toLowerCase();
+  }
+  return null;
+}
+
 function throwVerifyPaymentFailure(data: ChapaVerifyResponse | null | undefined): never {
-  const status = data?.chapa_status ?? data?.status;
+  const status =
+    coerceChapaStatus(data?.chapa_status) ?? coerceChapaStatus(data?.status);
+
   if (status === "pending") {
     throw new Error("Payment is still processing. Try again in a moment.");
   }
   if (status === "cancelled") {
     throw new Error("This payment was cancelled.");
   }
-  if (typeof data?.error === "string" && data.error.trim()) {
-    throw new Error(data.error.trim());
+  if (status === "failed") {
+    throw new Error(
+      "Payment not completed. Finish paying on Chapa or open checkout again.",
+    );
   }
-  throw new Error(status ? `Payment ${status}` : "Payment not completed");
+
+  if (data?.error) {
+    const formatted = formatUnknownError(data.error, "");
+    if (formatted && formatted !== "[object Object]") {
+      throw new Error(formatted);
+    }
+  }
+
+  throw new Error(
+    status
+      ? `Payment ${status}`
+      : "Payment not completed. Finish paying on Chapa or open checkout again.",
+  );
+}
+
+function asVerifyResponse(value: unknown): ChapaVerifyResponse | null {
+  if (!value || typeof value !== "object" || !("ok" in value)) {
+    return null;
+  }
+  return value as ChapaVerifyResponse;
+}
+
+async function resolveVerifyResponse(
+  data: ChapaVerifyResponse | null,
+  error: unknown,
+): Promise<ChapaVerifyResponse | null> {
+  const fromData = asVerifyResponse(data);
+  if (fromData) return fromData;
+
+  if (!error) return null;
+
+  const body = await readSupabaseFunctionResponseBody(error);
+  return asVerifyResponse(body);
 }
 
 export async function initializeChapaBookingPayment(bookingId: string) {
@@ -118,13 +168,14 @@ export async function verifyChapaPayment(txRef: string) {
     { body: { txRef } },
   );
 
-  if (data?.ok) {
-    return data;
+  const response = await resolveVerifyResponse(data, error);
+
+  if (response?.ok) {
+    return response;
   }
 
-  // chapa-verify returns 402/202 with payment state in the JSON body.
-  if (data && typeof data === "object" && "ok" in data) {
-    throwVerifyPaymentFailure(data);
+  if (response) {
+    throwVerifyPaymentFailure(response);
   }
 
   if (error) {
