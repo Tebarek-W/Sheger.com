@@ -35,7 +35,9 @@ const CHART_COLORS = {
   users: "#16a34a",
   businesses: "#0d9488",
   bookings: "#2563eb",
-  revenue: "#ca8a04",
+  completedGross: "#ca8a04",
+  paidGross: "#7c3aed",
+  commission: "#0f766e",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -99,11 +101,29 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="New users" value={String(totals.users)} hint={periodLabel} />
-        <StatCard label="New businesses" value={String(totals.businesses)} hint={periodLabel} />
-        <StatCard label="Bookings" value={String(totals.bookings)} hint={periodLabel} />
-        <StatCard label="Revenue" value={formatEtb(totals.revenue)} hint="Completed bookings" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard label="New users" value={String(totals.users)} hint="Account signups" />
+        <StatCard label="New businesses" value={String(totals.businesses)} hint="Registrations" />
+        <StatCard
+          label="Bookings"
+          value={String(totals.bookings)}
+          hint="By appointment date"
+        />
+        <StatCard
+          label="Completed gross"
+          value={formatEtb(totals.completedGrossRevenue)}
+          hint="Completed bookings · appointment date"
+        />
+        <StatCard
+          label="Paid gross"
+          value={formatEtb(totals.paidGrossRevenue)}
+          hint="Settled payments · settlement date"
+        />
+        <StatCard
+          label="Commission"
+          value={formatEtb(totals.platformCommission)}
+          hint="Platform share · settlement date"
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
@@ -197,7 +217,10 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <ChartCard title="Revenue trend" subtitle={`Completed bookings · ${periodLabel}`}>
+        <ChartCard
+          title="Completed gross trend"
+          subtitle={`Completed bookings · appointment date · ${periodLabel}`}
+        >
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -212,48 +235,90 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
                 labelStyle={{ color: "#14532d" }}
               />
               <Bar
-                dataKey="revenue"
-                name="Revenue"
-                fill={CHART_COLORS.revenue}
+                dataKey="completedGrossRevenue"
+                name="Completed gross"
+                fill={CHART_COLORS.completedGross}
                 radius={[8, 8, 0, 0]}
               />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Top businesses" subtitle="By booking count (all time)">
-          {data.topBusinesses.length ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={data.topBusinesses}
-                layout="vertical"
-                margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={110}
-                  tick={{ fontSize: 11, fill: "#6b7280" }}
-                />
-                <Tooltip />
-                <Bar dataKey="bookings" name="Bookings" fill={CHART_COLORS.users} radius={[0, 8, 8, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <EmptyChart />
-          )}
+        <ChartCard
+          title="Settled payments"
+          subtitle={`Paid gross and commission · settlement date · ${periodLabel}`}
+        >
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: "#6b7280" }}
+                interval="preserveStartEnd"
+              />
+              <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} />
+              <Tooltip
+                formatter={(value) => formatEtb(Number(value ?? 0))}
+                labelStyle={{ color: "#14532d" }}
+              />
+              <Legend />
+              <Bar
+                dataKey="paidGrossRevenue"
+                name="Paid gross"
+                fill={CHART_COLORS.paidGross}
+                radius={[8, 8, 0, 0]}
+              />
+              <Bar
+                dataKey="platformCommission"
+                name="Commission"
+                fill={CHART_COLORS.commission}
+                radius={[8, 8, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
         </ChartCard>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <ChartCard title="Top businesses" subtitle="By booking count (all time)">
+        {data.topBusinesses.length ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={data.topBusinesses}
+              layout="vertical"
+              margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={110}
+                tick={{ fontSize: 11, fill: "#6b7280" }}
+              />
+              <Tooltip />
+              <Bar dataKey="bookings" name="Bookings" fill={CHART_COLORS.users} radius={[0, 8, 8, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <EmptyChart />
+        )}
+      </ChartCard>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryTile label="Total users" value={String(data.summary.users)} />
         <SummaryTile label="Total businesses" value={String(data.summary.businesses)} />
-        <SummaryTile label="Pending approval" value={String(data.summary.pendingBusinesses)} />
         <SummaryTile label="Total bookings" value={String(data.summary.bookings)} />
-        <SummaryTile label="Total revenue" value={formatEtb(data.summary.revenue)} />
-        <SummaryTile label="Categories" value={String(data.summary.categories)} />
+        <SummaryTile label="Paid bookings" value={String(data.summary.paidBookings)} />
+        <SummaryTile
+          label="Completed gross"
+          value={formatEtb(data.summary.completedGrossRevenue)}
+        />
+        <SummaryTile label="Paid gross" value={formatEtb(data.summary.paidGrossRevenue)} />
+        <SummaryTile
+          label="Platform commission"
+          value={formatEtb(data.summary.platformCommission)}
+        />
+        <SummaryTile label="Pending approval" value={String(data.summary.pendingBusinesses)} />
       </div>
     </div>
   );

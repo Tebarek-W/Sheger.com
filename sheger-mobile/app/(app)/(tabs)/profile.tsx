@@ -79,6 +79,14 @@ export default function ProfileScreen() {
 
         <Pressable
           style={styles.menuItem}
+          onPress={() => router.push("/(app)/edit-profile")}
+        >
+          <Text style={styles.menuLabel}>{t("profile.editProfile")}</Text>
+          <Text style={styles.menuChevron}>›</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.menuItem}
           onPress={() => router.push("/(app)/(tabs)/bookings")}
         >
           <Text style={styles.menuLabel}>{t("profile.myBookings")}</Text>

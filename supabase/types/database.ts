@@ -81,6 +81,7 @@ export type Database = {
         Row: {
           booking_id: string
           business_id: string
+          chapa_subaccount_id: string | null
           commission_amount_etb: number
           commission_rate: number
           created_at: string
@@ -93,6 +94,7 @@ export type Database = {
         Insert: {
           booking_id: string
           business_id: string
+          chapa_subaccount_id?: string | null
           commission_amount_etb: number
           commission_rate: number
           created_at?: string
@@ -105,6 +107,7 @@ export type Database = {
         Update: {
           booking_id?: string
           business_id?: string
+          chapa_subaccount_id?: string | null
           commission_amount_etb?: number
           commission_rate?: number
           created_at?: string
@@ -756,6 +759,7 @@ export type Database = {
         Row: {
           amount_etb: number
           booking_id: string | null
+          business_id: string | null
           chapa_mode: string
           chapa_reference: string | null
           chapa_subaccount_id: string | null
@@ -776,6 +780,7 @@ export type Database = {
         Insert: {
           amount_etb: number
           booking_id?: string | null
+          business_id?: string | null
           chapa_mode?: string
           chapa_reference?: string | null
           chapa_subaccount_id?: string | null
@@ -796,6 +801,7 @@ export type Database = {
         Update: {
           amount_etb?: number
           booking_id?: string | null
+          business_id?: string | null
           chapa_mode?: string
           chapa_reference?: string | null
           chapa_subaccount_id?: string | null
@@ -819,6 +825,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -1315,12 +1328,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_business_subscription: {
+        Args: {
+          p_amount?: number
+          p_billing_interval: Database["public"]["Enums"]["billing_interval"]
+          p_business_id: string
+          p_payment_method: string
+          p_plan_id: string
+          p_reference_code?: string
+          p_source: Database["public"]["Enums"]["subscription_payment_source"]
+        }
+        Returns: Json
+      }
       addis_week_bounds: {
         Args: never
         Returns: {
           week_end: string
           week_start: string
         }[]
+      }
+      booking_gross_etb: {
+        Args: {
+          p_final_price: number
+          p_listed_price: number
+          p_listed_price_min: number
+          p_service_price: number
+        }
+        Returns: number
       }
       business_active_service_count: {
         Args: { p_business_id: string }
@@ -1411,6 +1445,7 @@ export type Database = {
         Args: { p_period: string }
         Returns: Json
       }
+      get_admin_payments_snapshot: { Args: never; Returns: Json }
       get_admin_reports_snapshot: { Args: never; Returns: Json }
       get_business_commission_rate: {
         Args: { p_business_id: string }
@@ -1533,6 +1568,18 @@ export type Database = {
         Returns: Json
       }
       mark_subscriptions_past_due: { Args: never; Returns: number }
+      normalize_contact_email: { Args: { p_email: string }; Returns: string }
+      normalize_ethiopian_mobile: { Args: { p_phone: string }; Returns: string }
+      platform_booking_status_counts: { Args: never; Returns: Json }
+      platform_paid_financial_totals: {
+        Args: { p_since?: string }
+        Returns: {
+          owner_net_revenue: number
+          paid_bookings: number
+          paid_gross_revenue: number
+          platform_commission: number
+        }[]
+      }
       record_subscription_payment: {
         Args: {
           p_billing_interval: Database["public"]["Enums"]["billing_interval"]
@@ -1598,7 +1645,7 @@ export type Database = {
       reminder_kind: "24h" | "1h"
       service_duration_model: "fixed" | "estimated" | "flexible"
       service_pricing_model: "fixed" | "starting_from" | "range" | "variable"
-      subscription_payment_source: "mock" | "admin_manual"
+      subscription_payment_source: "mock" | "admin_manual" | "chapa"
       subscription_status: "trialing" | "active" | "past_due" | "cancelled"
       transaction_status: "pending" | "succeeded" | "failed" | "refunded"
       transaction_type:
@@ -1780,7 +1827,7 @@ export const Constants = {
       reminder_kind: ["24h", "1h"],
       service_duration_model: ["fixed", "estimated", "flexible"],
       service_pricing_model: ["fixed", "starting_from", "range", "variable"],
-      subscription_payment_source: ["mock", "admin_manual"],
+      subscription_payment_source: ["mock", "admin_manual", "chapa"],
       subscription_status: ["trialing", "active", "past_due", "cancelled"],
       transaction_status: ["pending", "succeeded", "failed", "refunded"],
       transaction_type: [
@@ -1794,48 +1841,3 @@ export const Constants = {
     },
   },
 } as const
-
-/** Convenience row/enum aliases used by sheger-admin and sheger-mobile. */
-export type Profile = Tables<"profiles">
-export type Business = Tables<"businesses">
-export type Category = Tables<"categories">
-export type Employee = Tables<"employees">
-export type Service = Tables<"services">
-export type Booking = Tables<"bookings">
-export type Review = Tables<"reviews">
-export type WorkingHours = Tables<"working_hours">
-export type AppointmentSlot = Tables<"appointment_slots">
-export type BusinessDocument = Tables<"business_documents">
-export type SubscriptionPlan = Tables<"subscription_plans">
-export type SubscriptionPayment = Tables<"subscription_payments">
-export type BusinessSubscription = Tables<"business_subscriptions">
-
-export type UserRole = Enums<"user_role">
-export type BusinessStatus = Enums<"business_status">
-export type BookingStatus = Enums<"booking_status">
-export type BookingPaymentStatus = Enums<"booking_payment_status">
-export type BusinessDocumentStatus = Enums<"business_document_status">
-export type BusinessDocumentType = Enums<"business_document_type">
-export type BillingInterval = Enums<"billing_interval">
-export type ServiceDurationModel = Enums<"service_duration_model">
-export type ServicePricingModel = Enums<"service_pricing_model">
-
-/** JSON shape returned by get_subscription_summary RPC. */
-export type SubscriptionSummary = {
-  subscription: BusinessSubscription | null
-  current_plan: SubscriptionPlan | null
-  plans: SubscriptionPlan[]
-  platform: {
-    currency: string
-    grace_period_days: number
-  }
-  limits: {
-    max_services: number
-    max_bookings_per_week: number
-  }
-  usage: {
-    active_services: number
-    weekly_bookings: number
-  }
-  is_marketplace_live: boolean
-}

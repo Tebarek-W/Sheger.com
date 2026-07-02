@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
+import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { createEmployee, fetchMyEmployees, updateEmployee } from "@/lib/api/owner";
@@ -96,13 +97,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 16,
-    gap: 12,
-    marginBottom: 24,
+    padding: ownerLayout.cardPadding,
+    gap: ownerLayout.cardGap,
+    marginBottom: ownerLayout.sectionGap,
   },
   addTitle: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.primaryDarker, marginBottom: 12 },
-  list: { gap: 10, paddingBottom: 24 },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.primaryDarker,
+    marginBottom: ownerLayout.sectionTitleBottom,
+  },
+  list: { gap: ownerLayout.listGap, paddingBottom: ownerLayout.bottomPadding },
   item: {
     flexDirection: "row",
     alignItems: "center",
@@ -111,7 +117,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
+    padding: ownerLayout.cardPadding,
   },
   itemInfo: { flex: 1, gap: 4 },
   itemName: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },

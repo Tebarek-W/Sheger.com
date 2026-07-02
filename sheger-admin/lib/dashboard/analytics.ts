@@ -4,6 +4,7 @@ import { getSessionProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 import type { DashboardAnalytics } from "./analytics-shared";
+import { normalizeDashboardAnalytics } from "./analytics-shared";
 
 export type {
   DashboardAnalytics,
@@ -11,7 +12,11 @@ export type {
   TimeSeriesPoint,
   TopBusinessRow,
 } from "./analytics-shared";
-export { formatEtb, periodTotals } from "./analytics-shared";
+export {
+  formatEtb,
+  normalizeDashboardAnalytics,
+  periodTotals,
+} from "./analytics-shared";
 
 export async function fetchDashboardAnalytics(): Promise<DashboardAnalytics | null> {
   const { isAdmin } = await getSessionProfile();
@@ -20,5 +25,5 @@ export async function fetchDashboardAnalytics(): Promise<DashboardAnalytics | nu
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_admin_dashboard_snapshot");
   if (error) throw error;
-  return data as DashboardAnalytics | null;
+  return normalizeDashboardAnalytics(data);
 }

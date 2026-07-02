@@ -84,6 +84,13 @@ export const am: TranslationTree = {
     memberSince: "አባል ከ",
     myBookings: "የእኔ ቀጠሮዎች",
     searchServices: "አገልግሎቶችን ፈልግ",
+    editProfile: "መገለጫ አርትዕ",
+    editTitle: "መገለጫ አርትዕ",
+    editHint: "ስም፣ ስልክ እና ኢሜይልዎን ያዘምኑ። ኢሜይል ሲቀየር ማረጋገጫ ሊፈለግ ይችላል።",
+    saveChanges: "ለውጦችን አስቀምጥ",
+    editSaved: "መገለጫዎ ተዘምኗል።",
+    editEmailConfirm: "መገለጫ ተቀምጧል። አዲሱን ኢሜይል ለማረጋገጥ የገቢ ሳጥንዎን ይመልከቱ።",
+    editFailed: "መገለጫ ማስቀመጥ አልተሳካም",
   },
   bookings: {
     title: "የእኔ ቀጠሮዎች",

@@ -38,6 +38,7 @@ export default function AppLayout() {
       <Stack.Screen name="confirmation" />
       <Stack.Screen name="category/[slug]" />
       <Stack.Screen name="notifications" />
+      <Stack.Screen name="edit-profile" />
     </Stack>
   );
 }

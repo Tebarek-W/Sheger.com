@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
+import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchOwnerStats } from "@/lib/api/owner";
@@ -83,14 +84,14 @@ export default function OwnerReportsScreen() {
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: "row", gap: 12, marginBottom: 12 },
+  grid: { flexDirection: "row", gap: ownerLayout.cardGap, marginBottom: ownerLayout.sectionGap },
   statCard: {
     flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 16,
+    padding: ownerLayout.cardPadding,
     gap: 6,
   },
   statLabel: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
@@ -102,20 +103,20 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 12,
+    padding: ownerLayout.cardPadding,
     alignItems: "center",
     gap: 4,
   },
   miniValue: { fontSize: 20, fontWeight: "800", color: colors.primary },
   miniLabel: { fontSize: 11, color: colors.textMuted, fontWeight: "600" },
   sectionTitle: {
-    marginTop: 20,
-    marginBottom: 12,
+    marginTop: ownerLayout.sectionGap,
+    marginBottom: ownerLayout.sectionTitleBottom,
     fontSize: 18,
     fontWeight: "700",
     color: colors.primaryDarker,
   },
-  bars: { gap: 12, paddingBottom: 24 },
+  bars: { gap: ownerLayout.listGap, paddingBottom: ownerLayout.bottomPadding },
   barRow: { gap: 6 },
   barHeader: { flexDirection: "row", justifyContent: "space-between" },
   barLabel: { fontSize: 14, fontWeight: "600", color: colors.primaryDarker, textTransform: "capitalize" },

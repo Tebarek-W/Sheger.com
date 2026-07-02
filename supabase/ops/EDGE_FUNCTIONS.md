@@ -15,6 +15,7 @@ supabase functions deploy check-subscription-expiry
 supabase functions deploy send-push-queue
 supabase functions deploy expire-unpaid-bookings
 supabase functions deploy chapa-initialize
+supabase functions deploy chapa-subscription-initialize
 supabase functions deploy chapa-verify
 supabase functions deploy chapa-cancel
 supabase functions deploy chapa-callback
@@ -40,7 +41,7 @@ supabase secrets set CHAPA_MODE=test
 
 | Function | `verify_jwt` | Why |
 |----------|--------------|-----|
-| `chapa-initialize`, `chapa-verify`, `chapa-cancel` | default (true) | User JWT required |
+| `chapa-initialize`, `chapa-subscription-initialize`, `chapa-verify`, `chapa-cancel` | default (true) | User JWT required |
 | `chapa-banks`, `chapa-subaccount` | default (true) | Owner JWT for payout setup |
 | `chapa-charge`, `chapa-authorize` | default (true) | Customer JWT for direct charge checkout |
 | `booking-notifications` | false | Database webhook |
@@ -136,6 +137,19 @@ Per [Accept Payment](https://developer.chapa.co/integrations/accept-payments):
 The payment method UI is **hosted by Chapa**, not recreated in Sheger. In **test mode**, Chapa's hosted page may show a simplified **Pay with Test Mode** button; the full method list appears in **live mode**.
 
 `chapa-charge` / `chapa-authorize` (Direct Charge) remain deployed for optional future use but are not the default customer path.
+
+### Subscription payment (hosted checkout — owner mobile)
+
+Paid business subscription plans use the same hosted checkout rails as bookings, but the subscription fee is **100% to Sheger** so **no subaccount split** is sent.
+
+| Step | Where | What happens |
+|------|-------|----------------|
+| 1 | Owner billing screen | Owner picks a paid plan + interval and taps **Continue to payment** (free plans activate instantly via `record_subscription_payment`) |
+| 2 | `chapa-subscription-initialize` | Server verifies ownership + plan, calls `POST /v1/transaction/initialize` **without** `subaccounts`, stores a `payment_transactions` row (`purpose = 'subscription'`, `business_id`, `metadata.plan_id/billing_interval`), returns `checkout_url` |
+| 3 | `(owner)/billing/checkout` | App opens `checkout_url` in the in-app browser |
+| 4 | `chapa-return` / `chapa-callback` | Same generic handlers as bookings → `finalizeVerifiedPayment(tx_ref)` |
+| 5 | `finalize_chapa_payment` | Subscription branch calls `activate_business_subscription(..., source => 'chapa')`, writing `subscription_payments` and extending the period (idempotent) |
+| 6 | `chapa-verify` | Purpose-aware: authorizes by business owner for subscription txns and confirms activation after browser return |
 
 ## Checklist (new environment)
 

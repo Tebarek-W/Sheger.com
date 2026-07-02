@@ -1,6 +1,7 @@
 import { buildDefaultWorkingHours } from "@/lib/business/default-working-hours";
 import { supabase } from "@/lib/supabase";
 import { getBookingRevenueAmount } from "@/lib/services/pricing";
+import { normalizeEmail, normalizeEthiopianMobile } from "@/lib/validation/contact";
 import type {
   Booking,
   BookingStatus,
@@ -94,6 +95,9 @@ export async function fetchMyBusinesses(ownerId: string) {
 }
 
 export async function createBusiness(input: CreateBusinessInput) {
+  const phone = normalizeEthiopianMobile(input.phone) || null;
+  const email = normalizeEmail(input.email) || null;
+
   const { data, error } = await supabase
     .from("businesses")
     .insert({
@@ -103,8 +107,8 @@ export async function createBusiness(input: CreateBusinessInput) {
       description: input.description ?? null,
       address: input.address ?? null,
       city: input.city ?? "Addis Ababa",
-      phone: input.phone ?? null,
-      email: input.email ?? null,
+      phone,
+      email,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
       status: "pending",
@@ -123,6 +127,9 @@ export async function updateBusiness(
   businessId: string,
   input: Partial<CreateBusinessInput>,
 ) {
+  const phone = normalizeEthiopianMobile(input.phone) || null;
+  const email = normalizeEmail(input.email) || null;
+
   const { data, error } = await supabase
     .from("businesses")
     .update({
@@ -131,8 +138,8 @@ export async function updateBusiness(
       description: input.description ?? null,
       address: input.address ?? null,
       city: input.city ?? "Addis Ababa",
-      phone: input.phone ?? null,
-      email: input.email ?? null,
+      phone,
+      email,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
     })
@@ -452,13 +459,9 @@ async function fetchOwnerStatsDirect(businessId: string): Promise<OwnerStats> {
     const status = booking.status as BookingStatus;
     byStatus[status] = (byStatus[status] ?? 0) + 1;
 
-    if (status !== "completed") continue;
+    if (status !== "completed" || booking.payment_status !== "paid") continue;
 
-    const gross = getBookingRevenueAmount(booking);
-    const ownerNet =
-      booking.payment_status === "paid"
-        ? ownerNetByBooking.get(booking.id) ?? gross
-        : gross;
+    const ownerNet = ownerNetByBooking.get(booking.id) ?? 0;
 
     totalRevenue += ownerNet;
 

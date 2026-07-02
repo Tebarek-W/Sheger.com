@@ -14,6 +14,8 @@ import { DualDateTime } from "@/components/ui/DualDateTime";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
+import { Screen } from "@/components/ui/Screen";
+import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
@@ -136,11 +138,12 @@ export default function OwnerBookingsScreen() {
 
   return (
     <>
-      <FlatList
-        data={bookings ?? []}
-        keyExtractor={(item) => item.id}
-        style={styles.listScreen}
-        contentContainerStyle={styles.list}
+      <Screen style={styles.screen}>
+        <FlatList
+          data={bookings ?? []}
+          keyExtractor={(item) => item.id}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <>
             <Header title="Bookings" subtitle="Manage incoming appointments" showBack />
@@ -209,7 +212,8 @@ export default function OwnerBookingsScreen() {
             </View>
           );
         }}
-      />
+        />
+      </Screen>
 
       <Modal
         visible={Boolean(completingBooking)}
@@ -255,17 +259,18 @@ export default function OwnerBookingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  refresh: { marginBottom: 16 },
+  screen: { flex: 1 },
+  refresh: { marginBottom: ownerLayout.blockGap },
   refreshText: { color: colors.primary, fontWeight: "600", fontSize: 14 },
-  listScreen: { flex: 1 },
-  list: { gap: 12, paddingBottom: 24 },
+  list: { flex: 1 },
+  listContent: { gap: ownerLayout.listGap, paddingBottom: ownerLayout.bottomPadding },
   card: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 16,
-    gap: 8,
+    padding: ownerLayout.cardPadding,
+    gap: ownerLayout.blockGap / 2,
   },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
   customerBlock: { flex: 1, gap: 2 },
@@ -273,7 +278,7 @@ const styles = StyleSheet.create({
   customerPhone: { fontSize: 12, color: colors.textSecondary },
   status: { fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
   service: { fontSize: 14, color: colors.primary, fontWeight: "600" },
-  actions: { flexDirection: "row", gap: 10, marginTop: 8 },
+  actions: { flexDirection: "row", gap: ownerLayout.listGap, marginTop: ownerLayout.blockGap / 2 },
   actionBtn: {
     flex: 1,
     backgroundColor: colors.primary,
@@ -296,15 +301,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
-    padding: 24,
+    padding: ownerLayout.sectionGap,
   },
   modalCard: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,
-    padding: 20,
-    gap: 12,
+    padding: ownerLayout.screenPadding,
+    gap: ownerLayout.cardGap,
   },
   modalTitle: { fontSize: 18, fontWeight: "700", color: colors.primaryDarker },
   modalText: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 4 },
+  modalActions: { flexDirection: "row", gap: ownerLayout.listGap, marginTop: 4 },
 });

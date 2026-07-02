@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
+import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
@@ -291,9 +292,9 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    marginBottom: 8,
+    marginBottom: ownerLayout.blockGap / 2,
   },
-  dayTabs: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 14 },
+  dayTabs: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: ownerLayout.cardPadding },
   dayTab: {
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -313,14 +314,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
-    gap: 12,
-    marginBottom: 14,
+    padding: ownerLayout.cardPadding,
+    gap: ownerLayout.cardGap,
+    marginBottom: ownerLayout.cardPadding,
   },
   cardTitle: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
   cardHint: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
   toggle: { fontSize: 12, fontWeight: "600", color: colors.primary },
-  times: { flexDirection: "column", gap: 14 },
+  times: { flexDirection: "column", gap: ownerLayout.cardPadding },
   timeField: { gap: 4 },
   emptySlots: { fontSize: 13, color: colors.textMuted, fontStyle: "italic" },
   slotRow: {
@@ -329,19 +330,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: colors.screenBg,
     borderRadius: radius.md,
-    padding: 12,
-    gap: 10,
+    padding: ownerLayout.cardPadding,
+    gap: ownerLayout.listGap,
   },
   slotInfo: { flex: 1, gap: 4 },
   capacity: { fontSize: 11, color: colors.textSecondary },
   deleteBtn: { padding: 6 },
   deleteText: { fontSize: 12, fontWeight: "600", color: colors.error },
   addSlot: {
-    marginTop: 8,
-    paddingTop: 12,
+    marginTop: ownerLayout.blockGap / 2,
+    paddingTop: ownerLayout.cardGap,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
-    gap: 10,
+    gap: ownerLayout.listGap,
   },
   addLabel: { fontSize: 13, fontWeight: "600", color: colors.text },
 });

@@ -11,6 +11,12 @@ import { useI18n } from "@/hooks/useI18n";
 import { getErrorMessage } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 import type { UserRole } from "@/lib/types/database";
+import {
+  isValidEmail,
+  isValidEthiopianMobile,
+  normalizeEmail,
+  normalizeEthiopianMobile,
+} from "@/lib/validation/contact";
 
 export default function SignupScreen() {
   const { t } = useI18n();
@@ -21,19 +27,42 @@ export default function SignupScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const onChangePhone = (value: string) => {
+    const sanitized = value.replace(/[^\d+]/g, "");
+    const clamped = sanitized.startsWith("+") ? sanitized.slice(0, 13) : sanitized.slice(0, 10);
+    setPhone(clamped);
+  };
+
   const onSignup = async () => {
     if (!fullName || !email || !password) {
       Alert.alert(t("auth.missingFields"), t("auth.fillNameEmailPassword"));
       return;
     }
+
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPhone = normalizeEthiopianMobile(phone);
+
+    if (!isValidEmail(normalizedEmail)) {
+      Alert.alert(t("auth.signUpFailed"), "Enter a valid email address.");
+      return;
+    }
+
+    if (phone.trim() && !isValidEthiopianMobile(phone)) {
+      Alert.alert(
+        t("auth.signUpFailed"),
+        "Enter a valid Ethiopian mobile number like 09xxxxxxxx, 07xxxxxxxx, or +2519xxxxxxxx.",
+      );
+      return;
+    }
+
     setLoading(true);
     const { error } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: {
         data: {
-          full_name: fullName,
-          phone,
+          full_name: fullName.trim(),
+          phone: normalizedPhone,
           role: accountType satisfies UserRole,
         },
       },
@@ -99,9 +128,10 @@ export default function SignupScreen() {
           <Input
             label={t("auth.phone")}
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={onChangePhone}
             placeholder={t("auth.phonePlaceholder")}
             keyboardType="phone-pad"
+            maxLength={13}
           />
           <Input
             label={t("auth.email")}

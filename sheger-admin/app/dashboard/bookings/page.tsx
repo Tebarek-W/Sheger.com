@@ -28,6 +28,7 @@ export default async function BookingsPage() {
               <th className="px-4 py-3 font-semibold">Service</th>
               <th className="px-4 py-3 font-semibold">When</th>
               <th className="px-4 py-3 font-semibold">Status</th>
+              <th className="px-4 py-3 font-semibold">Payment</th>
             </tr>
           </thead>
           <tbody>
@@ -53,6 +54,9 @@ export default async function BookingsPage() {
                 </td>
                 <td className="px-4 py-3">
                   <StatusBadge status={booking.status} />
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={booking.payment_status ?? "unknown"} />
                 </td>
               </tr>
             ))}

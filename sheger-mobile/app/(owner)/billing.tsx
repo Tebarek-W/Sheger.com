@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
+import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
@@ -14,13 +16,6 @@ import {
 } from "@/lib/api/subscription";
 import { getErrorMessage } from "@/lib/errors";
 import type { BillingInterval, SubscriptionPlan } from "@/lib/types/database";
-
-const PAYMENT_METHODS = [
-  { id: "telebirr", label: "Telebirr", desc: "Pay with mobile money", icon: "📱", color: "#e4f5e4" },
-  { id: "cbe_birr", label: "CBE Birr", desc: "Commercial Bank of Ethiopia", icon: "🏦", color: "#e6f1fb" },
-  { id: "cash", label: "Cash", desc: "Pay in person / bank deposit", icon: "💵", color: "#faeeda" },
-  { id: "card", label: "Bank card", desc: "Visa / Mastercard", icon: "💳", color: "#eeedfe" },
-];
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -40,7 +35,6 @@ export default function OwnerBillingScreen() {
   const queryClient = useQueryClient();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [interval, setInterval] = useState<BillingInterval>("monthly");
-  const [method, setMethod] = useState("telebirr");
   const submittingRef = useRef(false);
 
   const { data: summary, isLoading } = useQuery({
@@ -72,23 +66,14 @@ export default function OwnerBillingScreen() {
   const selectedAmount = selectedPlan ? planPrice(selectedPlan, interval) : 0;
   const isPaidPlan = selectedAmount > 0;
 
-  const payMutation = useMutation({
+  const activateFreeMutation = useMutation({
     mutationFn: () =>
-      selectSubscriptionPlan(
-        business!.id,
-        selectedPlanId!,
-        interval,
-        isPaidPlan ? method : "free",
-      ),
+      selectSubscriptionPlan(business!.id, selectedPlanId!, interval, "free"),
     onSuccess: (result) => {
       submittingRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["subscription-summary", business?.id] });
       queryClient.invalidateQueries({ queryKey: ["subscription-payments", business?.id] });
-      const msg =
-        result.amount_etb > 0
-          ? `Plan: ${result.plan.name}\nReference: ${result.reference_code}\nAmount: ${result.amount_etb} ETB`
-          : `You are now on the ${result.plan.name} plan.`;
-      Alert.alert("Subscription updated", msg);
+      Alert.alert("Subscription updated", `You are now on the ${result.plan.name} plan.`);
     },
     onError: (error) => {
       Alert.alert("Could not update plan", getErrorMessage(error));
@@ -119,9 +104,23 @@ export default function OwnerBillingScreen() {
   const currentPlanName = summary.current_plan?.name ?? "None";
 
   const confirm = () => {
-    if (!selectedPlanId || submittingRef.current || payMutation.isPending) return;
+    if (!selectedPlanId || submittingRef.current || activateFreeMutation.isPending) return;
+
+    if (isPaidPlan) {
+      router.push({
+        pathname: "/(owner)/billing/checkout",
+        params: {
+          businessId: business.id,
+          planId: selectedPlanId,
+          interval,
+          planName: selectedPlan?.name ?? "",
+        },
+      });
+      return;
+    }
+
     submittingRef.current = true;
-    payMutation.mutate();
+    activateFreeMutation.mutate();
   };
 
   return (
@@ -207,37 +206,13 @@ export default function OwnerBillingScreen() {
             </Pressable>
           </View>
 
-          <Text style={styles.sectionLabel}>Payment method</Text>
-          <View style={styles.methods}>
-            {PAYMENT_METHODS.map((item) => {
-              const active = method === item.id;
-              return (
-                <Pressable
-                  key={item.id}
-                  style={[styles.method, active && styles.methodActive]}
-                  onPress={() => setMethod(item.id)}
-                >
-                  <View style={[styles.methodIcon, { backgroundColor: item.color }]}>
-                    <Text style={styles.methodEmoji}>{item.icon}</Text>
-                  </View>
-                  <View style={styles.methodText}>
-                    <Text style={styles.methodName}>{item.label}</Text>
-                    <Text style={styles.methodSub}>{item.desc}</Text>
-                  </View>
-                  <View style={[styles.radio, active && styles.radioOn]}>
-                    {active ? <View style={styles.radioDot} /> : null}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Text style={styles.mockNote}>
-            Mock payment — no live gateway. Your selected method is recorded for admin review.
+          <Text style={styles.chapaNote}>
+            Secure payment via Chapa. You'll choose Telebirr, CBE Birr, card, or bank on the next
+            step, and your plan activates once payment is confirmed.
           </Text>
         </>
       ) : selectedPlan ? (
-        <Text style={styles.mockNote}>
+        <Text style={styles.chapaNote}>
           The {selectedPlan.name} plan is free. Tap below to activate with no payment.
         </Text>
       ) : null}
@@ -252,9 +227,9 @@ export default function OwnerBillingScreen() {
       </View>
 
       <Button
-        title={selectedAmount > 0 ? "Confirm subscription" : "Activate plan"}
+        title={isPaidPlan ? "Continue to payment" : "Activate plan"}
         onPress={confirm}
-        loading={payMutation.isPending}
+        loading={activateFreeMutation.isPending}
         disabled={!selectedPlanId}
       />
 
@@ -281,11 +256,11 @@ export default function OwnerBillingScreen() {
 }
 
 const styles = StyleSheet.create({
-  muted: { color: colors.textMuted, marginTop: 16 },
+  muted: { color: colors.textMuted, marginTop: ownerLayout.blockGap },
   statusCard: {
-    marginTop: 16,
+    marginTop: ownerLayout.blockGap,
     borderRadius: radius.md,
-    padding: 14,
+    padding: ownerLayout.cardPadding,
     borderWidth: 1,
     gap: 4,
   },
@@ -300,12 +275,12 @@ const styles = StyleSheet.create({
   statusTitle: { fontSize: 14, fontWeight: "700", color: colors.primaryDarker },
   statusText: { fontSize: 13, color: colors.textMuted, lineHeight: 19 },
   usageCard: {
-    marginTop: 16,
+    marginTop: ownerLayout.blockGap,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
+    padding: ownerLayout.cardPadding,
     gap: 6,
   },
   usageLine: { fontSize: 14, color: colors.text },
@@ -315,15 +290,15 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.6,
-    marginTop: 24,
-    marginBottom: 12,
+    marginTop: ownerLayout.sectionGap,
+    marginBottom: ownerLayout.sectionTitleBottom,
   },
-  plans: { gap: 10 },
+  plans: { gap: ownerLayout.listGap },
   planCard: {
     borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: radius.lg,
+    padding: ownerLayout.cardPadding,
     gap: 6,
   },
   planCardActive: {
@@ -340,13 +315,13 @@ const styles = StyleSheet.create({
   planFeatured: { fontSize: 12, fontWeight: "600", color: "#854f0b" },
   planLimits: { fontSize: 12, color: colors.textSecondary },
   planPrice: { fontSize: 14, fontWeight: "600", color: colors.primary },
-  intervalRow: { flexDirection: "row", gap: 10 },
+  intervalRow: { flexDirection: "row", gap: ownerLayout.listGap },
   intervalCard: {
     flex: 1,
     borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: radius.lg,
+    padding: ownerLayout.cardPadding,
     gap: 4,
   },
   intervalActive: {
@@ -358,9 +333,9 @@ const styles = StyleSheet.create({
   summary: {
     backgroundColor: colors.screenBg,
     borderRadius: radius.lg,
-    padding: 16,
-    marginTop: 20,
-    marginBottom: 8,
+    padding: ownerLayout.cardPadding,
+    marginTop: ownerLayout.sectionGap - 4,
+    marginBottom: ownerLayout.blockGap / 2,
   },
   payRow: {
     flexDirection: "row",
@@ -369,38 +344,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontSize: 14, fontWeight: "500", color: colors.text },
   totalValue: { fontSize: 16, fontWeight: "500", color: colors.primary },
-  mockNote: {
+  chapaNote: {
     fontSize: 12,
     color: colors.textSecondary,
     lineHeight: 18,
     marginBottom: 8,
   },
-  methods: { gap: 10, marginBottom: 16 },
-  method: {
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  methodActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.screenBg,
-  },
-  methodIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  methodEmoji: { fontSize: 18 },
-  methodText: { flex: 1, gap: 2 },
-  methodName: { fontSize: 14, fontWeight: "500", color: colors.text },
-  methodSub: { fontSize: 11, color: colors.textSecondary },
   radio: {
     width: 18,
     height: 18,
@@ -417,15 +366,15 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.white,
   },
-  history: { marginTop: 28, paddingBottom: 24, gap: 10 },
+  history: { marginTop: ownerLayout.sectionGap + 4, paddingBottom: ownerLayout.bottomPadding, gap: ownerLayout.listGap },
   historyRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: ownerLayout.cardGap,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    padding: 12,
+    padding: ownerLayout.cardPadding,
   },
   historyMain: { flex: 1, gap: 2 },
   historyTitle: { fontSize: 14, fontWeight: "600", color: colors.text },

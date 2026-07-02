@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 
 import { DefaultCommissionSettings } from "@/components/admin/DefaultCommissionSettings";
+import { ConfirmPanel } from "@/components/admin/ConfirmPanel";
 import {
   createSubscriptionPlan,
   deleteSubscriptionPlan,
@@ -78,11 +79,27 @@ function parseForm(form: FormState) {
   };
 }
 
+type ConfirmAction =
+  | {
+      type: "delete";
+      planId: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "toggle-visibility";
+      planId: string;
+      hide: boolean;
+      title: string;
+      message: string;
+    };
+
 export function PlanManager({ plans, defaultCommissionRate }: PlanManagerProps) {
   const [addForm, setAddForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [pending, startTransition] = useTransition();
 
   const nextSortOrder = useMemo(() => {
@@ -121,9 +138,65 @@ export function PlanManager({ plans, defaultCommissionRate }: PlanManagerProps) 
     });
   };
 
+  const removePlan = (plan: SubscriptionPlan) => {
+    setError(null);
+    setConfirmAction({
+      type: "delete",
+      planId: plan.id,
+      title: `Delete "${plan.name}"?`,
+      message:
+        "Businesses on this plan will fall back to the default commission rate. This cannot be undone.",
+    });
+  };
+
+  const togglePlanVisibility = (plan: SubscriptionPlan) => {
+    setError(null);
+    const hide = plan.is_active;
+    setConfirmAction({
+      type: "toggle-visibility",
+      planId: plan.id,
+      hide,
+      title: hide ? `Hide "${plan.name}"?` : `Show "${plan.name}" again?`,
+      message: hide
+        ? "The plan will be hidden from new business sign-ups but existing subscriptions stay unchanged."
+        : "The plan will be available again for businesses to choose.",
+    });
+  };
+
+  const runConfirmAction = () => {
+    if (!confirmAction) return;
+
+    setError(null);
+    startTransition(async () => {
+      try {
+        if (confirmAction.type === "delete") {
+          await deleteSubscriptionPlan(confirmAction.planId);
+          if (editingId === confirmAction.planId) {
+            setEditingId(null);
+          }
+        } else {
+          await setSubscriptionPlanVisibility(confirmAction.planId, !confirmAction.hide);
+        }
+        setConfirmAction(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Action failed");
+      }
+    });
+  };
+
   return (
     <div className="mt-8 space-y-8">
       <DefaultCommissionSettings defaultRate={defaultCommissionRate} />
+
+      {confirmAction ? (
+        <ConfirmPanel
+          title={confirmAction.title}
+          message={confirmAction.message}
+          pending={pending}
+          onConfirm={runConfirmAction}
+          onCancel={() => setConfirmAction(null)}
+        />
+      ) : null}
 
       <form onSubmit={submitAdd} className="rounded-2xl border border-[var(--border)] bg-white p-6 space-y-4">
         <h2 className="text-lg font-semibold text-[var(--primary-dark)]">Add plan</h2>
@@ -438,15 +511,7 @@ export function PlanManager({ plans, defaultCommissionRate }: PlanManagerProps) 
                         <button
                           type="button"
                           disabled={pending}
-                          onClick={() =>
-                            startTransition(async () => {
-                              try {
-                                await setSubscriptionPlanVisibility(plan.id, !plan.is_active);
-                              } catch (err) {
-                                setError(err instanceof Error ? err.message : "Failed");
-                              }
-                            })
-                          }
+                          onClick={() => togglePlanVisibility(plan)}
                           className="text-sm font-semibold text-[var(--primary-dark)] hover:underline"
                         >
                           {plan.is_active ? "Hide" : "Show"}
@@ -454,16 +519,7 @@ export function PlanManager({ plans, defaultCommissionRate }: PlanManagerProps) 
                         <button
                           type="button"
                           disabled={pending}
-                          onClick={() => {
-                            if (!confirm(`Delete plan "${plan.name}"?`)) return;
-                            startTransition(async () => {
-                              try {
-                                await deleteSubscriptionPlan(plan.id);
-                              } catch (err) {
-                                setError(err instanceof Error ? err.message : "Failed to delete");
-                              }
-                            });
-                          }}
+                          onClick={() => removePlan(plan)}
                           className="text-sm font-semibold text-red-700 hover:underline"
                         >
                           Delete

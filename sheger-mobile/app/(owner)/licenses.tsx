@@ -7,6 +7,7 @@ import { LicenseDocumentPicker } from "@/components/owner/LicenseDocumentPicker"
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
+import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchBusinessDocuments, uploadBusinessDocument } from "@/lib/api/business-license";
@@ -148,13 +149,13 @@ export default function CompleteLicensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  form: { gap: 16, marginTop: 8 },
+  form: { gap: ownerLayout.sectionGap, marginTop: 8 },
   muted: { marginTop: 16, color: colors.textMuted, fontSize: 15, lineHeight: 22 },
   notice: {
     marginTop: 16,
     backgroundColor: colors.primaryLight,
     borderRadius: radius.md,
-    padding: 14,
+    padding: ownerLayout.cardPadding,
   },
   noticeText: { color: colors.primaryDarker, fontSize: 14, lineHeight: 20 },
 });

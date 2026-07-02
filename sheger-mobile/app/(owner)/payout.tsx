@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
+import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
@@ -201,60 +202,60 @@ export default function OwnerPayoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  muted: { color: colors.textMuted, marginTop: 16 },
+  muted: { color: colors.textMuted, marginTop: ownerLayout.blockGap },
   notice: {
-    marginTop: 16,
+    marginTop: ownerLayout.blockGap,
     backgroundColor: colors.primaryLight,
     borderRadius: radius.lg,
-    padding: 16,
+    padding: ownerLayout.cardPadding,
   },
   noticeText: { color: colors.primaryDarker, lineHeight: 22 },
   card: {
-    marginTop: 16,
+    marginTop: ownerLayout.blockGap,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 16,
-    gap: 8,
+    padding: ownerLayout.cardPadding,
+    gap: ownerLayout.blockGap / 2,
   },
   cardTitle: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
   cardText: { fontSize: 14, color: colors.textMuted, lineHeight: 21 },
   commission: { fontSize: 14, fontWeight: "600", color: colors.primary },
   activeCard: {
-    marginTop: 12,
+    marginTop: ownerLayout.blockGap,
     backgroundColor: "#e8f6ee",
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: "#b9e3cb",
-    padding: 16,
+    padding: ownerLayout.cardPadding,
     gap: 4,
   },
   activeTitle: { fontSize: 15, fontWeight: "700", color: "#1f6b43" },
   activeText: { fontSize: 14, color: "#2d5a40" },
   activeMeta: { fontSize: 13, color: "#4b6f57" },
   warningCard: {
-    marginTop: 12,
+    marginTop: ownerLayout.blockGap,
     backgroundColor: "#fff4e8",
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: "#f0d2a8",
-    padding: 16,
+    padding: ownerLayout.cardPadding,
     gap: 6,
   },
   warningTitle: { fontSize: 15, fontWeight: "700", color: "#8a4b12" },
   warningText: { fontSize: 14, color: "#7a5a33", lineHeight: 21 },
   errorCard: {
-    marginTop: 16,
+    marginTop: ownerLayout.blockGap,
     backgroundColor: colors.errorBg,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: "#fecaca",
-    padding: 16,
-    gap: 10,
+    padding: ownerLayout.cardPadding,
+    gap: ownerLayout.listGap,
   },
   errorTitle: { fontSize: 15, fontWeight: "700", color: colors.error },
   errorText: { fontSize: 14, color: "#991b1b", lineHeight: 20 },
-  loader: { marginTop: 24 },
-  form: { marginTop: 16, gap: 12 },
+  loader: { marginTop: ownerLayout.sectionGap },
+  form: { marginTop: ownerLayout.blockGap, gap: ownerLayout.cardGap },
 });

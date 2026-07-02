@@ -4,6 +4,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Header } from "@/components/ui/Header";
+import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -116,18 +117,18 @@ export function NotificationInbox({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  scroll: { flexGrow: 1, padding: 20 },
-  markAll: { alignSelf: "flex-end", marginBottom: 12 },
+  scroll: { flexGrow: 1, padding: ownerLayout.screenPadding },
+  markAll: { alignSelf: "flex-end", marginBottom: ownerLayout.cardGap },
   markAllText: { color: colors.primary, fontWeight: "600", fontSize: 13 },
   muted: { color: colors.textMuted, fontSize: 14 },
   empty: {
-    marginTop: 24,
-    padding: 20,
+    marginTop: ownerLayout.sectionGap,
+    padding: ownerLayout.screenPadding,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 8,
+    gap: ownerLayout.blockGap / 2,
   },
   emptyTitle: { fontSize: 18, fontWeight: "700", color: colors.primaryDarker },
   emptyText: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
+    padding: ownerLayout.cardPadding,
     gap: 6,
   },
   itemUnread: {
@@ -154,5 +155,5 @@ const styles = StyleSheet.create({
   },
   itemBody: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
   itemTime: { fontSize: 12, color: colors.textMuted },
-  separator: { height: 10 },
+  separator: { height: ownerLayout.listGap },
 });

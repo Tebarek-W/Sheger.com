@@ -82,27 +82,28 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1,
-    justifyContent: "space-between",
+    justifyContent: "center",
     paddingHorizontal: 28,
-    paddingBottom: 12,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   hero: {
-    flex: 1,
+    flex: 0,
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 24,
+    marginTop: -96,
   },
   wordmark: {
     fontSize: 42,
     fontWeight: "600",
     color: colors.white,
     letterSpacing: -1,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   taglineRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   serviceBooking: {
     fontSize: 12,
@@ -120,10 +121,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.gold,
     letterSpacing: 3,
+    marginTop: -2,
   },
   actions: {
     width: "100%",
-    paddingBottom: 8,
+    marginTop: 28,
+    paddingHorizontal: 6,
   },
   cta: {
     width: "100%",
@@ -168,7 +171,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   guestLink: {
-    marginTop: 22,
+    marginTop: 18,
     alignItems: "center",
   },
   guestText: {

@@ -82,6 +82,13 @@ export const en = {
     memberSince: "Member since",
     myBookings: "My bookings",
     searchServices: "Search services",
+    editProfile: "Edit profile",
+    editTitle: "Edit profile",
+    editHint: "Update your name, phone, and email. Changing email may require confirmation.",
+    saveChanges: "Save changes",
+    editSaved: "Your profile has been updated.",
+    editEmailConfirm: "Profile saved. Check your inbox to confirm the new email address.",
+    editFailed: "Could not save profile",
   },
   bookings: {
     title: "My bookings",

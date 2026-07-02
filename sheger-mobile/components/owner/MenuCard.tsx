@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { colors, radius } from "@/constants/theme";
+import { ownerLayout } from "@/constants/owner-layout";
 
 type MenuCardProps = {
   title: string;
@@ -29,12 +30,12 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: ownerLayout.cardPadding - 2,
     backgroundColor: colors.white,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 16,
+    padding: ownerLayout.cardPadding,
   },
   pressed: { backgroundColor: colors.surface },
   icon: { fontSize: 24 },

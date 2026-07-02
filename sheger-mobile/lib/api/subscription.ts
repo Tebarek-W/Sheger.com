@@ -1,3 +1,4 @@
+import { readSupabaseFunctionError } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 import type {
   BillingInterval,
@@ -5,6 +6,13 @@ import type {
   SubscriptionPlan,
   SubscriptionSummary,
 } from "@/lib/types/database";
+
+type ChapaSubscriptionInitializeResponse = {
+  checkout_url: string;
+  tx_ref: string;
+  return_url?: string;
+  error?: string;
+};
 
 export async function fetchSubscriptionSummary(businessId: string): Promise<SubscriptionSummary> {
   const { data, error } = await supabase.rpc("get_subscription_summary", {
@@ -48,4 +56,22 @@ export async function selectSubscriptionPlan(
     reference_code: string;
     amount_etb: number;
   };
+}
+
+/** Starts a Chapa hosted checkout for a paid subscription plan (no split). */
+export async function initializeChapaSubscriptionPayment(
+  businessId: string,
+  planId: string,
+  billingInterval: BillingInterval,
+) {
+  const { data, error } = await supabase.functions.invoke<ChapaSubscriptionInitializeResponse>(
+    "chapa-subscription-initialize",
+    { body: { businessId, planId, billingInterval } },
+  );
+
+  if (error || !data?.checkout_url || !data.tx_ref) {
+    await readSupabaseFunctionError(data, error);
+  }
+
+  return data!;
 }

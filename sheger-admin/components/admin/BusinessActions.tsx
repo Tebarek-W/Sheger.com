@@ -1,10 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { updateBusinessStatus } from "@/app/actions/admin";
+import { ConfirmPanel } from "@/components/admin/ConfirmPanel";
 import type { BusinessStatus } from "@/lib/types/database";
+
+type ConfirmAction = {
+  status: BusinessStatus;
+  title: string;
+  message: string;
+};
+
+const CONFIRM_MESSAGES: Partial<
+  Record<BusinessStatus, { title: string; message: string }>
+> = {
+  approved: {
+    title: "Approve this business?",
+    message: "The business will become visible to customers and can accept bookings.",
+  },
+  rejected: {
+    title: "Reject this business?",
+    message: "The owner will not be able to operate on Sheger until they reapply or you approve later.",
+  },
+  suspended: {
+    title: "Suspend this business?",
+    message: "The business will be hidden from customers and cannot accept new bookings.",
+  },
+};
 
 export function BusinessActions({
   businessId,
@@ -19,16 +43,35 @@ export function BusinessActions({
   approveHint?: string;
   reviewHref?: string;
 }) {
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const act = (next: BusinessStatus) => {
+  const requestAction = (next: BusinessStatus) => {
+    const copy = CONFIRM_MESSAGES[next];
+    if (!copy) return;
+    setConfirmAction({ status: next, ...copy });
+  };
+
+  const runConfirmAction = () => {
+    if (!confirmAction) return;
     startTransition(async () => {
-      await updateBusinessStatus(businessId, next);
+      await updateBusinessStatus(businessId, confirmAction.status);
+      setConfirmAction(null);
     });
   };
 
   return (
     <div className="flex flex-col gap-2">
+      {confirmAction ? (
+        <ConfirmPanel
+          title={confirmAction.title}
+          message={confirmAction.message}
+          pending={pending}
+          onConfirm={runConfirmAction}
+          onCancel={() => setConfirmAction(null)}
+        />
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
         {reviewHref ? (
           <Link
@@ -43,7 +86,7 @@ export function BusinessActions({
             type="button"
             disabled={pending || !canApprove}
             title={!canApprove ? approveHint : undefined}
-            onClick={() => act("approved")}
+            onClick={() => requestAction("approved")}
             className="rounded-lg bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Approve
@@ -53,7 +96,7 @@ export function BusinessActions({
           <button
             type="button"
             disabled={pending}
-            onClick={() => act("rejected")}
+            onClick={() => requestAction("rejected")}
             className="rounded-lg border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--primary-dark)] hover:bg-[var(--primary-light)] disabled:opacity-50"
           >
             Reject
@@ -63,7 +106,7 @@ export function BusinessActions({
           <button
             type="button"
             disabled={pending}
-            onClick={() => act("suspended")}
+            onClick={() => requestAction("suspended")}
             className="rounded-lg border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--primary-dark)] hover:bg-[var(--primary-light)] disabled:opacity-50"
           >
             Suspend

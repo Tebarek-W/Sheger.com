@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
+import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchCategories } from "@/lib/api/categories";
@@ -16,6 +17,12 @@ import { updateBusiness } from "@/lib/api/owner";
 import { getErrorMessage } from "@/lib/errors";
 import { isWithinEthiopia, type Coordinates } from "@/lib/location";
 import { goBackSafely } from "@/lib/routing";
+import {
+  isValidEmail,
+  isValidEthiopianMobile,
+  normalizeEmail,
+  normalizeEthiopianMobile,
+} from "@/lib/validation/contact";
 
 export default function EditBusinessScreen() {
   const { business } = useOwnerBusiness();
@@ -28,6 +35,12 @@ export default function EditBusinessScreen() {
   const [email, setEmail] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [coords, setCoords] = useState<Coordinates | null>(null);
+
+  const onChangePhone = (value: string) => {
+    const sanitized = value.replace(/[^\d+]/g, "");
+    const clamped = sanitized.startsWith("+") ? sanitized.slice(0, 13) : sanitized.slice(0, 10);
+    setPhone(clamped);
+  };
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -52,12 +65,12 @@ export default function EditBusinessScreen() {
     mutationFn: () =>
       updateBusiness(business!.id, {
         categoryId: categoryId!,
-        name,
-        description,
-        address,
-        city,
-        phone,
-        email,
+        name: name.trim(),
+        description: description.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        phone: normalizeEthiopianMobile(phone) || undefined,
+        email: normalizeEmail(email) || undefined,
         latitude: coords?.latitude ?? null,
         longitude: coords?.longitude ?? null,
       }),
@@ -78,6 +91,20 @@ export default function EditBusinessScreen() {
       );
       return;
     }
+
+    if (phone.trim() && !isValidEthiopianMobile(phone)) {
+      Alert.alert(
+        "Invalid phone",
+        "Enter a valid Ethiopian mobile number like 09xxxxxxxx, 07xxxxxxxx, or +2519xxxxxxxx.",
+      );
+      return;
+    }
+
+    if (email.trim() && !isValidEmail(email)) {
+      Alert.alert("Invalid email", "Enter a valid email address.");
+      return;
+    }
+
     mutation.mutate();
   };
 
@@ -130,7 +157,13 @@ export default function EditBusinessScreen() {
 
         <Input label="Address (area / street)" value={address} onChangeText={setAddress} />
         <Input label="City" value={city} onChangeText={setCity} />
-        <Input label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+        <Input
+          label="Phone"
+          value={phone}
+          onChangeText={onChangePhone}
+          keyboardType="phone-pad"
+          maxLength={13}
+        />
         <Input label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" />
         <Button title="Save changes" onPress={onSave} loading={mutation.isPending} />
       </View>
@@ -139,7 +172,7 @@ export default function EditBusinessScreen() {
 }
 
 const styles = StyleSheet.create({
-  form: { gap: 16 },
+  form: { gap: ownerLayout.sectionGap },
   label: { fontSize: 14, fontWeight: "600", color: colors.primaryDarker },
   sectionHint: { fontSize: 12, color: colors.textSecondary, lineHeight: 16, marginTop: -8 },
   locationSection: { gap: 8 },

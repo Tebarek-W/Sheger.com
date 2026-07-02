@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
+import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadBusinessDocument } from "@/lib/api/business-license";
@@ -23,6 +24,12 @@ import {
 import { getErrorMessage } from "@/lib/errors";
 import { isWithinEthiopia, type Coordinates } from "@/lib/location";
 import type { BusinessDocumentType } from "@/lib/types/database";
+import {
+  isValidEmail,
+  isValidEthiopianMobile,
+  normalizeEmail,
+  normalizeEthiopianMobile,
+} from "@/lib/validation/contact";
 
 export default function RegisterBusinessScreen() {
   const { user } = useAuth();
@@ -38,6 +45,12 @@ export default function RegisterBusinessScreen() {
   const [tradeLicenseFile, setTradeLicenseFile] = useState<LicenseFileSelection | null>(null);
   const [healthLicenseFile, setHealthLicenseFile] = useState<LicenseFileSelection | null>(null);
   const [showDocErrors, setShowDocErrors] = useState(false);
+
+  const onChangePhone = (value: string) => {
+    const sanitized = value.replace(/[^\d+]/g, "");
+    const clamped = sanitized.startsWith("+") ? sanitized.slice(0, 13) : sanitized.slice(0, 10);
+    setPhone(clamped);
+  };
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -57,12 +70,12 @@ export default function RegisterBusinessScreen() {
       const business = await createBusiness({
         ownerId: user!.id,
         categoryId: categoryId!,
-        name,
-        description,
-        address,
-        city,
-        phone,
-        email,
+        name: name.trim(),
+        description: description.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        phone: normalizeEthiopianMobile(phone) || undefined,
+        email: normalizeEmail(email) || undefined,
         latitude: coords!.latitude,
         longitude: coords!.longitude,
       });
@@ -111,6 +124,19 @@ export default function RegisterBusinessScreen() {
         "Location required",
         "Set your business location so customers can find you in Nearby search.",
       );
+      return;
+    }
+
+    if (phone.trim() && !isValidEthiopianMobile(phone)) {
+      Alert.alert(
+        "Invalid phone",
+        "Enter a valid Ethiopian mobile number like 09xxxxxxxx, 07xxxxxxxx, or +2519xxxxxxxx.",
+      );
+      return;
+    }
+
+    if (email.trim() && !isValidEmail(email)) {
+      Alert.alert("Invalid email", "Enter a valid email address.");
       return;
     }
 
@@ -216,7 +242,14 @@ export default function RegisterBusinessScreen() {
 
         <Input label="Address (area / street)" value={address} onChangeText={setAddress} placeholder="e.g. Bole Road, near Edna Mall" />
         <Input label="City" value={city} onChangeText={setCity} />
-        <Input label="Phone" value={phone} onChangeText={setPhone} placeholder="+251..." keyboardType="phone-pad" />
+        <Input
+          label="Phone"
+          value={phone}
+          onChangeText={onChangePhone}
+          placeholder="+251..."
+          keyboardType="phone-pad"
+          maxLength={13}
+        />
         <Input
           label="Email (optional)"
           value={email}
@@ -231,11 +264,11 @@ export default function RegisterBusinessScreen() {
 }
 
 const styles = StyleSheet.create({
-  form: { gap: 16 },
+  form: { gap: ownerLayout.sectionGap },
   label: { fontSize: 14, fontWeight: "600", color: colors.primaryDarker },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
   sectionHint: { fontSize: 12, color: colors.textSecondary, lineHeight: 16 },
-  docSection: { gap: 12 },
+  docSection: { gap: ownerLayout.cardGap },
   locationSection: { gap: 8 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {

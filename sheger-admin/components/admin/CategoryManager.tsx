@@ -8,6 +8,7 @@ import {
   setCategoryVisibility,
   updateCategory,
 } from "@/app/actions/admin";
+import { ConfirmPanel } from "@/components/admin/ConfirmPanel";
 import { slugifyCategoryName } from "@/lib/categories";
 import type { Category } from "@/lib/types/database";
 
@@ -22,6 +23,20 @@ type FormState = {
   icon: string;
   sort_order: string;
 };
+
+type ConfirmAction =
+  | {
+      type: "delete";
+      categoryId: string;
+      title: string;
+      message: string;
+    }
+  | {
+      type: "toggle-visibility";
+      categoryId: string;
+      title: string;
+      message: string;
+    };
 
 const emptyForm = (): FormState => ({
   name: "",
@@ -51,6 +66,7 @@ export function CategoryManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [pending, startTransition] = useTransition();
 
   const nextSortOrder = useMemo(() => {
@@ -126,38 +142,58 @@ export function CategoryManager({
   };
 
   const remove = (category: Category) => {
-    const confirmed = window.confirm(
-      `Delete "${category.name}"?\n\nBusinesses in this category will have their category cleared.`,
-    );
-    if (!confirmed) return;
-
     setError(null);
-    startTransition(async () => {
-      try {
-        await deleteCategory(category.id);
-        if (editingId === category.id) cancelEdit();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not delete category");
-      }
+    setConfirmAction({
+      type: "delete",
+      categoryId: category.id,
+      title: `Delete "${category.name}"?`,
+      message:
+        "Businesses in this category will have their category cleared.",
     });
   };
 
   const toggleVisibility = (category: Category) => {
     const hide = isCategoryVisible(category);
-    const confirmed = window.confirm(
-      hide
-        ? `Mark "${category.name}" as inactive?\n\nThe category will be kept but won't appear for customers or new business registrations.`
+    setError(null);
+    setConfirmAction({
+      type: "toggle-visibility",
+      categoryId: category.id,
+      title: hide
+        ? `Mark "${category.name}" as inactive?`
         : `Mark "${category.name}" as active again?`,
-    );
-    if (!confirmed) return;
+      message: hide
+        ? "The category will be kept but won't appear for customers or new business registrations."
+        : "The category will be available again for customers and new business registrations.",
+    });
+  };
+
+  const runConfirmAction = () => {
+    if (!confirmAction) return;
 
     setError(null);
     startTransition(async () => {
       try {
-        await setCategoryVisibility(category.id, !hide);
+        if (confirmAction.type === "delete") {
+          await deleteCategory(confirmAction.categoryId);
+          if (editingId === confirmAction.categoryId) cancelEdit();
+        } else {
+          const category = categories.find((item) => item.id === confirmAction.categoryId);
+          if (!category) {
+            throw new Error("Category not found");
+          }
+          await setCategoryVisibility(
+            confirmAction.categoryId,
+            !isCategoryVisible(category),
+          );
+        }
+        setConfirmAction(null);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Could not update visibility",
+          err instanceof Error
+            ? err.message
+            : confirmAction.type === "delete"
+              ? "Could not delete category"
+              : "Could not update visibility",
         );
       }
     });
@@ -239,6 +275,16 @@ export function CategoryManager({
         <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
+      ) : null}
+
+      {confirmAction ? (
+        <ConfirmPanel
+          title={confirmAction.title}
+          message={confirmAction.message}
+          pending={pending}
+          onConfirm={runConfirmAction}
+          onCancel={() => setConfirmAction(null)}
+        />
       ) : null}
 
       <div className="overflow-hidden rounded-2xl border border-[var(--border)]">

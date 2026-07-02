@@ -13,6 +13,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { getHomeRouteForRole } from "@/lib/routing";
 import { supabase } from "@/lib/supabase";
 import type { UserRole } from "@/lib/types/database";
+import { isValidEmail, normalizeEmail } from "@/lib/validation/contact";
 
 export default function LoginScreen() {
   const { t } = useI18n();
@@ -25,8 +26,18 @@ export default function LoginScreen() {
       Alert.alert(t("auth.missingFields"), t("auth.enterEmailPassword"));
       return;
     }
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!isValidEmail(normalizedEmail)) {
+      Alert.alert(t("auth.loginFailed"), "Enter a valid email address.");
+      return;
+    }
+
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
     setLoading(false);
     if (error) {
       Alert.alert(t("auth.loginFailed"), getErrorMessage(error));
