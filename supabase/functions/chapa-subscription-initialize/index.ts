@@ -2,6 +2,7 @@ import {
   chapaInitialize,
   formatChapaAmount,
   normalizeChapaPhone,
+  sanitizeChapaText,
 } from "../_shared/chapa.ts";
 import {
   insertSubscriptionPaymentTransaction,
@@ -67,7 +68,11 @@ Deno.serve(async (req) => {
       return_url: prepared.returnUrl,
       customization: {
         title: "Sheger",
-        description: `${prepared.planName} subscription (${prepared.billingInterval})`,
+        description: sanitizeChapaText(
+          `${prepared.planName} subscription ${prepared.billingInterval}`,
+          "Sheger subscription",
+          120,
+        ),
       },
       meta: {
         business_id: prepared.businessId,
@@ -75,7 +80,11 @@ Deno.serve(async (req) => {
         plan_id: prepared.planId,
         billing_interval: prepared.billingInterval,
         purpose: "subscription",
-        payment_reason: `Sheger subscription — ${prepared.planName}`,
+        payment_reason: sanitizeChapaText(
+          `Sheger subscription ${prepared.planName}`,
+          "Sheger subscription",
+          120,
+        ),
       },
     });
 
