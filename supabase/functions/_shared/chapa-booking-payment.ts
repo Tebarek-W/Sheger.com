@@ -7,6 +7,7 @@ import {
   sanitizeChapaText,
   splitFullName,
   supabaseFunctionsBaseUrl,
+  type ChapaSplitSubaccount,
 } from "./chapa.ts";
 
 export type BookingSplit = {
@@ -72,6 +73,45 @@ function parseSplit(split: unknown): BookingSplit {
     commission_rate: commissionRate,
     commission_amount_etb: commissionAmount,
     owner_net_etb: ownerNet,
+  };
+}
+
+/**
+ * Chapa deducts processing fees from the main merchant (Sheger) share of a split payment.
+ * @see https://developer.chapa.co/integrations/split-payment
+ */
+export function estimateChapaMerchantFeeEtb(amountEtb: number): number {
+  const rateFee = Math.ceil(amountEtb * 0.06 * 100) / 100;
+  return Math.max(6, rateFee);
+}
+
+export function assertBookingSplitViableForChapa(
+  split: BookingSplit,
+  amountEtb: number,
+): void {
+  const estimatedFee = estimateChapaMerchantFeeEtb(amountEtb);
+  if (split.commission_amount_etb >= estimatedFee) return;
+
+  const minAmount = split.commission_rate > 0
+    ? Math.ceil((estimatedFee / split.commission_rate) * 100) / 100
+    : amountEtb;
+
+  throw new BookingPaymentError(
+    `Online payment requires a service price of at least ${minAmount.toFixed(0)} ETB so Sheger's commission can cover Chapa fees. This booking is ${amountEtb.toFixed(0)} ETB — choose cash at the business or pick a higher-priced service.`,
+    400,
+    "amount_too_low_for_chapa_split",
+  );
+}
+
+/** Flat ETB commission is explicit and avoids percentage rounding on small totals. */
+export function buildBookingChapaSubaccountSplit(
+  split: BookingSplit,
+  chapaSubaccountId: string,
+): ChapaSplitSubaccount {
+  return {
+    id: chapaSubaccountId,
+    split_type: "flat",
+    split_value: split.commission_amount_etb,
   };
 }
 

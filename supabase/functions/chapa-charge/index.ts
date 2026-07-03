@@ -1,5 +1,7 @@
 import {
+  assertBookingSplitViableForChapa,
   BookingPaymentError,
+  buildBookingChapaSubaccountSplit,
   findInitializedBookingTxn,
   insertBookingPaymentTransaction,
   prepareBookingChapaPayment,
@@ -71,6 +73,7 @@ Deno.serve(async (req) => {
     const prepared = await prepareBookingChapaPayment(supabase, user.id, bookingId, {
       mobileOverride: mobile,
     });
+    assertBookingSplitViableForChapa(prepared.split, prepared.amount);
 
     const chargeResult = await chapaDirectCharge(chargeType, {
       amount: formatChapaAmount(prepared.amount),
@@ -80,11 +83,10 @@ Deno.serve(async (req) => {
       last_name: prepared.lastName,
       tx_ref: prepared.txRef,
       mobile,
-      subaccounts: {
-        id: prepared.chapaSubaccountId,
-        split_type: "percentage",
-        split_value: prepared.split.commission_rate,
-      },
+      subaccounts: buildBookingChapaSubaccountSplit(
+        prepared.split,
+        prepared.chapaSubaccountId,
+      ),
     });
 
     await insertBookingPaymentTransaction(supabase, prepared, {

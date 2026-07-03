@@ -1,5 +1,7 @@
 import {
+  assertBookingSplitViableForChapa,
   BookingPaymentError,
+  buildBookingChapaSubaccountSplit,
   cancelStaleInitializedCheckout,
   findReusableHostedCheckout,
   insertBookingPaymentTransaction,
@@ -73,6 +75,7 @@ Deno.serve(async (req) => {
     await cancelStaleInitializedCheckout(supabase, bookingId);
 
     const prepared = await prepareBookingChapaPayment(supabase, user.id, bookingId);
+    assertBookingSplitViableForChapa(prepared.split, prepared.amount);
 
     const initResult = await chapaInitialize({
       amount: formatChapaAmount(prepared.amount),
@@ -104,11 +107,10 @@ Deno.serve(async (req) => {
           chapa_subaccount_id: prepared.chapaSubaccountId,
         },
       },
-      subaccounts: {
-        id: prepared.chapaSubaccountId,
-        split_type: "percentage",
-        split_value: prepared.split.commission_rate,
-      },
+      subaccounts: buildBookingChapaSubaccountSplit(
+        prepared.split,
+        prepared.chapaSubaccountId,
+      ),
     });
 
     await insertBookingPaymentTransaction(supabase, prepared, {
