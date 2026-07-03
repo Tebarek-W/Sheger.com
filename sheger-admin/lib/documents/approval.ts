@@ -6,7 +6,7 @@ import type {
 
 import { getRequiredDocumentTypes } from "./license";
 
-export type DocumentApprovalSummary = {
+type DocumentApprovalSummary = {
   requiredTypes: BusinessDocumentType[];
   uploadedCount: number;
   approvedCount: number;

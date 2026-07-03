@@ -5,6 +5,7 @@ import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { StarRating } from "@/components/customer/StarRating";
 import { Button } from "@/components/ui/Button";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { createReview } from "@/lib/api/reviews";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -23,6 +24,7 @@ export function ReviewForm({
   serviceLabel,
   onSuccess,
 }: ReviewFormProps) {
+  const { t } = useI18n();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
 
@@ -36,15 +38,22 @@ export function ReviewForm({
         comment,
       }),
     onSuccess: () => {
-      Alert.alert("Thank you!", "Your review has been posted.");
+      Alert.alert(
+        t("customer.reviewForm.thankYouTitle"),
+        t("customer.reviewForm.thankYouMessage"),
+      );
       onSuccess?.();
     },
-    onError: (error) => Alert.alert("Could not post review", getErrorMessage(error)),
+    onError: (error) =>
+      Alert.alert(t("customer.reviewForm.postFailedTitle"), getErrorMessage(error)),
   });
 
   const submit = () => {
     if (rating < 1) {
-      Alert.alert("Rating required", "Please select a star rating.");
+      Alert.alert(
+        t("customer.reviewForm.ratingRequiredTitle"),
+        t("customer.reviewForm.ratingRequiredMessage"),
+      );
       return;
     }
     mutation.mutate();
@@ -52,21 +61,21 @@ export function ReviewForm({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Rate your visit</Text>
+      <Text style={styles.title}>{t("customer.reviewForm.title")}</Text>
       {serviceLabel ? <Text style={styles.subtitle}>{serviceLabel}</Text> : null}
-      <Text style={styles.label}>Your rating</Text>
+      <Text style={styles.label}>{t("customer.reviewForm.yourRating")}</Text>
       <StarRating value={rating} onChange={setRating} size={28} />
-      <Text style={styles.label}>Comment (optional)</Text>
+      <Text style={styles.label}>{t("customer.reviewForm.commentOptional")}</Text>
       <TextInput
         value={comment}
         onChangeText={setComment}
-        placeholder="Share your experience..."
+        placeholder={t("customer.reviewForm.commentPlaceholder")}
         placeholderTextColor={colors.textTertiary}
         multiline
         style={styles.input}
       />
       <Button
-        title="Submit review"
+        title={t("customer.reviewForm.submit")}
         onPress={submit}
         loading={mutation.isPending}
         disabled={rating < 1}

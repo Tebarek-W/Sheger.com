@@ -5,8 +5,6 @@ import { en } from "./locales/en";
 
 export type AppLocale = "en" | "am";
 
-export const LOCALES: AppLocale[] = ["en", "am"];
-
 const catalogs = { en, am } as const;
 
 type TranslationParams = Record<string, string | number>;

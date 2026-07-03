@@ -5,13 +5,6 @@ type BookingRevenueRow = {
   services?: { price: number | null } | null;
 };
 
-export function getBookingRevenueAmount(row: BookingRevenueRow): number {
-  if (row.final_price != null) return Number(row.final_price);
-  if (row.listed_price != null) return Number(row.listed_price);
-  if (row.listed_price_min != null) return Number(row.listed_price_min);
-  return Number(row.services?.price ?? 0);
-}
-
 export function formatBookingPrice(row: BookingRevenueRow & {
   pricing_model?: string;
   listed_price_max?: number | null;

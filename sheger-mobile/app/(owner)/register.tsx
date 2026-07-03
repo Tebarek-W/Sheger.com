@@ -12,6 +12,7 @@ import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { uploadBusinessDocument } from "@/lib/api/business-license";
 import { fetchCategories } from "@/lib/api/categories";
 import { createBusiness } from "@/lib/api/owner";
@@ -32,6 +33,7 @@ import {
 } from "@/lib/validation/contact";
 
 export default function RegisterBusinessScreen() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -104,39 +106,45 @@ export default function RegisterBusinessScreen() {
       queryClient.invalidateQueries({ queryKey: ["owner-businesses"] });
       queryClient.invalidateQueries({ queryKey: ["business-documents"] });
       Alert.alert(
-        "Business submitted",
-        "Your business and license documents are pending admin review. You can set up services and hours while you wait.",
-        [{ text: "OK", onPress: () => router.replace("/(owner)/dashboard") }],
+        t("owner.screens.register.submittedTitle"),
+        t("owner.screens.register.submittedMessage"),
+        [{ text: t("common.ok"), onPress: () => router.replace("/(owner)/dashboard") }],
       );
     },
     onError: (error) => {
-      Alert.alert("Could not register", getErrorMessage(error));
+      Alert.alert(t("owner.screens.register.registerFailedTitle"), getErrorMessage(error));
     },
   });
 
   const onSubmit = () => {
     if (!name || !categoryId) {
-      Alert.alert("Missing fields", "Enter a business name and select a category.");
+      Alert.alert(
+        t("owner.screens.register.missingFieldsTitle"),
+        t("owner.screens.register.missingFieldsMessage"),
+      );
       return;
     }
     if (!isWithinEthiopia(coords)) {
       Alert.alert(
-        "Location required",
-        "Set your business location so customers can find you in Nearby search.",
+        t("owner.screens.register.locationRequiredTitle"),
+        t("owner.screens.register.locationRequiredMessage"),
       );
       return;
     }
 
     if (phone.trim() && !isValidEthiopianMobile(phone)) {
       Alert.alert(
-        "Invalid phone",
-        "Enter a valid Ethiopian mobile number like 09xxxxxxxx, 07xxxxxxxx, or +2519xxxxxxxx.",
+        t("owner.screens.register.invalidPhoneTitle"),
+        t("owner.screens.register.invalidPhoneMessage"),
       );
       return;
     }
 
     if (email.trim() && !isValidEmail(email)) {
-      Alert.alert("Invalid email", "Enter a valid email address.");
+      Alert.alert(
+        t("owner.screens.register.invalidEmailTitle"),
+        t("owner.screens.register.invalidEmailMessage"),
+      );
       return;
     }
 
@@ -150,13 +158,16 @@ export default function RegisterBusinessScreen() {
       const file = files[type];
       if (!file) {
         setShowDocErrors(true);
-        Alert.alert("Missing documents", "Upload all required license documents before submitting.");
+        Alert.alert(
+          t("owner.screens.register.missingDocsTitle"),
+          t("owner.screens.register.missingDocsMessage"),
+        );
         return;
       }
       const validationError = validateLicenseFile(file);
       if (validationError) {
         setShowDocErrors(true);
-        Alert.alert("Invalid document", validationError);
+        Alert.alert(t("owner.screens.register.invalidDocTitle"), validationError);
         return;
       }
     }
@@ -168,21 +179,26 @@ export default function RegisterBusinessScreen() {
   return (
     <Screen scroll>
       <Header
-        title="Register business"
-        subtitle="Submit your business and licenses for admin approval"
+        title={t("owner.screens.register.title")}
+        subtitle={t("owner.screens.register.subtitle")}
         showBack
       />
 
       <View style={styles.form}>
-        <Input label="Business name" value={name} onChangeText={setName} placeholder="e.g. Bole Premium Barbers" />
         <Input
-          label="Description"
+          label={t("owner.screens.register.businessName")}
+          value={name}
+          onChangeText={setName}
+          placeholder={t("owner.screens.register.businessNamePlaceholder")}
+        />
+        <Input
+          label={t("owner.screens.register.description")}
           value={description}
           onChangeText={setDescription}
-          placeholder="What do you offer?"
+          placeholder={t("owner.screens.register.descriptionPlaceholder")}
           multiline
         />
-        <Text style={styles.label}>Category</Text>
+        <Text style={styles.label}>{t("owner.screens.register.category")}</Text>
         <View style={styles.chips}>
           {categories?.map((cat) => {
             const active = categoryId === cat.id;
@@ -201,12 +217,10 @@ export default function RegisterBusinessScreen() {
         </View>
 
         <View style={styles.docSection}>
-          <Text style={styles.sectionTitle}>Required documents</Text>
+          <Text style={styles.sectionTitle}>{t("owner.screens.register.requiredDocs")}</Text>
           <Text style={styles.sectionHint}>
-            Upload clear copies of your licenses. All businesses need a trade license.
-            {requiresHealthLicense
-              ? " Clinics and dentists also need a health facility operating license."
-              : ""}
+            {t("owner.screens.register.docsHint")}
+            {requiresHealthLicense ? t("owner.screens.register.docsHintHealth") : ""}
           </Text>
 
           <LicenseDocumentPicker
@@ -227,10 +241,8 @@ export default function RegisterBusinessScreen() {
         </View>
 
         <View style={styles.locationSection}>
-          <Text style={styles.label}>Business location</Text>
-          <Text style={styles.sectionHint}>
-            Required. This places you on the map for Nearby search.
-          </Text>
+          <Text style={styles.label}>{t("owner.screens.register.businessLocation")}</Text>
+          <Text style={styles.sectionHint}>{t("owner.screens.register.locationHintRequired")}</Text>
           <LocationPicker
             value={coords}
             onChange={setCoords}
@@ -240,10 +252,15 @@ export default function RegisterBusinessScreen() {
           />
         </View>
 
-        <Input label="Address (area / street)" value={address} onChangeText={setAddress} placeholder="e.g. Bole Road, near Edna Mall" />
-        <Input label="City" value={city} onChangeText={setCity} />
         <Input
-          label="Phone"
+          label={t("owner.screens.register.address")}
+          value={address}
+          onChangeText={setAddress}
+          placeholder={t("owner.screens.register.addressPlaceholder")}
+        />
+        <Input label={t("owner.screens.register.city")} value={city} onChangeText={setCity} />
+        <Input
+          label={t("owner.screens.register.phone")}
           value={phone}
           onChangeText={onChangePhone}
           placeholder="+251..."
@@ -251,13 +268,17 @@ export default function RegisterBusinessScreen() {
           maxLength={13}
         />
         <Input
-          label="Email (optional)"
+          label={t("owner.screens.register.emailOptional")}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
         />
-        <Button title="Submit for approval" onPress={onSubmit} loading={mutation.isPending} />
+        <Button
+          title={t("owner.screens.register.submit")}
+          onPress={onSubmit}
+          loading={mutation.isPending}
+        />
       </View>
     </Screen>
   );

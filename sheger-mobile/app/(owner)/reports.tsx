@@ -5,11 +5,13 @@ import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchOwnerStats } from "@/lib/api/owner";
 import type { BookingStatus } from "@/lib/types/database";
 
 export default function OwnerReportsScreen() {
+  const { t } = useI18n();
   const { business } = useOwnerBusiness();
 
   const { data: stats } = useQuery({
@@ -29,46 +31,50 @@ export default function OwnerReportsScreen() {
 
   return (
     <Screen scroll>
-      <Header title="Income & reports" subtitle="Track your business performance" showBack />
+      <Header
+        title={t("owner.screens.reports.title")}
+        subtitle={t("owner.screens.reports.subtitle")}
+        showBack
+      />
 
       <View style={styles.grid}>
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total revenue</Text>
+          <Text style={styles.statLabel}>{t("owner.screens.reports.totalRevenue")}</Text>
           <Text style={styles.statValue}>
             ETB {(stats?.totalRevenue ?? 0).toLocaleString()}
           </Text>
-          <Text style={styles.statHint}>From completed bookings</Text>
+          <Text style={styles.statHint}>{t("owner.screens.reports.revenueHint")}</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Last 30 days</Text>
+          <Text style={styles.statLabel}>{t("owner.screens.reports.last30Days")}</Text>
           <Text style={styles.statValue}>
             ETB {(stats?.last30DaysRevenue ?? 0).toLocaleString()}
           </Text>
-          <Text style={styles.statHint}>Completed in period</Text>
+          <Text style={styles.statHint}>{t("owner.screens.reports.periodHint")}</Text>
         </View>
       </View>
 
       <View style={styles.grid}>
         <View style={styles.miniCard}>
           <Text style={styles.miniValue}>{stats?.totalBookings ?? 0}</Text>
-          <Text style={styles.miniLabel}>All bookings</Text>
+          <Text style={styles.miniLabel}>{t("owner.screens.reports.allBookings")}</Text>
         </View>
         <View style={styles.miniCard}>
           <Text style={styles.miniValue}>{stats?.pendingBookings ?? 0}</Text>
-          <Text style={styles.miniLabel}>Pending</Text>
+          <Text style={styles.miniLabel}>{t("owner.screens.reports.pending")}</Text>
         </View>
         <View style={styles.miniCard}>
           <Text style={styles.miniValue}>{stats?.completedBookings ?? 0}</Text>
-          <Text style={styles.miniLabel}>Completed</Text>
+          <Text style={styles.miniLabel}>{t("owner.screens.reports.completed")}</Text>
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Bookings by status</Text>
+      <Text style={styles.sectionTitle}>{t("owner.screens.reports.byStatus")}</Text>
       <View style={styles.bars}>
         {(Object.entries(byStatus) as [BookingStatus, number][]).map(([status, count]) => (
           <View key={status} style={styles.barRow}>
             <View style={styles.barHeader}>
-              <Text style={styles.barLabel}>{status}</Text>
+              <Text style={styles.barLabel}>{t(`owner.screens.reports.status.${status}`)}</Text>
               <Text style={styles.barCount}>{count}</Text>
             </View>
             <View style={styles.barTrack}>

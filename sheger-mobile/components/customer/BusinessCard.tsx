@@ -4,6 +4,7 @@ import { BusinessThumbnail } from "@/components/business/BusinessThumbnail";
 import { formatRating } from "@/components/customer/StarRating";
 import { getCategoryTheme } from "@/constants/categories";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import type { BusinessWithDetails } from "@/lib/api/businesses";
 import type { RatingSummary } from "@/lib/api/reviews";
 
@@ -24,10 +25,11 @@ export function BusinessCard({
   fromPrice,
   onPress,
 }: BusinessCardProps) {
+  const { t } = useI18n();
   const slug = business.categories?.slug ?? "";
   const theme = getCategoryTheme(themeIndex);
-  const location = business.address ?? business.city ?? "Addis Ababa";
-  const ratingLabel = formatRating(rating?.average ?? null, rating?.count ?? 0);
+  const location = business.address ?? business.city ?? t("customer.businessCard.defaultCity");
+  const ratingLabel = formatRating(rating?.average ?? null, rating?.count ?? 0, t);
 
   return (
     <Pressable onPress={onPress} style={styles.card}>
@@ -44,13 +46,15 @@ export function BusinessCard({
             {business.name}
           </Text>
           {fromPrice != null ? (
-            <Text style={styles.price}>from {fromPrice.toFixed(0)} ETB</Text>
+            <Text style={styles.price}>
+              {t("customer.businessCard.fromPrice", { price: fromPrice.toFixed(0) })}
+            </Text>
           ) : null}
         </View>
         <View style={styles.meta}>
           {business.featured_in_search ? (
             <View style={styles.featuredBadge}>
-              <Text style={styles.featuredBadgeText}>Featured</Text>
+              <Text style={styles.featuredBadgeText}>{t("customer.businessCard.featured")}</Text>
             </View>
           ) : null}
           {business.categories?.name ? (

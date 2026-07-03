@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchCategories } from "@/lib/api/categories";
 import { updateBusiness } from "@/lib/api/owner";
@@ -25,6 +26,7 @@ import {
 } from "@/lib/validation/contact";
 
 export default function EditBusinessScreen() {
+  const { t } = useI18n();
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -76,32 +78,35 @@ export default function EditBusinessScreen() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-businesses"] });
-      Alert.alert("Saved", "Business profile updated.", [
-        { text: "OK", onPress: () => goBackSafely("/(owner)/dashboard") },
+      Alert.alert(t("owner.screens.business.savedTitle"), t("owner.screens.business.savedMessage"), [
+        { text: t("common.ok"), onPress: () => goBackSafely("/(owner)/dashboard") },
       ]);
     },
-    onError: (error) => Alert.alert("Error", getErrorMessage(error)),
+    onError: (error) => Alert.alert(t("common.error"), getErrorMessage(error)),
   });
 
   const onSave = () => {
     if (!isWithinEthiopia(coords)) {
       Alert.alert(
-        "Location required",
-        "Set your business location so customers can find you in Nearby search.",
+        t("owner.screens.business.locationRequiredTitle"),
+        t("owner.screens.business.locationRequiredMessage"),
       );
       return;
     }
 
     if (phone.trim() && !isValidEthiopianMobile(phone)) {
       Alert.alert(
-        "Invalid phone",
-        "Enter a valid Ethiopian mobile number like 09xxxxxxxx, 07xxxxxxxx, or +2519xxxxxxxx.",
+        t("owner.screens.business.invalidPhoneTitle"),
+        t("owner.screens.business.invalidPhoneMessage"),
       );
       return;
     }
 
     if (email.trim() && !isValidEmail(email)) {
-      Alert.alert("Invalid email", "Enter a valid email address.");
+      Alert.alert(
+        t("owner.screens.business.invalidEmailTitle"),
+        t("owner.screens.business.invalidEmailMessage"),
+      );
       return;
     }
 
@@ -111,21 +116,37 @@ export default function EditBusinessScreen() {
   if (!business) {
     return (
       <Screen>
-        <Header title="Business profile" showBack />
-        <Text style={styles.muted}>Register a business first.</Text>
-        <Button title="Register" onPress={() => router.push("/(owner)/register")} />
+        <Header title={t("owner.screens.business.title")} showBack />
+        <Text style={styles.muted}>{t("owner.screens.business.registerFirst")}</Text>
+        <Button
+          title={t("owner.screens.business.registerButton")}
+          onPress={() => router.push("/(owner)/register")}
+        />
       </Screen>
     );
   }
 
   return (
     <Screen scroll>
-      <Header title="Business profile" subtitle="Update your public listing" showBack />
+      <Header
+        title={t("owner.screens.business.title")}
+        subtitle={t("owner.screens.business.subtitle")}
+        showBack
+      />
       <View style={styles.form}>
         <BusinessProfilePhoto business={business} />
-        <Input label="Business name" value={name} onChangeText={setName} />
-        <Input label="Description" value={description} onChangeText={setDescription} multiline />
-        <Text style={styles.label}>Category</Text>
+        <Input
+          label={t("owner.screens.business.businessName")}
+          value={name}
+          onChangeText={setName}
+        />
+        <Input
+          label={t("owner.screens.business.description")}
+          value={description}
+          onChangeText={setDescription}
+          multiline
+        />
+        <Text style={styles.label}>{t("owner.screens.business.category")}</Text>
         <View style={styles.chips}>
           {categories?.map((cat) => {
             const active = categoryId === cat.id;
@@ -142,10 +163,8 @@ export default function EditBusinessScreen() {
         </View>
 
         <View style={styles.locationSection}>
-          <Text style={styles.label}>Business location</Text>
-          <Text style={styles.sectionHint}>
-            Required. Keep this accurate so you rank correctly in Nearby search.
-          </Text>
+          <Text style={styles.label}>{t("owner.screens.business.businessLocation")}</Text>
+          <Text style={styles.sectionHint}>{t("owner.screens.business.locationHint")}</Text>
           <LocationPicker
             value={coords}
             onChange={setCoords}
@@ -155,17 +174,30 @@ export default function EditBusinessScreen() {
           />
         </View>
 
-        <Input label="Address (area / street)" value={address} onChangeText={setAddress} />
-        <Input label="City" value={city} onChangeText={setCity} />
         <Input
-          label="Phone"
+          label={t("owner.screens.business.address")}
+          value={address}
+          onChangeText={setAddress}
+        />
+        <Input label={t("owner.screens.business.city")} value={city} onChangeText={setCity} />
+        <Input
+          label={t("owner.screens.business.phone")}
           value={phone}
           onChangeText={onChangePhone}
           keyboardType="phone-pad"
           maxLength={13}
         />
-        <Input label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" />
-        <Button title="Save changes" onPress={onSave} loading={mutation.isPending} />
+        <Input
+          label={t("owner.screens.business.email")}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+        />
+        <Button
+          title={t("owner.screens.business.saveChanges")}
+          onPress={onSave}
+          loading={mutation.isPending}
+        />
       </View>
     </Screen>
   );

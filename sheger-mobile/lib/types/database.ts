@@ -1476,6 +1476,7 @@ export type Database = {
           p_business_id: string
           p_range_end: string
           p_range_start: string
+          p_employee_id?: string
         }
         Returns: {
           booking_count: number
@@ -1844,3 +1845,5 @@ export const Constants = {
     },
   },
 } as const
+
+export * from "./aliases";

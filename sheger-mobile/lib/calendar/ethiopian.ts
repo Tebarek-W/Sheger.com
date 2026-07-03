@@ -91,14 +91,6 @@ export function formatEthiopianDate(et: EthiopianDate, options?: { weekday?: Dat
   return `${weekday}${month} ${et.day}, ${et.year}`;
 }
 
-export function formatGregorianTime(date: Date) {
-  return date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
 /** European 24-hour clock in the business timezone. */
 export function formatGregorianTime24(
   date: Date,

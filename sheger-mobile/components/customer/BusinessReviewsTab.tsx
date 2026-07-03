@@ -1,12 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { ReviewForm } from "@/components/customer/ReviewForm";
 import { StarRating } from "@/components/customer/StarRating";
 import { Button } from "@/components/ui/Button";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import {
   fetchBusinessReviews,
   fetchReviewableBookings,
@@ -17,13 +18,14 @@ type BusinessReviewsTabProps = {
   businessId: string;
 };
 
-function reviewerName(review: ReviewWithCustomer) {
+function reviewerName(review: ReviewWithCustomer, fallback: string) {
   const name = review.profiles?.full_name?.trim();
-  if (!name) return "Sheger customer";
+  if (!name) return fallback;
   return name.split(" ")[0];
 }
 
 export function BusinessReviewsTab({ businessId }: BusinessReviewsTabProps) {
+  const { t } = useI18n();
   const { session, user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -39,6 +41,7 @@ export function BusinessReviewsTab({ businessId }: BusinessReviewsTabProps) {
   });
 
   const pendingBooking = reviewable?.[0];
+  const defaultCustomer = t("customer.defaultCustomer");
 
   if (isLoading) {
     return (
@@ -68,25 +71,23 @@ export function BusinessReviewsTab({ businessId }: BusinessReviewsTabProps) {
 
       {!session ? (
         <View style={styles.authBanner}>
-          <Text style={styles.authText}>Sign in to leave a review after your visit.</Text>
-          <Button title="Sign in" onPress={() => router.push("/(auth)/login")} />
+          <Text style={styles.authText}>{t("customer.reviews.signInHint")}</Text>
+          <Button title={t("common.signIn")} onPress={() => router.push("/(auth)/login")} />
         </View>
       ) : session && !pendingBooking && reviewable !== undefined ? (
-        <Text style={styles.hint}>
-          Reviews are available after a completed appointment at this business.
-        </Text>
+        <Text style={styles.hint}>{t("customer.reviews.afterVisitHint")}</Text>
       ) : null}
 
       {!reviews?.length ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>No reviews yet</Text>
-          <Text style={styles.emptyText}>Be the first to share your experience.</Text>
+          <Text style={styles.emptyTitle}>{t("customer.reviews.emptyTitle")}</Text>
+          <Text style={styles.emptyText}>{t("customer.reviews.emptyText")}</Text>
         </View>
       ) : (
         reviews.map((review) => (
           <View key={review.id} style={styles.reviewCard}>
             <View style={styles.reviewTop}>
-              <Text style={styles.reviewer}>{reviewerName(review)}</Text>
+              <Text style={styles.reviewer}>{reviewerName(review, defaultCustomer)}</Text>
               <Text style={styles.reviewDate}>
                 {new Date(review.created_at).toLocaleDateString("en-ET", {
                   month: "short",

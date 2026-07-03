@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import {
   formatServiceDuration,
   formatServicePrice,
@@ -13,6 +14,7 @@ type ServiceCardProps = {
 };
 
 export function ServiceCard({ service, onPress }: ServiceCardProps) {
+  const { t } = useI18n();
   const hasDescription = Boolean(service.description?.trim());
   const priceLabel = formatServicePrice(service);
   const durationLabel = formatServiceDuration(service);
@@ -22,7 +24,7 @@ export function ServiceCard({ service, onPress }: ServiceCardProps) {
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       accessibilityRole="button"
-      accessibilityLabel={`Book ${service.name}`}
+      accessibilityLabel={t("customer.serviceCard.accessibilityLabel", { name: service.name })}
     >
       <View style={styles.topRow}>
         <Text style={styles.name} numberOfLines={1}>
@@ -42,7 +44,7 @@ export function ServiceCard({ service, onPress }: ServiceCardProps) {
           <Text style={styles.durationText}>{durationLabel}</Text>
         </View>
         <View style={styles.bookRow}>
-          <Text style={styles.bookText}>Book</Text>
+          <Text style={styles.bookText}>{t("customer.serviceCard.book")}</Text>
           <Text style={styles.chevron}>›</Text>
         </View>
       </View>

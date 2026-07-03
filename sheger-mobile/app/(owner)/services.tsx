@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { createService, fetchMyServices, updateService } from "@/lib/api/owner";
 import { fetchSubscriptionSummary } from "@/lib/api/subscription";
@@ -60,6 +61,7 @@ function ModelPicker<T extends string>({
 }
 
 export default function OwnerServicesScreen() {
+  const { t } = useI18n();
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
   const categorySlug =
@@ -78,6 +80,26 @@ export default function OwnerServicesScreen() {
   const [duration, setDuration] = useState("30");
   const [blockMinutes, setBlockMinutes] = useState("30");
   const [defaultsApplied, setDefaultsApplied] = useState(false);
+
+  const pricingOptions = useMemo(
+    () =>
+      PRICING_MODEL_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: t(`owner.screens.services.pricingModels.${opt.value}.label`),
+        hint: t(`owner.screens.services.pricingModels.${opt.value}.hint`),
+      })),
+    [t],
+  );
+
+  const durationOptions = useMemo(
+    () =>
+      DURATION_MODEL_OPTIONS.map((opt) => ({
+        value: opt.value,
+        label: t(`owner.screens.services.durationModels.${opt.value}.label`),
+        hint: t(`owner.screens.services.durationModels.${opt.value}.hint`),
+      })),
+    [t],
+  );
 
   useEffect(() => {
     if (!isHealthcare || defaultsApplied) return;
@@ -158,7 +180,7 @@ export default function OwnerServicesScreen() {
       queryClient.invalidateQueries({ queryKey: ["owner-services", business?.id] });
       resetForm();
     },
-    onError: (e) => Alert.alert("Error", getErrorMessage(e)),
+    onError: (e) => Alert.alert(t("common.error"), getErrorMessage(e)),
   });
 
   const toggleMutation = useMutation({
@@ -172,7 +194,7 @@ export default function OwnerServicesScreen() {
     if (!buildInput) return;
     const validationError = validateCreateServiceInput(buildInput);
     if (validationError) {
-      Alert.alert("Missing fields", validationError);
+      Alert.alert(t("owner.screens.services.missingFieldsTitle"), validationError);
       return;
     }
     if (
@@ -180,8 +202,10 @@ export default function OwnerServicesScreen() {
       subscriptionSummary.usage.active_services >= subscriptionSummary.limits.max_services
     ) {
       Alert.alert(
-        "Service limit reached",
-        `You can have at most ${subscriptionSummary.limits.max_services} active services. Deactivate one or renew your plan from Subscription & billing.`,
+        t("owner.screens.services.limitTitle"),
+        t("owner.screens.services.limitActivateMessage", {
+          max: subscriptionSummary.limits.max_services,
+        }),
       );
       return;
     }
@@ -195,8 +219,10 @@ export default function OwnerServicesScreen() {
       subscriptionSummary.usage.active_services >= subscriptionSummary.limits.max_services
     ) {
       Alert.alert(
-        "Service limit reached",
-        `You can have at most ${subscriptionSummary.limits.max_services} active services.`,
+        t("owner.screens.services.limitTitle"),
+        t("owner.screens.services.limitMessage", {
+          max: subscriptionSummary.limits.max_services,
+        }),
       );
       return;
     }
@@ -211,36 +237,50 @@ export default function OwnerServicesScreen() {
 
   return (
     <Screen scroll>
-      <Header title="Services & prices" subtitle="What customers can book" showBack />
+      <Header
+        title={t("owner.screens.services.title")}
+        subtitle={t("owner.screens.services.subtitle")}
+        showBack
+      />
 
       {isHealthcare ? (
-        <Text style={styles.healthHint}>
-          Consultations can use estimated time and starting-from pricing. Calendar block time
-          reserves the slot; actual visit length may vary.
-        </Text>
+        <Text style={styles.healthHint}>{t("owner.screens.services.healthHint")}</Text>
       ) : null}
 
       <View style={styles.addCard}>
-        <Text style={styles.addTitle}>Add service</Text>
-        <Input label="Name" value={name} onChangeText={setName} placeholder="Haircut" />
-        <Input label="Description" value={description} onChangeText={setDescription} />
+        <Text style={styles.addTitle}>{t("owner.screens.services.addTitle")}</Text>
+        <Input
+          label={t("owner.screens.services.name")}
+          value={name}
+          onChangeText={setName}
+          placeholder={t("owner.screens.services.namePlaceholder")}
+        />
+        <Input
+          label={t("owner.screens.services.description")}
+          value={description}
+          onChangeText={setDescription}
+        />
 
         <ModelPicker
-          label="Pricing"
+          label={t("owner.screens.services.pricing")}
           value={pricingModel}
-          options={PRICING_MODEL_OPTIONS}
+          options={pricingOptions}
           onChange={setPricingModel}
         />
         <ModelPicker
-          label="Duration"
+          label={t("owner.screens.services.duration")}
           value={durationModel}
-          options={DURATION_MODEL_OPTIONS}
+          options={durationOptions}
           onChange={setDurationModel}
         />
 
         {showPriceField ? (
           <Input
-            label={pricingModel === "starting_from" ? "Minimum price (ETB)" : "Price (ETB)"}
+            label={
+              pricingModel === "starting_from"
+                ? t("owner.screens.services.minPriceEtb")
+                : t("owner.screens.services.priceEtb")
+            }
             value={price}
             onChangeText={setPrice}
             keyboardType="numeric"
@@ -251,7 +291,7 @@ export default function OwnerServicesScreen() {
           <View style={styles.row}>
             <View style={styles.half}>
               <Input
-                label="Min price (ETB)"
+                label={t("owner.screens.services.minPriceLabel")}
                 value={priceMin}
                 onChangeText={setPriceMin}
                 keyboardType="numeric"
@@ -259,7 +299,7 @@ export default function OwnerServicesScreen() {
             </View>
             <View style={styles.half}>
               <Input
-                label="Max price (ETB)"
+                label={t("owner.screens.services.maxPriceLabel")}
                 value={priceMax}
                 onChangeText={setPriceMax}
                 keyboardType="numeric"
@@ -270,17 +310,21 @@ export default function OwnerServicesScreen() {
 
         {showGuidePrice ? (
           <Input
-            label="Guide price (optional ETB)"
+            label={t("owner.screens.services.guidePrice")}
             value={priceMin}
             onChangeText={setPriceMin}
             keyboardType="numeric"
-            placeholder="Optional minimum estimate"
+            placeholder={t("owner.screens.services.guidePricePlaceholder")}
           />
         ) : null}
 
         {showDurationField ? (
           <Input
-            label={durationModel === "estimated" ? "Typical duration (min)" : "Duration (min)"}
+            label={
+              durationModel === "estimated"
+                ? t("owner.screens.services.typicalDuration")
+                : t("owner.screens.services.durationMin")
+            }
             value={duration}
             onChangeText={setDuration}
             keyboardType="numeric"
@@ -289,18 +333,22 @@ export default function OwnerServicesScreen() {
 
         {showBlockField ? (
           <Input
-            label="Calendar block (min)"
+            label={t("owner.screens.services.calendarBlock")}
             value={blockMinutes}
             onChangeText={setBlockMinutes}
             keyboardType="numeric"
           />
         ) : null}
 
-        <Button title="Add service" onPress={onAdd} loading={addMutation.isPending} />
+        <Button
+          title={t("owner.screens.services.addButton")}
+          onPress={onAdd}
+          loading={addMutation.isPending}
+        />
       </View>
 
-      <Text style={styles.sectionTitle}>Your services</Text>
-      {isLoading ? <Text style={styles.muted}>Loading...</Text> : null}
+      <Text style={styles.sectionTitle}>{t("owner.screens.services.yourServices")}</Text>
+      {isLoading ? <Text style={styles.muted}>{t("common.loading")}</Text> : null}
       <View style={styles.list}>
         {services?.map((service) => (
           <View key={service.id} style={styles.item}>
@@ -310,20 +358,20 @@ export default function OwnerServicesScreen() {
                 {formatServicePrice(service)} · {formatServiceDuration(service)}
               </Text>
               {!service.is_active ? (
-                <Text style={styles.inactive}>Inactive</Text>
+                <Text style={styles.inactive}>{t("owner.screens.services.inactive")}</Text>
               ) : null}
             </View>
-            <Pressable
-              onPress={() => onToggle(service.id, !service.is_active)}
-            >
+            <Pressable onPress={() => onToggle(service.id, !service.is_active)}>
               <Text style={styles.toggle}>
-                {service.is_active ? "Deactivate" : "Activate"}
+                {service.is_active
+                  ? t("owner.screens.services.deactivate")
+                  : t("owner.screens.services.activate")}
               </Text>
             </Pressable>
           </View>
         ))}
         {!services?.length && !isLoading ? (
-          <Text style={styles.muted}>No services yet. Add your first one above.</Text>
+          <Text style={styles.muted}>{t("owner.screens.services.empty")}</Text>
         ) : null}
       </View>
     </Screen>

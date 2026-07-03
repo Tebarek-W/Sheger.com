@@ -2,8 +2,8 @@ import * as DocumentPicker from "expo-document-picker";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/hooks/useI18n";
 import {
-  DOCUMENT_TYPE_LABELS,
   formatFileSize,
   type LicenseFileSelection,
   validateLicenseFile,
@@ -26,9 +26,31 @@ export function LicenseDocumentPicker({
   required = true,
   showError = false,
 }: LicenseDocumentPickerProps) {
-  const label = DOCUMENT_TYPE_LABELS[documentType];
+  const { t } = useI18n();
+  const label =
+    documentType === "trade_license"
+      ? t("owner.components.licenseDocumentPicker.tradeLicense")
+      : t("owner.components.licenseDocumentPicker.healthLicense");
   const missing = required && !value;
-  const validationError = value ? validateLicenseFile(value) : null;
+  const rawValidationError = value ? validateLicenseFile(value) : null;
+
+  const mapValidationError = (error: string | null): string | null => {
+    if (!error) return null;
+    switch (error) {
+      case "Only PDF, JPG, JPEG, and PNG files are accepted.":
+        return t("owner.components.licenseDocumentPicker.errors.invalidType");
+      case "The selected file appears to be empty.":
+        return t("owner.components.licenseDocumentPicker.errors.empty");
+      case "File must be 10 MB or smaller.":
+        return t("owner.components.licenseDocumentPicker.errors.tooLarge");
+      case "The selected file must have a name.":
+        return t("owner.components.licenseDocumentPicker.errors.noName");
+      default:
+        return error;
+    }
+  };
+
+  const validationError = mapValidationError(rawValidationError);
 
   const pickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -54,7 +76,7 @@ export function LicenseDocumentPicker({
         {label}
         {required ? " *" : ""}
       </Text>
-      <Text style={styles.hint}>Accepted formats: PDF, JPG, PNG. Max 10 MB.</Text>
+      <Text style={styles.hint}>{t("owner.components.licenseDocumentPicker.hint")}</Text>
 
       {value ? (
         <View style={styles.fileCard}>
@@ -65,19 +87,29 @@ export function LicenseDocumentPicker({
             <Text style={styles.fileMeta}>{formatFileSize(value.sizeBytes)}</Text>
           </View>
           <Pressable onPress={() => onChange(null)} hitSlop={8}>
-            <Text style={styles.remove}>Remove</Text>
+            <Text style={styles.remove}>{t("owner.components.licenseDocumentPicker.remove")}</Text>
           </Pressable>
         </View>
       ) : (
-        <Button title="Choose file" variant="secondary" onPress={pickFile} />
+        <Button
+          title={t("owner.components.licenseDocumentPicker.chooseFile")}
+          variant="secondary"
+          onPress={pickFile}
+        />
       )}
 
       {value && !validationError ? (
-        <Button title="Replace file" variant="secondary" onPress={pickFile} />
+        <Button
+          title={t("owner.components.licenseDocumentPicker.replaceFile")}
+          variant="secondary"
+          onPress={pickFile}
+        />
       ) : null}
 
       {showError && missing ? (
-        <Text style={styles.error}>Please upload your {label.toLowerCase()}.</Text>
+        <Text style={styles.error}>
+          {t("owner.components.licenseDocumentPicker.uploadRequired", { label: label.toLowerCase() })}
+        </Text>
       ) : null}
       {showError && validationError ? (
         <Text style={styles.error}>{validationError}</Text>

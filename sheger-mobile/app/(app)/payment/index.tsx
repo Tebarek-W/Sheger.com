@@ -59,6 +59,7 @@ function PaymentScreenContent() {
   const business = useBookingStore((s) => s.business);
   const service = useBookingStore((s) => s.service);
   const scheduledAt = useBookingStore((s) => s.scheduledAt);
+  const employeeId = useBookingStore((s) => s.employeeId);
   const setPaymentMethod = useBookingStore((s) => s.setPaymentMethod);
   const setBookingId = useBookingStore((s) => s.setBookingId);
   const [method, setMethod] = useState<CustomerPaymentMethod>(PAYMENT_METHOD_CHAPA);
@@ -87,6 +88,7 @@ function PaymentScreenContent() {
         customerId: user.id,
         businessId: business.id,
         serviceId: service.id,
+        employeeId,
         scheduledAt,
         durationMinutes: service.duration_minutes,
         paymentMethod: method,

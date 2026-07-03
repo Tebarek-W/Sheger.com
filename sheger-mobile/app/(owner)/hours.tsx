@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
   createAppointmentSlot,
@@ -30,11 +31,12 @@ import { formatTimeFromDb, normalizeTime24 } from "@/lib/calendar/timezone";
 import { getErrorMessage } from "@/lib/errors";
 import type { AppointmentSlot } from "@/lib/types/database";
 
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAY_KEYS = ["su", "mo", "tu", "we", "th", "fr", "sa"] as const;
 
 const DEFAULT_HOURS = buildDefaultWorkingHours();
 
 export default function OwnerHoursScreen() {
+  const { t } = useI18n();
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
   const [hours, setHours] = useState<WorkingHoursInput[]>(DEFAULT_HOURS);
@@ -83,9 +85,9 @@ export default function OwnerHoursScreen() {
     mutationFn: () => saveWorkingHours(business!.id, hours),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-hours", business?.id] });
-      Alert.alert("Saved", "Working hours updated.");
+      Alert.alert(t("owner.screens.hours.savedTitle"), t("owner.screens.hours.savedMessage"));
     },
-    onError: (e) => Alert.alert("Error", getErrorMessage(e)),
+    onError: (e) => Alert.alert(t("common.error"), getErrorMessage(e)),
   });
 
   const addSlotMutation = useMutation({
@@ -95,7 +97,7 @@ export default function OwnerHoursScreen() {
       setNewSlotTime(DEFAULT_OPEN_TIME_GC);
       setNewSlotCapacity("1");
     },
-    onError: (e) => Alert.alert("Could not add slot", getErrorMessage(e)),
+    onError: (e) => Alert.alert(t("owner.screens.hours.addSlotFailedTitle"), getErrorMessage(e)),
   });
 
   const removeSlotMutation = useMutation({
@@ -103,7 +105,7 @@ export default function OwnerHoursScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-slots", business?.id] });
     },
-    onError: (e) => Alert.alert("Error", getErrorMessage(e)),
+    onError: (e) => Alert.alert(t("common.error"), getErrorMessage(e)),
   });
 
   const updateDay = (day: number, patch: Partial<WorkingHoursInput>) => {
@@ -112,17 +114,26 @@ export default function OwnerHoursScreen() {
 
   const addSlot = () => {
     if (dayHours.is_closed) {
-      Alert.alert("Day closed", "Open this day before adding appointment slots.");
+      Alert.alert(
+        t("owner.screens.hours.dayClosedTitle"),
+        t("owner.screens.hours.dayClosedMessage"),
+      );
       return;
     }
     const time = normalizeTime24(newSlotTime);
     if (!time) {
-      Alert.alert("Invalid time", "Enter hour (1–12), minutes, and ጠዋት or ማታ.");
+      Alert.alert(
+        t("owner.screens.hours.invalidTimeTitle"),
+        t("owner.screens.hours.invalidTimeMessage"),
+      );
       return;
     }
     const capacity = Number(newSlotCapacity);
     if (!Number.isInteger(capacity) || capacity < 1) {
-      Alert.alert("Invalid capacity", "Enter a whole number of 1 or more.");
+      Alert.alert(
+        t("owner.screens.hours.invalidCapacityTitle"),
+        t("owner.screens.hours.invalidCapacityMessage"),
+      );
       return;
     }
     const openM = timeToMin(dayHours.open_time);
@@ -132,8 +143,11 @@ export default function OwnerHoursScreen() {
       const openEt = gc24ToEthiopianWall(dayHours.open_time);
       const closeEt = gc24ToEthiopianWall(dayHours.close_time);
       Alert.alert(
-        "Outside hours",
-        `Slot must be between ${openEt ? formatEthiopianWallLabel(openEt) : dayHours.open_time} and ${closeEt ? formatEthiopianWallLabel(closeEt) : dayHours.close_time}.`,
+        t("owner.screens.hours.outsideHoursTitle"),
+        t("owner.screens.hours.outsideHoursMessage", {
+          open: openEt ? formatEthiopianWallLabel(openEt) : dayHours.open_time,
+          close: closeEt ? formatEthiopianWallLabel(closeEt) : dayHours.close_time,
+        }),
       );
       return;
     }
@@ -144,27 +158,29 @@ export default function OwnerHoursScreen() {
     });
   };
 
+  const activeDayKey = DAY_KEYS[activeDay];
+
   return (
     <Screen scroll>
       <Header
-        title="Hours & slots"
-        subtitle="Set opening hours and bookable time slots with capacity"
+        title={t("owner.screens.hours.title")}
+        subtitle={t("owner.screens.hours.subtitle")}
         showBack
       />
 
-      <Text style={styles.sectionTitle}>Day</Text>
+      <Text style={styles.sectionTitle}>{t("owner.screens.hours.day")}</Text>
       <View style={styles.dayTabs}>
-        {DAY_NAMES.map((name, day) => {
+        {DAY_KEYS.map((key, day) => {
           const active = activeDay === day;
           const closed = hours.find((h) => h.day_of_week === day)?.is_closed;
           return (
             <Pressable
-              key={name}
+              key={key}
               onPress={() => setActiveDay(day)}
               style={[styles.dayTab, active && styles.dayTabActive]}
             >
               <Text style={[styles.dayTabText, active && styles.dayTabTextActive]}>
-                {name.slice(0, 3)}
+                {t(`booking.weekdays.${key}`)}
               </Text>
               {closed ? <Text style={styles.closedDot}>✕</Text> : null}
             </Pressable>
@@ -173,10 +189,12 @@ export default function OwnerHoursScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{DAY_NAMES[activeDay]}</Text>
+        <Text style={styles.cardTitle}>{t(`owner.screens.hours.days.${activeDayKey}`)}</Text>
         <Pressable onPress={() => updateDay(activeDay, { is_closed: !dayHours.is_closed })}>
           <Text style={styles.toggle}>
-            {dayHours.is_closed ? "Closed — tap to open" : "Open — tap to mark closed"}
+            {dayHours.is_closed
+              ? t("owner.screens.hours.closedTapOpen")
+              : t("owner.screens.hours.openTapClose")}
           </Text>
         </Pressable>
 
@@ -185,21 +203,21 @@ export default function OwnerHoursScreen() {
             <View style={styles.times}>
               <View style={styles.timeField}>
                 <EthiopianTimeInput
-                  label="Opens (Ethiopian)"
+                  label={t("owner.screens.hours.opensLabel")}
                   valueGc24={dayHours.open_time}
                   onChangeGc24={(v) => updateDay(activeDay, { open_time: v })}
                 />
               </View>
               <View style={styles.timeField}>
                 <EthiopianTimeInput
-                  label="Closes (Ethiopian)"
+                  label={t("owner.screens.hours.closesLabel")}
                   valueGc24={dayHours.close_time}
                   onChangeGc24={(v) => updateDay(activeDay, { close_time: v })}
                 />
               </View>
             </View>
             <Button
-              title="Save working hours"
+              title={t("owner.screens.hours.saveHours")}
               variant="outline"
               onPress={() => saveHoursMutation.mutate()}
               loading={saveHoursMutation.isPending}
@@ -210,14 +228,11 @@ export default function OwnerHoursScreen() {
 
       {!dayHours.is_closed ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Appointment slots</Text>
-          <Text style={styles.cardHint}>
-            Customers can only book configured slots. Each slot has a maximum number of
-            bookings. Past slots become unavailable automatically.
-          </Text>
+          <Text style={styles.cardTitle}>{t("owner.screens.hours.slotsTitle")}</Text>
+          <Text style={styles.cardHint}>{t("owner.screens.hours.slotsHint")}</Text>
 
           {daySlots.length === 0 ? (
-            <Text style={styles.emptySlots}>No slots for this day yet.</Text>
+            <Text style={styles.emptySlots}>{t("owner.screens.hours.noSlots")}</Text>
           ) : (
             daySlots.map((slot) => (
               <SlotRow
@@ -230,21 +245,21 @@ export default function OwnerHoursScreen() {
           )}
 
           <View style={styles.addSlot}>
-            <Text style={styles.addLabel}>Add slot</Text>
+            <Text style={styles.addLabel}>{t("owner.screens.hours.addSlot")}</Text>
             <EthiopianTimeInput
-              label="Start time (Ethiopian)"
+              label={t("owner.screens.hours.startTime")}
               valueGc24={newSlotTime}
               onChangeGc24={setNewSlotTime}
             />
             <Input
-              label="Max bookings"
+              label={t("owner.screens.hours.maxBookings")}
               value={newSlotCapacity}
               onChangeText={setNewSlotCapacity}
               placeholder="1"
               keyboardType="number-pad"
             />
             <Button
-              title="Add time slot"
+              title={t("owner.screens.hours.addTimeSlot")}
               onPress={addSlot}
               loading={addSlotMutation.isPending}
             />
@@ -269,17 +284,20 @@ function SlotRow({
   onDelete: () => void;
   deleting: boolean;
 }) {
+  const { t } = useI18n();
   const time = formatTimeFromDb(slot.start_time);
   return (
     <View style={styles.slotRow}>
       <View style={styles.slotInfo}>
         <DualTime hhmm={time} compact />
         <Text style={styles.capacity}>
-          Capacity: {slot.max_capacity} booking{slot.max_capacity === 1 ? "" : "s"}
+          {slot.max_capacity === 1
+            ? t("owner.screens.hours.capacity", { count: slot.max_capacity })
+            : t("owner.screens.hours.capacityPlural", { count: slot.max_capacity })}
         </Text>
       </View>
       <Pressable onPress={onDelete} disabled={deleting} style={styles.deleteBtn}>
-        <Text style={styles.deleteText}>Remove</Text>
+        <Text style={styles.deleteText}>{t("owner.screens.hours.remove")}</Text>
       </Pressable>
     </View>
   );

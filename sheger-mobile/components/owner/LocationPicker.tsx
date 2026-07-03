@@ -11,6 +11,7 @@ import {
 
 import { MapPicker } from "@/components/owner/MapPicker";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { reverseGeocode, searchPlaces, type PlaceResult } from "@/lib/geocoding";
 import {
   getFallbackCoordinates,
@@ -27,6 +28,7 @@ type LocationPickerProps = {
 };
 
 export function LocationPicker({ value, onChange, onResolveAddress }: LocationPickerProps) {
+  const { t } = useI18n();
   const [locating, setLocating] = useState(false);
   const [manual, setManual] = useState(false);
   const [latText, setLatText] = useState(value ? String(value.latitude) : "");
@@ -56,8 +58,8 @@ export function LocationPicker({ value, onChange, onResolveAddress }: LocationPi
   const applyCoords = (coords: Coordinates, withReverse = true) => {
     if (!isWithinEthiopia(coords)) {
       Alert.alert(
-        "Location looks off",
-        "These coordinates are outside Ethiopia. Please check and try again.",
+        t("owner.components.locationPicker.locationOffTitle"),
+        t("owner.components.locationPicker.locationOffMessage"),
       );
       return;
     }
@@ -73,18 +75,24 @@ export function LocationPicker({ value, onChange, onResolveAddress }: LocationPi
       const result = await requestUserLocation();
       if (!result.granted) {
         Alert.alert(
-          "Location permission needed",
-          "Allow location access, search for your address, or enter coordinates manually.",
+          t("owner.components.locationPicker.permissionTitle"),
+          t("owner.components.locationPicker.permissionMessage"),
         );
         return;
       }
       if (!result.coords) {
-        Alert.alert("Could not get location", "Try search or manual entry instead.");
+        Alert.alert(
+          t("owner.components.locationPicker.getLocationFailedTitle"),
+          t("owner.components.locationPicker.getLocationFailedMessage"),
+        );
         return;
       }
       applyCoords(result.coords);
     } catch {
-      Alert.alert("Could not get location", "Try search or manual entry instead.");
+      Alert.alert(
+        t("owner.components.locationPicker.getLocationFailedTitle"),
+        t("owner.components.locationPicker.getLocationFailedMessage"),
+      );
     } finally {
       setLocating(false);
     }
@@ -117,7 +125,10 @@ export function LocationPicker({ value, onChange, onResolveAddress }: LocationPi
     const latitude = parseCoordinate(latText);
     const longitude = parseCoordinate(lngText);
     if (latitude == null || longitude == null) {
-      Alert.alert("Invalid coordinates", "Enter valid numbers for latitude and longitude.");
+      Alert.alert(
+        t("owner.components.locationPicker.invalidCoordsTitle"),
+        t("owner.components.locationPicker.invalidCoordsMessage"),
+      );
       return;
     }
     applyCoords({ latitude, longitude });
@@ -133,7 +144,7 @@ export function LocationPicker({ value, onChange, onResolveAddress }: LocationPi
         <TextInput
           value={query}
           onChangeText={onChangeQuery}
-          placeholder="Search area or landmark (e.g. Edna Mall)"
+          placeholder={t("owner.components.locationPicker.searchPlaceholder")}
           placeholderTextColor={colors.textTertiary}
           style={styles.searchInput}
         />
@@ -160,7 +171,7 @@ export function LocationPicker({ value, onChange, onResolveAddress }: LocationPi
         <View style={styles.statusInfo}>
           {hasLocation && value ? (
             <>
-              <Text style={styles.statusTitle}>Location set</Text>
+              <Text style={styles.statusTitle}>{t("owner.components.locationPicker.locationSet")}</Text>
               {resolvedAddress ? (
                 <Text style={styles.statusAddress} numberOfLines={2}>
                   {resolvedAddress}
@@ -172,9 +183,9 @@ export function LocationPicker({ value, onChange, onResolveAddress }: LocationPi
             </>
           ) : (
             <>
-              <Text style={styles.statusTitleMuted}>No location set</Text>
+              <Text style={styles.statusTitleMuted}>{t("owner.components.locationPicker.noLocation")}</Text>
               <Text style={styles.statusHint}>
-                Search, tap the map, or use your current location.
+                {t("owner.components.locationPicker.noLocationHint")}
               </Text>
             </>
           )}
@@ -186,14 +197,18 @@ export function LocationPicker({ value, onChange, onResolveAddress }: LocationPi
           <ActivityIndicator color={colors.white} />
         ) : (
           <Text style={styles.primaryBtnText}>
-            {hasLocation ? "Update to my current location" : "Use my current location"}
+            {hasLocation
+              ? t("owner.components.locationPicker.updateCurrent")
+              : t("owner.components.locationPicker.useCurrent")}
           </Text>
         )}
       </Pressable>
 
       <Pressable onPress={() => setManual((m) => !m)}>
         <Text style={styles.manualToggle}>
-          {manual ? "Hide manual entry" : "Enter coordinates manually"}
+          {manual
+            ? t("owner.components.locationPicker.hideManual")
+            : t("owner.components.locationPicker.showManual")}
         </Text>
       </Pressable>
 
@@ -201,7 +216,7 @@ export function LocationPicker({ value, onChange, onResolveAddress }: LocationPi
         <View style={styles.manualBox}>
           <View style={styles.manualRow}>
             <View style={styles.manualField}>
-              <Text style={styles.manualLabel}>Latitude</Text>
+              <Text style={styles.manualLabel}>{t("owner.components.locationPicker.latitude")}</Text>
               <TextInput
                 value={latText}
                 onChangeText={setLatText}
@@ -212,7 +227,7 @@ export function LocationPicker({ value, onChange, onResolveAddress }: LocationPi
               />
             </View>
             <View style={styles.manualField}>
-              <Text style={styles.manualLabel}>Longitude</Text>
+              <Text style={styles.manualLabel}>{t("owner.components.locationPicker.longitude")}</Text>
               <TextInput
                 value={lngText}
                 onChangeText={setLngText}
@@ -224,7 +239,7 @@ export function LocationPicker({ value, onChange, onResolveAddress }: LocationPi
             </View>
           </View>
           <Pressable style={styles.manualApply} onPress={applyManual}>
-            <Text style={styles.manualApplyText}>Set this location</Text>
+            <Text style={styles.manualApplyText}>{t("owner.components.locationPicker.setLocation")}</Text>
           </Pressable>
         </View>
       ) : null}

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { BookingHeader } from "@/components/ui/BookingHeader";
@@ -10,13 +10,26 @@ import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { dateToEthiopian, formatMonthDual } from "@/lib/calendar/ethiopian";
 import { addisToday, dayOfWeekInAddis } from "@/lib/calendar/timezone";
+import { useI18n } from "@/hooks/useI18n";
 import { RequireAuth } from "@/hooks/useRequireAuth";
+import { useSlotRealtimeRefresh } from "@/hooks/useSlotRealtime";
 import { fetchAvailableSlotsForDate, slotInstantKey } from "@/lib/api/slots";
 import { fetchWorkingHours } from "@/lib/api/bookings";
+import { fetchBusinessEmployees } from "@/lib/api/businesses";
 import { formatSlotTimeDual } from "@/lib/booking/slots";
+import type { Employee } from "@/lib/types/database";
 import { useBookingStore } from "@/stores/bookingStore";
 
-const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const WEEKDAY_KEYS = ["su", "mo", "tu", "we", "th", "fr", "sa"] as const;
+
+function staffInitials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export default function BookScreen() {
   return (
@@ -27,8 +40,11 @@ export default function BookScreen() {
 }
 
 function BookScreenContent() {
+  const { t } = useI18n();
   const business = useBookingStore((s) => s.business);
   const service = useBookingStore((s) => s.service);
+  const employeeId = useBookingStore((s) => s.employeeId);
+  const setEmployeeId = useBookingStore((s) => s.setEmployeeId);
   const setScheduledAt = useBookingStore((s) => s.setScheduledAt);
   const scheduledAt = useBookingStore((s) => s.scheduledAt);
 
@@ -38,6 +54,12 @@ function BookScreenContent() {
   });
   const [selectedDate, setSelectedDate] = useState(() => addisToday());
 
+  const { data: employees } = useQuery({
+    queryKey: ["business-employees", business?.id],
+    queryFn: () => fetchBusinessEmployees(business!.id),
+    enabled: Boolean(business?.id),
+  });
+
   const { data: workingHours, isLoading: hoursLoading } = useQuery({
     queryKey: ["working-hours", business?.id, selectedDate.toDateString()],
     queryFn: () => fetchWorkingHours(business!.id, dayOfWeekInAddis(selectedDate)),
@@ -45,23 +67,21 @@ function BookScreenContent() {
     refetchInterval: 30_000,
   });
 
-  // Hours not configured for this day == closed. `null` is a loaded value here.
   const hoursConfigured = Boolean(workingHours);
   const isOpenDay = hoursConfigured && !workingHours!.is_closed;
 
+  useSlotRealtimeRefresh(business?.id, selectedDate, employeeId);
+
   const { data: availableSlots, isLoading: slotsLoading } = useQuery({
-    queryKey: ["available-slots", business?.id, selectedDate.toDateString()],
-    queryFn: () => fetchAvailableSlotsForDate(business!.id, selectedDate),
+    queryKey: ["available-slots", business?.id, selectedDate.toDateString(), employeeId],
+    queryFn: () => fetchAvailableSlotsForDate(business!.id, selectedDate, employeeId),
     enabled: Boolean(business?.id) && isOpenDay,
-    refetchInterval: 8_000,
     refetchOnMount: "always",
   });
 
   const bookableSlots = availableSlots?.filter((s) => !s.isFull) ?? [];
   const hasFullSlots = (availableSlots?.some((s) => s.isFull) ?? false) && bookableSlots.length === 0;
 
-  // If the chosen slot becomes full or disappears after a refetch, clear it so
-  // the user can't proceed to payment with a stale selection.
   useEffect(() => {
     if (!scheduledAt || !availableSlots) return;
     const match = availableSlots.find(
@@ -99,12 +119,17 @@ function BookScreenContent() {
     setScheduledAt(null);
   };
 
+  const pickEmployee = (id: string | null) => {
+    setEmployeeId(id);
+    setScheduledAt(null);
+  };
+
   if (!business || !service) {
     return (
       <Screen padded={false}>
         <View style={styles.pad}>
-          <BookingHeader title="Booking" />
-          <Text style={styles.muted}>Select a service first.</Text>
+          <BookingHeader title={t("booking.title")} />
+          <Text style={styles.muted}>{t("booking.selectServiceFirst")}</Text>
         </View>
       </Screen>
     );
@@ -112,23 +137,51 @@ function BookScreenContent() {
 
   const loading = hoursLoading || slotsLoading;
   const monthDual = formatMonthDual(viewMonth);
+  const showStaffPicker = (employees?.length ?? 0) > 0;
 
   return (
     <Screen scroll padded={false}>
       <View style={styles.pad}>
         <BookingHeader title={service.name} />
 
-        <Text style={styles.sectionLabel}>Staff member</Text>
-        <View style={styles.staffRow}>
-          <View style={styles.staffItem}>
-            <View style={[styles.staffAvatar, styles.staffSelected]}>
-              <Text style={styles.staffInitials}>Any</Text>
-            </View>
-            <Text style={styles.staffName}>Any available</Text>
-          </View>
-        </View>
+        {showStaffPicker ? (
+          <>
+            <Text style={styles.sectionLabel}>
+              {t("booking.staff")} · {t("booking.staffOptional")}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.staffRow}
+            >
+              <Pressable style={styles.staffItem} onPress={() => pickEmployee(null)}>
+                <View style={[styles.staffAvatar, employeeId === null && styles.staffSelected]}>
+                  <Text style={styles.staffInitials}>★</Text>
+                </View>
+                <Text style={styles.staffName}>{t("booking.anyAvailable")}</Text>
+              </Pressable>
+              {employees!.map((employee: Employee) => {
+                const active = employeeId === employee.id;
+                return (
+                  <Pressable
+                    key={employee.id}
+                    style={styles.staffItem}
+                    onPress={() => pickEmployee(employee.id)}
+                  >
+                    <View style={[styles.staffAvatar, active && styles.staffSelected]}>
+                      <Text style={styles.staffInitials}>{staffInitials(employee.full_name)}</Text>
+                    </View>
+                    <Text style={styles.staffName} numberOfLines={1}>
+                      {employee.full_name.split(" ")[0]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </>
+        ) : null}
 
-        <Text style={styles.sectionLabel}>Select date</Text>
+        <Text style={styles.sectionLabel}>{t("booking.selectDate")}</Text>
         <View style={styles.calendar}>
           <View style={styles.calHeader}>
             <View style={styles.calMonthBlock}>
@@ -145,13 +198,13 @@ function BookScreenContent() {
             </View>
           </View>
           <View style={styles.calWeek}>
-            {WEEKDAYS.map((d) => (
-              <Text key={d} style={styles.calWeekDay}>
-                {d}
+            {WEEKDAY_KEYS.map((key) => (
+              <Text key={key} style={styles.calWeekDay}>
+                {t(`booking.weekdays.${key}`)}
               </Text>
             ))}
           </View>
-          <Text style={styles.calLegend}>GC day · ET day below</Text>
+          <Text style={styles.calLegend}>{t("booking.gcEtLegend")}</Text>
           <View style={styles.calGrid}>
             {calendarDays.map((date, i) => {
               if (!date) {
@@ -199,19 +252,19 @@ function BookScreenContent() {
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>Available times (Ethiopian)</Text>
+        <Text style={styles.sectionLabel}>{t("booking.availableTimes")}</Text>
         {hoursLoading ? (
           <ActivityIndicator color={colors.primary} />
         ) : !hoursConfigured ? (
-          <Text style={styles.muted}>Hours are not set for this day yet.</Text>
+          <Text style={styles.muted}>{t("booking.hoursNotSet")}</Text>
         ) : workingHours?.is_closed ? (
-          <Text style={styles.muted}>This business is closed on this day.</Text>
+          <Text style={styles.muted}>{t("booking.closedToday")}</Text>
         ) : loading ? (
           <ActivityIndicator color={colors.primary} />
         ) : !availableSlots?.length ? (
-          <Text style={styles.muted}>No slots available for this day.</Text>
+          <Text style={styles.muted}>{t("booking.noSlots")}</Text>
         ) : hasFullSlots ? (
-          <Text style={styles.muted}>All time slots are full for this day.</Text>
+          <Text style={styles.muted}>{t("booking.allFull")}</Text>
         ) : (
           <View style={styles.timeGrid}>
             {availableSlots.map((slot) => {
@@ -251,10 +304,10 @@ function BookScreenContent() {
                     24h {time.gc24}
                   </Text>
                   {disabled ? (
-                    <Text style={styles.fullBadge}>Full</Text>
+                    <Text style={styles.fullBadge}>{t("booking.full")}</Text>
                   ) : slot.maxCapacity > 1 ? (
                     <Text style={[styles.capacityText, active && styles.timeTextActive]}>
-                      {slot.remainingCapacity} left
+                      {t("booking.left", { count: slot.remainingCapacity })}
                     </Text>
                   ) : null}
                 </Pressable>
@@ -266,7 +319,10 @@ function BookScreenContent() {
         {scheduledAt ? (
           <View style={styles.footer}>
             <DualDateTime iso={scheduledAt} />
-            <Button title="Continue to payment" onPress={() => router.push("/(app)/payment")} />
+            <Button
+              title={t("booking.continueToPayment")}
+              onPress={() => router.push("/(app)/payment")}
+            />
           </View>
         ) : null}
       </View>
@@ -285,8 +341,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 20,
   },
-  staffRow: { flexDirection: "row", gap: 12, marginBottom: 4 },
-  staffItem: { alignItems: "center", gap: 6 },
+  staffRow: { flexDirection: "row", gap: 12, marginBottom: 4, paddingRight: 8 },
+  staffItem: { alignItems: "center", gap: 6, maxWidth: 72 },
   staffAvatar: {
     width: 52,
     height: 52,
@@ -297,7 +353,7 @@ const styles = StyleSheet.create({
   },
   staffSelected: { borderWidth: 2, borderColor: colors.primary },
   staffInitials: { fontSize: 14, fontWeight: "500", color: colors.primary },
-  staffName: { fontSize: 10, color: colors.textSecondary },
+  staffName: { fontSize: 10, color: colors.textSecondary, textAlign: "center" },
   calendar: {
     backgroundColor: colors.screenBg,
     borderRadius: radius.lg,

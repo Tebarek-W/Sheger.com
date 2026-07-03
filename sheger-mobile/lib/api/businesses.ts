@@ -153,11 +153,6 @@ export async function fetchMarketplaceBusinessesPage(
   };
 }
 
-export async function fetchApprovedBusinessesWithDetails() {
-  const page = await fetchMarketplaceBusinessesPage({ limit: 40 });
-  return page.rows;
-}
-
 export async function fetchBusinessesByCategory(categoryId: string) {
   const page = await fetchMarketplaceBusinessesPage({
     limit: 40,

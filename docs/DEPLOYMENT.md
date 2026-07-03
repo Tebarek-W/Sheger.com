@@ -116,7 +116,7 @@ supabase functions deploy send-booking-reminders --no-verify-jwt
 
 8. Test on a **physical device** with notification permission granted. Denied permission still allows the in-app inbox.
 
-## Provider subscriptions (mock payment)
+## Provider subscriptions (Chapa payment)
 
 Providers choose a **subscription plan** (Free, Basic, Premium, etc.) to stay visible on the marketplace. Admins create plans and set limits; businesses pick a plan and inherit those limits automatically.
 
@@ -126,11 +126,13 @@ Providers choose a **subscription plan** (Free, Basic, Premium, etc.) to stay vi
 supabase db push
 ```
 
-Required file:
+Required files:
 
 - `supabase/migrations/20250625000001_business_subscriptions.sql` (plans, marketplace gating, featured search)
+- `supabase/migrations/20250703140001_subscription_chapa_payment.sql` (Chapa checkout for paid plans)
+- `supabase/migrations/20250703150001_grace_employee_slots_realtime.sql` (grace period, employee slots, realtime)
 
-Or run it in the Supabase SQL Editor.
+Or run them in the Supabase SQL Editor.
 
 If you previously applied the older split migrations (`20250626000001`–`20250628000001`), mark them as reverted locally so `db push` stays in sync:
 
@@ -141,7 +143,15 @@ supabase migration repair 20250627000002 --status reverted
 supabase migration repair 20250628000001 --status reverted
 ```
 
-### 2. Admin configuration
+### 2. Deploy edge functions
+
+```bash
+supabase functions deploy chapa-subscription-initialize
+supabase functions deploy chapa-verify
+supabase functions deploy check-subscription-expiry --no-verify-jwt
+```
+
+### 3. Admin configuration
 
 In the admin panel, open **Subscription plans** (`/dashboard/plans`):
 
@@ -150,17 +160,17 @@ In the admin panel, open **Subscription plans** (`/dashboard/plans`):
 
 Default seeded plans: **Free** (0 ETB), **Basic** (500/5000 ETB), **Premium** (1500/15000 ETB).
 
-### 3. Owner app
+### 4. Owner app
 
 Owners use **Subscription & billing** on the dashboard:
 
 1. Pick a plan (Free, Basic, Premium, …)
-2. For paid plans: choose monthly/yearly + mock payment method
+2. For paid plans: choose monthly/yearly, then complete payment on Chapa's secure checkout
 3. For free plans: tap **Activate plan** (no payment)
 
-Limits update immediately from the selected plan.
+Limits update immediately from the selected plan. During a grace period (`past_due` with `grace_ends_at` in the future), the business remains visible on the marketplace.
 
-### 4. Expiry cron (optional)
+### 5. Expiry cron (optional)
 
 Deploy and schedule the expiry checker:
 
@@ -170,7 +180,7 @@ supabase functions deploy check-subscription-expiry --no-verify-jwt
 
 Schedule: `0 */6 * * *` (every 6 hours). Marks expired `active` subscriptions as `past_due` and sets `grace_ends_at`.
 
-### 5. Marketplace gating
+### 6. Marketplace gating
 
 - Customers only see businesses with an active paid period (`business_is_marketplace_live`)
 - Booking inserts are rejected when subscription expired or weekly booking cap reached

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -12,18 +12,29 @@ import { formatRating, StarRating } from "@/components/customer/StarRating";
 import { getCategoryIcon, getCategoryTheme } from "@/constants/categories";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { fetchBusinessById, fetchBusinessServices } from "@/lib/api/businesses";
 import { fetchBusinessReviewSummary } from "@/lib/api/reviews";
 import { promptLoginToBook, setBookingDraft } from "@/lib/auth-booking";
 import { CUSTOMER_HOME, goBackSafely } from "@/lib/routing";
 
-const TABS = ["Services", "Staff", "Reviews", "Photos"] as const;
+const TAB_KEYS = ["services", "staff", "reviews", "photos"] as const;
+type TabKey = (typeof TAB_KEYS)[number];
 
 export default function BusinessProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useAuth();
-  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("Services");
+  const { t } = useI18n();
+  const [activeTab, setActiveTab] = useState<TabKey>("services");
   const [heroAspect, setHeroAspect] = useState(4 / 3);
+
+  const tabLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        TAB_KEYS.map((key) => [key, t(`business.tabs.${key}`)]),
+      ) as Record<TabKey, string>,
+    [t],
+  );
 
   const { data: business, isLoading } = useQuery({
     queryKey: ["business", id],
@@ -87,7 +98,7 @@ export default function BusinessProfileScreen() {
         <Pressable onPress={() => goBackSafely(CUSTOMER_HOME)} style={styles.backFab}>
           <Text style={styles.backFabText}>←</Text>
         </Pressable>
-        <Text style={styles.muted}>This business is unavailable.</Text>
+        <Text style={styles.muted}>{t("business.unavailable")}</Text>
       </SafeAreaView>
     );
   }
@@ -95,7 +106,7 @@ export default function BusinessProfileScreen() {
   const slug = business.categories?.slug;
   const icon = getCategoryIcon(slug);
   const theme = getCategoryTheme(0);
-  const ratingLabel = formatRating(reviewSummary?.average ?? null, reviewSummary?.count ?? 0);
+  const ratingLabel = formatRating(reviewSummary?.average ?? null, reviewSummary?.count ?? 0, t);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -127,25 +138,27 @@ export default function BusinessProfileScreen() {
               ) : null}
               <Text style={styles.stat}>★ {ratingLabel}</Text>
             </View>
-            <Text style={styles.stat}>📍 {business.address ?? business.city ?? "Addis"}</Text>
+            <Text style={styles.stat}>
+              📍 {business.address ?? business.city ?? t("business.defaultCity")}
+            </Text>
             <View style={styles.openBadge}>
-              <Text style={styles.openText}>Open today</Text>
+              <Text style={styles.openText}>{t("business.openToday")}</Text>
             </View>
           </View>
 
           <View style={styles.tabs}>
-            {TABS.map((tab) => {
+            {TAB_KEYS.map((tab) => {
               const active = activeTab === tab;
               return (
                 <Pressable key={tab} onPress={() => setActiveTab(tab)} style={styles.tab}>
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab}</Text>
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tabLabels[tab]}</Text>
                   {active ? <View style={styles.tabLine} /> : null}
                 </Pressable>
               );
             })}
           </View>
 
-          {activeTab === "Services" ? (
+          {activeTab === "services" ? (
             <View style={styles.serviceList}>
               {services?.map((service) => (
                 <ServiceCard
@@ -154,13 +167,13 @@ export default function BusinessProfileScreen() {
                   onPress={() => onBook(service.id)}
                 />
               ))}
-              {!services?.length ? <Text style={styles.muted}>No services listed yet.</Text> : null}
+              {!services?.length ? <Text style={styles.muted}>{t("business.noServices")}</Text> : null}
             </View>
           ) : null}
 
-          {activeTab === "Staff" ? <BusinessStaffTab businessId={business.id} /> : null}
-          {activeTab === "Reviews" ? <BusinessReviewsTab businessId={business.id} /> : null}
-          {activeTab === "Photos" ? <BusinessPhotosTab business={business} /> : null}
+          {activeTab === "staff" ? <BusinessStaffTab businessId={business.id} /> : null}
+          {activeTab === "reviews" ? <BusinessReviewsTab businessId={business.id} /> : null}
+          {activeTab === "photos" ? <BusinessPhotosTab business={business} /> : null}
         </View>
       </ScrollView>
     </SafeAreaView>

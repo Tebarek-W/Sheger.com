@@ -16,3 +16,14 @@ for (const target of targets) {
   writeFileSync(target, header + body, "utf8");
   console.log(`Synced ${target}`);
 }
+
+const mobileAliases = join(root, "sheger-mobile", "lib", "types", "database.ts");
+const mobileBody = readFileSync(mobileAliases, "utf8");
+if (!mobileBody.includes('export * from "./aliases"')) {
+  writeFileSync(
+    mobileAliases,
+    `${mobileBody.trimEnd()}\n\nexport * from "./aliases";\n`,
+    "utf8",
+  );
+  console.log("Appended aliases re-export to sheger-mobile/lib/types/database.ts");
+}

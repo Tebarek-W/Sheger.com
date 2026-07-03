@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { CUSTOMER_HOME } from "@/lib/routing";
 
 /**
@@ -13,6 +14,7 @@ import { CUSTOMER_HOME } from "@/lib/routing";
  */
 export default function AdminBlockedScreen() {
   const { profile, signOut } = useAuth();
+  const { t } = useI18n();
 
   const onSignOut = async () => {
     await signOut();
@@ -24,36 +26,29 @@ export default function AdminBlockedScreen() {
     router.replace(CUSTOMER_HOME);
   };
 
+  const name = profile?.full_name?.trim();
+  const subtitle = name
+    ? t("auth.adminBlocked.subtitleNamed", { name })
+    : t("auth.adminBlocked.subtitleGeneric");
+
   return (
     <Screen scroll backgroundColor={colors.screenBg}>
       <View style={styles.wrap}>
         <View style={styles.iconRing}>
           <Text style={styles.icon}>🛡️</Text>
         </View>
-        <Text style={styles.title}>Admin account</Text>
-        <Text style={styles.subtitle}>
-          {profile?.full_name?.trim()
-            ? `${profile.full_name.trim()}, this`
-            : "This"}{" "}
-          account has platform admin access and cannot be used in the Sheger mobile app.
-        </Text>
+        <Text style={styles.title}>{t("auth.adminBlocked.title")}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Use separate accounts</Text>
-          <Text style={styles.cardText}>
-            • Admin panel — sign in on the Sheger admin website with your admin email.
-          </Text>
-          <Text style={styles.cardText}>
-            • Mobile app — use a different email registered as customer or business owner.
-          </Text>
+          <Text style={styles.cardTitle}>{t("auth.adminBlocked.cardTitle")}</Text>
+          <Text style={styles.cardText}>{t("auth.adminBlocked.cardAdmin")}</Text>
+          <Text style={styles.cardText}>{t("auth.adminBlocked.cardMobile")}</Text>
         </View>
 
-        <Button title="Sign out" onPress={onSignOut} />
-        <Button title="Browse as guest" variant="outline" onPress={onBrowseGuest} />
-        <Text style={styles.footer}>
-          If you need to book services, ask your administrator to set your personal email to
-          customer role, or create a new mobile account.
-        </Text>
+        <Button title={t("common.signOut")} onPress={onSignOut} />
+        <Button title={t("welcome.browseGuest")} variant="outline" onPress={onBrowseGuest} />
+        <Text style={styles.footer}>{t("auth.adminBlocked.footer")}</Text>
       </View>
     </Screen>
   );

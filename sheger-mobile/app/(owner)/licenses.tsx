@@ -9,6 +9,7 @@ import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchBusinessDocuments, uploadBusinessDocument } from "@/lib/api/business-license";
 import {
@@ -21,6 +22,7 @@ import { getErrorMessage } from "@/lib/errors";
 import type { BusinessDocumentType } from "@/lib/types/database";
 
 export default function CompleteLicensesScreen() {
+  const { t } = useI18n();
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
   const categorySlug =
@@ -34,7 +36,7 @@ export default function CompleteLicensesScreen() {
 
   const requiredTypes = getRequiredDocumentTypes(categorySlug);
   const existingTypes = new Set(documents?.map((d) => d.document_type) ?? []);
-  const missingTypes = requiredTypes.filter((t) => !existingTypes.has(t));
+  const missingTypes = requiredTypes.filter((docType) => !existingTypes.has(docType));
 
   const [files, setFiles] = useState<Partial<Record<BusinessDocumentType, LicenseFileSelection>>>({});
   const [showErrors, setShowErrors] = useState(false);
@@ -61,11 +63,11 @@ export default function CompleteLicensesScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["business-documents", business?.id] });
       queryClient.invalidateQueries({ queryKey: ["owner-businesses"] });
-      Alert.alert("Documents uploaded", "Your licenses are pending admin review.", [
-        { text: "OK", onPress: () => router.back() },
+      Alert.alert(t("owner.screens.licenses.uploadedTitle"), t("owner.screens.licenses.uploadedMessage"), [
+        { text: t("common.ok"), onPress: () => router.back() },
       ]);
     },
-    onError: (error) => Alert.alert("Upload failed", getErrorMessage(error)),
+    onError: (error) => Alert.alert(t("owner.screens.licenses.uploadFailedTitle"), getErrorMessage(error)),
   });
 
   const onSubmit = () => {
@@ -73,13 +75,16 @@ export default function CompleteLicensesScreen() {
       const file = files[type];
       if (!file) {
         setShowErrors(true);
-        Alert.alert("Missing documents", "Upload all required license documents.");
+        Alert.alert(
+          t("owner.screens.licenses.missingDocsTitle"),
+          t("owner.screens.licenses.missingDocsMessage"),
+        );
         return;
       }
       const validationError = validateLicenseFile(file);
       if (validationError) {
         setShowErrors(true);
-        Alert.alert("Invalid document", validationError);
+        Alert.alert(t("owner.screens.licenses.invalidDocTitle"), validationError);
         return;
       }
     }
@@ -88,16 +93,19 @@ export default function CompleteLicensesScreen() {
   };
 
   const subtitle = useMemo(() => {
-    if (!business) return "Upload missing license documents";
-    if (missingTypes.length === 0) return "All required documents are on file";
-    return `Upload ${missingTypes.length} missing document(s) for ${business.name}`;
-  }, [business, missingTypes.length]);
+    if (!business) return t("owner.screens.licenses.uploadMissing");
+    if (missingTypes.length === 0) return t("owner.screens.licenses.allOnFile");
+    return t("owner.screens.licenses.uploadCount", {
+      count: missingTypes.length,
+      name: business.name,
+    });
+  }, [business, missingTypes.length, t]);
 
   if (!business) {
     return (
       <Screen>
-        <Header title="License documents" showBack />
-        <Text style={styles.muted}>Register a business first.</Text>
+        <Header title={t("owner.screens.licenses.title")} showBack />
+        <Text style={styles.muted}>{t("owner.screens.licenses.registerFirst")}</Text>
       </Screen>
     );
   }
@@ -105,19 +113,19 @@ export default function CompleteLicensesScreen() {
   if (business.status !== "pending") {
     return (
       <Screen>
-        <Header title="License documents" showBack />
-        <Text style={styles.muted}>License uploads are only editable while your business is pending review.</Text>
+        <Header title={t("owner.screens.licenses.title")} showBack />
+        <Text style={styles.muted}>{t("owner.screens.licenses.pendingOnly")}</Text>
       </Screen>
     );
   }
 
   return (
     <Screen scroll>
-      <Header title="License documents" subtitle={subtitle} showBack />
+      <Header title={t("owner.screens.licenses.title")} subtitle={subtitle} showBack />
 
       {missingTypes.length === 0 ? (
         <View style={styles.notice}>
-          <Text style={styles.noticeText}>All required documents have been uploaded.</Text>
+          <Text style={styles.noticeText}>{t("owner.screens.licenses.allUploaded")}</Text>
         </View>
       ) : (
         <View style={styles.form}>
@@ -141,7 +149,11 @@ export default function CompleteLicensesScreen() {
             />
           ) : null}
 
-          <Button title="Upload documents" onPress={onSubmit} loading={mutation.isPending} />
+          <Button
+            title={t("owner.screens.licenses.uploadButton")}
+            onPress={onSubmit}
+            loading={mutation.isPending}
+          />
         </View>
       )}
     </Screen>

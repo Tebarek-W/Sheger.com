@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { fetchBusinessEmployees } from "@/lib/api/businesses";
 import type { Employee } from "@/lib/types/database";
 
@@ -19,6 +20,7 @@ function initials(name: string) {
 }
 
 export function BusinessStaffTab({ businessId }: BusinessStaffTabProps) {
+  const { t } = useI18n();
   const { data: employees, isLoading } = useQuery({
     queryKey: ["business-employees", businessId],
     queryFn: () => fetchBusinessEmployees(businessId),
@@ -36,8 +38,8 @@ export function BusinessStaffTab({ businessId }: BusinessStaffTabProps) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyEmoji}>👥</Text>
-        <Text style={styles.emptyTitle}>No staff listed</Text>
-        <Text style={styles.emptyText}>This business has not added team members yet.</Text>
+        <Text style={styles.emptyTitle}>{t("customer.staff.emptyTitle")}</Text>
+        <Text style={styles.emptyText}>{t("customer.staff.emptyText")}</Text>
       </View>
     );
   }

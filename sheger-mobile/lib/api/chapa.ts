@@ -5,25 +5,6 @@ import {
 } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 
-type ChapaDirectChargeResponse = {
-  ok: boolean;
-  tx_ref: string;
-  reference: string;
-  charge_type: string;
-  status: string;
-  auth_required?: boolean;
-  amount_etb?: number;
-  reused?: boolean;
-  error?: string;
-};
-
-type ChapaAuthorizeResponse = {
-  ok: boolean;
-  status?: string;
-  tx_ref?: string;
-  error?: string;
-};
-
 type ChapaInitializeResponse = {
   checkout_url: string;
   tx_ref: string;
@@ -121,41 +102,6 @@ export async function initializeChapaBookingPayment(bookingId: string) {
   );
 
   if (error || !data?.checkout_url || !data.tx_ref) {
-    await readSupabaseFunctionError(data, error);
-  }
-
-  return data!;
-}
-
-export async function startChapaDirectCharge(input: {
-  bookingId: string;
-  chargeType: string;
-  mobile: string;
-}) {
-  const { data, error } = await supabase.functions.invoke<ChapaDirectChargeResponse>(
-    "chapa-charge",
-    { body: input },
-  );
-
-  if (error || !data?.ok || !data.tx_ref || !data.reference) {
-    await readSupabaseFunctionError(data, error);
-  }
-
-  return data!;
-}
-
-export async function authorizeChapaDirectCharge(input: {
-  txRef: string;
-  chargeType: string;
-  reference: string;
-  client?: string;
-}) {
-  const { data, error } = await supabase.functions.invoke<ChapaAuthorizeResponse>(
-    "chapa-authorize",
-    { body: input },
-  );
-
-  if (error || !data?.ok) {
     await readSupabaseFunctionError(data, error);
   }
 

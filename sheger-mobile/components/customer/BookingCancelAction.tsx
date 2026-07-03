@@ -1,15 +1,14 @@
 import { useMutation } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { cancelCustomerBooking } from "@/lib/api/bookings";
 import {
   DEFAULT_CANCELLATION_HOURS,
-  getCancellationConfirmMessage,
   getCancellationEligibility,
-  getCancellationPolicyText,
   parseCancellationApiError,
 } from "@/lib/booking/cancellation";
 import type { BookingStatus } from "@/lib/types/database";
@@ -33,37 +32,86 @@ export function BookingCancelAction({
   cancellationHours = DEFAULT_CANCELLATION_HOURS,
   onCancelled,
 }: BookingCancelActionProps) {
+  const { t } = useI18n();
+
+  const getPolicyText = useCallback(
+    (hours: number) =>
+      hours === 1
+        ? t("customer.cancellation.policyOneHour", { hours })
+        : t("customer.cancellation.policy", { hours }),
+    [t],
+  );
+
+  const getReasonText = useCallback(
+    (elig: ReturnType<typeof getCancellationEligibility>) => {
+      if (!elig.allowed) {
+        if (elig.hoursRemaining === 0) {
+          return t("customer.cancellation.reasonPassed");
+        }
+        if (elig.hoursRemaining != null) {
+          const remaining = elig.hoursRemaining;
+          const required = elig.hoursRequired;
+          return remaining === 1
+            ? t("customer.cancellation.reasonTooLateOne", { required, remaining })
+            : t("customer.cancellation.reasonTooLate", { required, remaining });
+        }
+      }
+      return getPolicyText(cancellationHours);
+    },
+    [cancellationHours, getPolicyText, t],
+  );
+
   const eligibility = useMemo(
     () => getCancellationEligibility(scheduledAt, cancellationHours),
     [scheduledAt, cancellationHours],
   );
 
+  const parseCancelError = useCallback(
+    (error: unknown) => {
+      const raw = parseCancellationApiError(error);
+      if (raw.includes("Cancellations must be made at least")) {
+        const match = raw.match(/at least (\d+) hours/i);
+        const hours = match ? Number(match[1]) : DEFAULT_CANCELLATION_HOURS;
+        return t("customer.cancellation.apiTooLate", { hours });
+      }
+      if (raw.includes("Only pending bookings")) {
+        return t("customer.cancellation.apiNotPending");
+      }
+      return raw;
+    },
+    [t],
+  );
+
   const mutation = useMutation({
     mutationFn: () => cancelCustomerBooking(bookingId),
     onSuccess: () => {
-      Alert.alert("Booking cancelled", "Your appointment has been cancelled.");
+      Alert.alert(
+        t("customer.cancellation.cancelledTitle"),
+        t("customer.cancellation.cancelledMessage"),
+      );
       onCancelled();
     },
-    onError: (error) => Alert.alert("Could not cancel", parseCancellationApiError(error)),
+    onError: (error) =>
+      Alert.alert(t("customer.cancellation.cancelFailedTitle"), parseCancelError(error)),
   });
 
   if (!CANCELLABLE.includes(status)) return null;
 
+  const policyText = getPolicyText(cancellationHours);
+  const reasonText = getReasonText(eligibility);
+
   const showBlockedInfo = () => {
-    Alert.alert(
-      "Cancellation not available",
-      eligibility.reason ?? getCancellationPolicyText(cancellationHours),
-    );
+    Alert.alert(t("customer.cancellation.notAvailableTitle"), reasonText);
   };
 
   const confirmCancel = () => {
     Alert.alert(
-      "Cancel this booking?",
-      getCancellationConfirmMessage(businessName, cancellationHours),
+      t("customer.cancellation.confirmTitle"),
+      t("customer.cancellation.confirmMessage", { policy: policyText, business: businessName }),
       [
-        { text: "Keep booking", style: "cancel" },
+        { text: t("customer.cancellation.keepBooking"), style: "cancel" },
         {
-          text: "Yes, cancel booking",
+          text: t("customer.cancellation.confirmCancel"),
           style: "destructive",
           onPress: () => mutation.mutate(),
         },
@@ -74,18 +122,18 @@ export function BookingCancelAction({
   if (!eligibility.allowed) {
     return (
       <Pressable onPress={showBlockedInfo} style={styles.blockedWrap}>
-        <Text style={styles.blockedTitle}>Cancellation not available</Text>
-        <Text style={styles.blockedText}>{eligibility.reason}</Text>
-        <Text style={styles.blockedLink}>Tap for policy details</Text>
+        <Text style={styles.blockedTitle}>{t("customer.cancellation.notAvailableTitle")}</Text>
+        <Text style={styles.blockedText}>{reasonText}</Text>
+        <Text style={styles.blockedLink}>{t("customer.cancellation.tapPolicy")}</Text>
       </Pressable>
     );
   }
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.policyHint}>{getCancellationPolicyText(cancellationHours)}</Text>
+      <Text style={styles.policyHint}>{policyText}</Text>
       <Button
-        title="Cancel booking"
+        title={t("customer.cancellation.cancelBooking")}
         variant="outline"
         onPress={confirmCancel}
         loading={mutation.isPending}

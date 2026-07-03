@@ -6,11 +6,13 @@ import { BusinessThumbnail } from "@/components/business/BusinessThumbnail";
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { fetchBusinessesByCategory, fetchCategoryBySlug } from "@/lib/api/businesses";
 import { compareFeaturedFirst } from "@/lib/business/discovery";
 
 export default function BusinessListScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { t } = useI18n();
 
   const { data: category } = useQuery({
     queryKey: ["category", slug],
@@ -27,16 +29,18 @@ export default function BusinessListScreen() {
 
   return (
     <Screen scroll>
-      <Header title={category?.name ?? "Businesses"} subtitle="Choose a place near you" showBack />
+      <Header
+        title={category?.name ?? t("category.titleFallback")}
+        subtitle={t("category.subtitle")}
+        showBack
+      />
 
       {isLoading ? (
         <ActivityIndicator color={colors.primary} size="large" />
       ) : businesses?.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>No businesses yet</Text>
-          <Text style={styles.emptyText}>
-            Approved businesses will appear here. Ask your provider to join Sheger.
-          </Text>
+          <Text style={styles.emptyTitle}>{t("category.emptyTitle")}</Text>
+          <Text style={styles.emptyText}>{t("category.emptyText")}</Text>
         </View>
       ) : (
         <View style={styles.list}>
@@ -55,7 +59,9 @@ export default function BusinessListScreen() {
               />
               <View style={styles.info}>
                 <Text style={styles.name}>{biz.name}</Text>
-                <Text style={styles.meta}>{biz.address ?? biz.city ?? "Addis Ababa"}</Text>
+                <Text style={styles.meta}>
+                  {biz.address ?? biz.city ?? t("category.defaultCity")}
+                </Text>
                 {biz.phone ? <Text style={styles.meta}>{biz.phone}</Text> : null}
               </View>
               <Text style={styles.chevron}>›</Text>

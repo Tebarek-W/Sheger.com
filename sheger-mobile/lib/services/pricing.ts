@@ -76,11 +76,6 @@ export function formatServiceDuration(service: ServiceDisplayFields): string {
   }
 }
 
-export function requiresServiceFinalization(service: ServiceDisplayFields): boolean {
-  return service.pricing_model === "variable" || service.pricing_model === "range"
-    || service.duration_model === "flexible" || service.duration_model === "estimated";
-}
-
 export function requiresBookingFinalization(booking: BookingPriceFields): boolean {
   return booking.pricing_model === "variable"
     || booking.pricing_model === "range"

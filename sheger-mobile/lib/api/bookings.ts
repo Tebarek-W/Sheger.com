@@ -13,24 +13,6 @@ export async function fetchWorkingHours(businessId: string, dayOfWeek: number) {
   return data as WorkingHours | null;
 }
 
-export async function fetchBookingsForDay(businessId: string, date: Date) {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(date);
-  end.setHours(23, 59, 59, 999);
-
-  const { data, error } = await supabase
-    .from("bookings")
-    .select("scheduled_at, duration_minutes, status")
-    .eq("business_id", businessId)
-    .gte("scheduled_at", start.toISOString())
-    .lte("scheduled_at", end.toISOString())
-    .neq("status", "cancelled");
-
-  if (error) throw error;
-  return (data ?? []) as Pick<Booking, "scheduled_at" | "duration_minutes">[];
-}
-
 export type CreateBookingInput = {
   customerId: string;
   businessId: string;
@@ -63,17 +45,6 @@ export async function createBooking(input: CreateBookingInput) {
 
   if (error) throw error;
   return data as Booking;
-}
-
-export async function fetchBookingById(id: string) {
-  const { data, error } = await supabase
-    .from("bookings")
-    .select("*, businesses(name, address), services(name, price)")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
 }
 
 export type CustomerBooking = Booking & {

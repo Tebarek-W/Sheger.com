@@ -1,6 +1,7 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import {
   DISTANCE_OPTIONS,
   PRICE_RANGES,
@@ -55,6 +56,17 @@ function Chip({ label, active, disabled, onPress }: ChipProps) {
   );
 }
 
+const PRICE_KEYS: Record<string, string> = {
+  any: "customer.filters.price.any",
+  lt200: "customer.filters.price.lt200",
+  "200-500": "customer.filters.price.range200500",
+  "500-1000": "customer.filters.price.range5001000",
+  gt1000: "customer.filters.price.gt1000",
+};
+
+const RATING_KEYS = ["any", "r3", "r4", "r45"] as const;
+const DISTANCE_KEYS = ["any", "km2", "km5", "km10", "km25"] as const;
+
 export function DiscoveryFilterSheet({
   visible,
   filters,
@@ -65,7 +77,13 @@ export function DiscoveryFilterSheet({
   onReset,
   onClose,
 }: DiscoveryFilterSheetProps) {
+  const { t } = useI18n();
   const set = (patch: Partial<DiscoveryFilters>) => onChange({ ...filters, ...patch });
+
+  const applyLabel =
+    resultCount === 1
+      ? t("customer.filters.showResult", { count: resultCount })
+      : t("customer.filters.showResults", { count: resultCount });
 
   return (
     <Modal
@@ -80,9 +98,9 @@ export function DiscoveryFilterSheet({
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.headerRow}>
-            <Text style={styles.title}>Filters</Text>
+            <Text style={styles.title}>{t("customer.filters.title")}</Text>
             <Pressable onPress={onReset} hitSlop={8}>
-              <Text style={styles.reset}>Reset all</Text>
+              <Text style={styles.reset}>{t("customer.filters.resetAll")}</Text>
             </Pressable>
           </View>
 
@@ -90,10 +108,10 @@ export function DiscoveryFilterSheet({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scroll}
           >
-            <Text style={styles.label}>Service type</Text>
+            <Text style={styles.label}>{t("customer.filters.serviceType")}</Text>
             <View style={styles.chipWrap}>
               <Chip
-                label="All"
+                label={t("customer.filters.all")}
                 active={filters.categoryId == null}
                 onPress={() => set({ categoryId: null })}
               />
@@ -109,39 +127,43 @@ export function DiscoveryFilterSheet({
               ))}
             </View>
 
-            <Text style={styles.label}>Price range (ETB)</Text>
+            <Text style={styles.label}>{t("customer.filters.priceRange")}</Text>
             <View style={styles.chipWrap}>
               {PRICE_RANGES.map((range) => (
                 <Chip
                   key={range.id}
-                  label={range.label}
+                  label={t(PRICE_KEYS[range.id] ?? "customer.filters.price.any")}
                   active={filters.priceRangeId === range.id}
                   onPress={() => set({ priceRangeId: range.id })}
                 />
               ))}
             </View>
 
-            <Text style={styles.label}>Minimum rating</Text>
+            <Text style={styles.label}>{t("customer.filters.minRating")}</Text>
             <View style={styles.chipWrap}>
-              {RATING_OPTIONS.map((option) => (
+              {RATING_OPTIONS.map((option, index) => (
                 <Chip
                   key={option.label}
-                  label={option.value == null ? option.label : `★ ${option.label}`}
+                  label={
+                    option.value == null
+                      ? t(`customer.filters.rating.${RATING_KEYS[index]}`)
+                      : `★ ${t(`customer.filters.rating.${RATING_KEYS[index]}`)}`
+                  }
                   active={filters.minRating === option.value}
                   onPress={() => set({ minRating: option.value })}
                 />
               ))}
             </View>
 
-            <Text style={styles.label}>Distance</Text>
+            <Text style={styles.label}>{t("customer.filters.distance")}</Text>
             {!hasLocation ? (
-              <Text style={styles.hint}>Set a location above to filter by distance.</Text>
+              <Text style={styles.hint}>{t("customer.filters.distanceHint")}</Text>
             ) : null}
             <View style={styles.chipWrap}>
-              {DISTANCE_OPTIONS.map((option) => (
+              {DISTANCE_OPTIONS.map((option, index) => (
                 <Chip
                   key={option.label}
-                  label={option.label}
+                  label={t(`customer.filters.distanceOptions.${DISTANCE_KEYS[index]}`)}
                   active={filters.radiusKm === option.value}
                   disabled={!hasLocation && option.value != null}
                   onPress={() => set({ radiusKm: option.value })}
@@ -149,12 +171,12 @@ export function DiscoveryFilterSheet({
               ))}
             </View>
 
-            <Text style={styles.label}>Sort by</Text>
+            <Text style={styles.label}>{t("customer.filters.sortBy")}</Text>
             <View style={styles.chipWrap}>
               {SORT_OPTIONS.map((option) => (
                 <Chip
                   key={option.key}
-                  label={option.label}
+                  label={t(`customer.filters.sort.${option.key}`)}
                   active={filters.sort === option.key}
                   disabled={option.needsLocation && !hasLocation}
                   onPress={() => set({ sort: option.key as SortKey })}
@@ -164,9 +186,7 @@ export function DiscoveryFilterSheet({
           </ScrollView>
 
           <Pressable style={styles.applyBtn} onPress={onClose}>
-            <Text style={styles.applyText}>
-              Show {resultCount} {resultCount === 1 ? "result" : "results"}
-            </Text>
+            <Text style={styles.applyText}>{applyLabel}</Text>
           </Pressable>
         </View>
       </View>

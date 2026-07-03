@@ -8,6 +8,7 @@ import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
   fetchSubscriptionPayments,
@@ -31,6 +32,7 @@ function planPrice(plan: SubscriptionPlan, interval: BillingInterval) {
 }
 
 export default function OwnerBillingScreen() {
+  const { t } = useI18n();
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
@@ -73,10 +75,13 @@ export default function OwnerBillingScreen() {
       submittingRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["subscription-summary", business?.id] });
       queryClient.invalidateQueries({ queryKey: ["subscription-payments", business?.id] });
-      Alert.alert("Subscription updated", `You are now on the ${result.plan.name} plan.`);
+      Alert.alert(
+        t("owner.screens.billing.updatedTitle"),
+        t("owner.screens.billing.updatedMessage", { plan: result.plan.name }),
+      );
     },
     onError: (error) => {
-      Alert.alert("Could not update plan", getErrorMessage(error));
+      Alert.alert(t("owner.screens.billing.updateFailedTitle"), getErrorMessage(error));
       submittingRef.current = false;
     },
   });
@@ -84,8 +89,8 @@ export default function OwnerBillingScreen() {
   if (!business) {
     return (
       <Screen>
-        <Header title="Subscription & billing" />
-        <Text style={styles.muted}>Register a business first.</Text>
+        <Header title={t("owner.screens.billing.title")} />
+        <Text style={styles.muted}>{t("owner.screens.billing.registerFirst")}</Text>
       </Screen>
     );
   }
@@ -93,15 +98,17 @@ export default function OwnerBillingScreen() {
   if (isLoading || !summary) {
     return (
       <Screen>
-        <Header title="Subscription & billing" />
-        <Text style={styles.muted}>Loading…</Text>
+        <Header title={t("owner.screens.billing.title")} />
+        <Text style={styles.muted}>{t("common.loading")}</Text>
       </Screen>
     );
   }
 
   const isLive = summary.is_marketplace_live;
   const periodEnd = summary.subscription?.current_period_end;
-  const currentPlanName = summary.current_plan?.name ?? "None";
+  const graceEndsAt = summary.subscription?.grace_ends_at;
+  const isGracePeriod = summary.subscription?.status === "past_due" && Boolean(graceEndsAt);
+  const currentPlanName = summary.current_plan?.name ?? t("common.none");
 
   const confirm = () => {
     if (!selectedPlanId || submittingRef.current || activateFreeMutation.isPending) return;
@@ -125,30 +132,48 @@ export default function OwnerBillingScreen() {
 
   return (
     <Screen scroll>
-      <Header title="Subscription & billing" subtitle={business.name} />
+      <Header title={t("owner.screens.billing.title")} subtitle={business.name} />
 
       <View style={[styles.statusCard, isLive ? styles.statusLive : styles.statusExpired]}>
         <Text style={styles.statusTitle}>
-          {isLive ? "Active on marketplace" : "Subscription inactive"}
+          {isLive ? t("owner.screens.billing.activeTitle") : t("owner.screens.billing.inactiveTitle")}
         </Text>
         <Text style={styles.statusText}>
           {isLive
-            ? `Plan: ${currentPlanName} · visible until ${formatDate(periodEnd)}`
-            : "Choose a plan to appear in customer search and accept bookings."}
+            ? t("owner.screens.billing.activeText", {
+                plan: currentPlanName,
+                date: formatDate(isGracePeriod ? graceEndsAt : periodEnd),
+              })
+            : t("owner.screens.billing.inactiveText")}
         </Text>
       </View>
+
+      {isGracePeriod ? (
+        <View style={styles.graceCard}>
+          <Text style={styles.graceTitle}>{t("owner.screens.billing.graceTitle")}</Text>
+          <Text style={styles.graceText}>
+            {t("owner.screens.billing.graceText", { date: formatDate(graceEndsAt) })}
+          </Text>
+        </View>
+      ) : null}
 
       <View style={styles.usageCard}>
-        <Text style={styles.sectionLabel}>Your usage</Text>
+        <Text style={styles.sectionLabel}>{t("owner.screens.billing.usage")}</Text>
         <Text style={styles.usageLine}>
-          Services: {summary.usage.active_services} / {summary.limits.max_services}
+          {t("owner.screens.billing.servicesUsage", {
+            used: summary.usage.active_services,
+            max: summary.limits.max_services,
+          })}
         </Text>
         <Text style={styles.usageLine}>
-          Bookings this week: {summary.usage.weekly_bookings} / {summary.limits.max_bookings_per_week}
+          {t("owner.screens.billing.bookingsUsage", {
+            used: summary.usage.weekly_bookings,
+            max: summary.limits.max_bookings_per_week,
+          })}
         </Text>
       </View>
 
-      <Text style={styles.sectionLabel}>Choose a plan</Text>
+      <Text style={styles.sectionLabel}>{t("owner.screens.billing.choosePlan")}</Text>
       <View style={styles.plans}>
         {plans.map((plan) => {
           const active = plan.id === selectedPlanId;
@@ -168,14 +193,19 @@ export default function OwnerBillingScreen() {
                 <Text style={styles.planDesc}>{plan.description}</Text>
               ) : null}
               {plan.is_featured_in_search ? (
-                <Text style={styles.planFeatured}>Featured in search results</Text>
+                <Text style={styles.planFeatured}>{t("owner.screens.billing.featuredInSearch")}</Text>
               ) : null}
               <Text style={styles.planLimits}>
-                {plan.max_services} services · {plan.max_bookings_per_week} bookings/week
+                {t("owner.screens.billing.planLimits", {
+                  services: plan.max_services,
+                  bookings: plan.max_bookings_per_week,
+                })}
               </Text>
               <Text style={styles.planPrice}>
-                {Number(plan.monthly_fee_etb).toLocaleString()} ETB/mo ·{" "}
-                {Number(plan.yearly_fee_etb).toLocaleString()} ETB/yr
+                {t("owner.screens.billing.planPrice", {
+                  monthly: Number(plan.monthly_fee_etb).toLocaleString(),
+                  yearly: Number(plan.yearly_fee_etb).toLocaleString(),
+                })}
               </Text>
             </Pressable>
           );
@@ -184,13 +214,13 @@ export default function OwnerBillingScreen() {
 
       {selectedPlan && selectedAmount > 0 ? (
         <>
-          <Text style={styles.sectionLabel}>Billing interval</Text>
+          <Text style={styles.sectionLabel}>{t("owner.screens.billing.billingInterval")}</Text>
           <View style={styles.intervalRow}>
             <Pressable
               style={[styles.intervalCard, interval === "monthly" && styles.intervalActive]}
               onPress={() => setInterval("monthly")}
             >
-              <Text style={styles.intervalTitle}>Monthly</Text>
+              <Text style={styles.intervalTitle}>{t("owner.screens.billing.monthly")}</Text>
               <Text style={styles.intervalPrice}>
                 {Number(selectedPlan.monthly_fee_etb).toLocaleString()} ETB
               </Text>
@@ -199,35 +229,36 @@ export default function OwnerBillingScreen() {
               style={[styles.intervalCard, interval === "yearly" && styles.intervalActive]}
               onPress={() => setInterval("yearly")}
             >
-              <Text style={styles.intervalTitle}>Yearly</Text>
+              <Text style={styles.intervalTitle}>{t("owner.screens.billing.yearly")}</Text>
               <Text style={styles.intervalPrice}>
                 {Number(selectedPlan.yearly_fee_etb).toLocaleString()} ETB
               </Text>
             </Pressable>
           </View>
 
-          <Text style={styles.chapaNote}>
-            Secure payment via Chapa. You'll choose Telebirr, CBE Birr, card, or bank on the next
-            step, and your plan activates once payment is confirmed.
-          </Text>
+          <Text style={styles.chapaNote}>{t("owner.screens.billing.chapaNotePaid")}</Text>
         </>
       ) : selectedPlan ? (
         <Text style={styles.chapaNote}>
-          The {selectedPlan.name} plan is free. Tap below to activate with no payment.
+          {t("owner.screens.billing.chapaNoteFree", { plan: selectedPlan.name })}
         </Text>
       ) : null}
 
       <View style={styles.summary}>
         <View style={styles.payRow}>
-          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalLabel}>{t("owner.screens.billing.total")}</Text>
           <Text style={styles.totalValue}>
-            {selectedAmount > 0 ? `${selectedAmount.toLocaleString()} ETB` : "Free"}
+            {selectedAmount > 0 ? `${selectedAmount.toLocaleString()} ETB` : t("common.free")}
           </Text>
         </View>
       </View>
 
       <Button
-        title={isPaidPlan ? "Continue to payment" : "Activate plan"}
+        title={
+          isPaidPlan
+            ? t("owner.screens.billing.continueToPayment")
+            : t("owner.screens.billing.activatePlan")
+        }
         onPress={confirm}
         loading={activateFreeMutation.isPending}
         disabled={!selectedPlanId}
@@ -235,7 +266,7 @@ export default function OwnerBillingScreen() {
 
       {payments && payments.length > 0 ? (
         <View style={styles.history}>
-          <Text style={styles.sectionLabel}>Payment history</Text>
+          <Text style={styles.sectionLabel}>{t("owner.screens.billing.paymentHistory")}</Text>
           {payments.map((payment) => (
             <View key={payment.id} style={styles.historyRow}>
               <View style={styles.historyMain}>
@@ -272,6 +303,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorBg,
     borderColor: "#fecaca",
   },
+  graceCard: {
+    marginTop: ownerLayout.blockGap,
+    borderRadius: radius.md,
+    padding: ownerLayout.cardPadding,
+    borderWidth: 1,
+    borderColor: "#fde68a",
+    backgroundColor: "#fffbeb",
+    gap: 4,
+  },
+  graceTitle: { fontSize: 14, fontWeight: "700", color: "#854f0b" },
+  graceText: { fontSize: 13, color: colors.textMuted, lineHeight: 19 },
   statusTitle: { fontSize: 14, fontWeight: "700", color: colors.primaryDarker },
   statusText: { fontSize: 13, color: colors.textMuted, lineHeight: 19 },
   usageCard: {

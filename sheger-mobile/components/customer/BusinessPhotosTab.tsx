@@ -2,6 +2,7 @@ import { Image, StyleSheet, Text, View } from "react-native";
 
 import { getCategoryIcon } from "@/constants/categories";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import type { Business } from "@/lib/types/database";
 
 type BusinessPhotosTabProps = {
@@ -9,6 +10,7 @@ type BusinessPhotosTabProps = {
 };
 
 export function BusinessPhotosTab({ business }: BusinessPhotosTabProps) {
+  const { t } = useI18n();
   const icon = getCategoryIcon(business.categories?.slug);
   const hasCover = Boolean(business.cover_image_url);
 
@@ -23,19 +25,19 @@ export function BusinessPhotosTab({ business }: BusinessPhotosTabProps) {
       ) : (
         <View style={styles.placeholder}>
           <Text style={styles.placeholderIcon}>{icon}</Text>
-          <Text style={styles.placeholderText}>No photos uploaded yet</Text>
+          <Text style={styles.placeholderText}>{t("customer.photos.noPhotos")}</Text>
         </View>
       )}
 
       {business.description ? (
         <View style={styles.about}>
-          <Text style={styles.aboutTitle}>About</Text>
+          <Text style={styles.aboutTitle}>{t("customer.photos.about")}</Text>
           <Text style={styles.aboutText}>{business.description}</Text>
         </View>
       ) : null}
 
       {!hasCover && !business.description ? (
-        <Text style={styles.muted}>Photos and gallery coming from the business soon.</Text>
+        <Text style={styles.muted}>{t("customer.photos.comingSoon")}</Text>
       ) : null}
     </View>
   );

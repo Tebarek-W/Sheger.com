@@ -4,6 +4,7 @@ import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { BusinessThumbnail } from "@/components/business/BusinessThumbnail";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { removeBusinessCoverImage, uploadBusinessCoverImage } from "@/lib/api/business-image";
 import { getErrorMessage } from "@/lib/errors";
 import type { Business } from "@/lib/types/database";
@@ -13,6 +14,7 @@ type BusinessProfilePhotoProps = {
 };
 
 export function BusinessProfilePhoto({ business }: BusinessProfilePhotoProps) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
 
   const invalidate = () => {
@@ -23,26 +25,33 @@ export function BusinessProfilePhoto({ business }: BusinessProfilePhotoProps) {
     mutationFn: (uri: string) => uploadBusinessCoverImage(business.id, uri),
     onSuccess: () => {
       invalidate();
-      Alert.alert("Saved", "Business profile photo updated.");
+      Alert.alert(
+        t("owner.components.businessProfilePhoto.savedTitle"),
+        t("owner.components.businessProfilePhoto.savedMessage"),
+      );
     },
-    onError: (error) => Alert.alert("Upload failed", getErrorMessage(error)),
+    onError: (error) =>
+      Alert.alert(t("owner.components.businessProfilePhoto.uploadFailedTitle"), getErrorMessage(error)),
   });
 
   const removeMutation = useMutation({
     mutationFn: () => removeBusinessCoverImage(business.id),
     onSuccess: () => {
       invalidate();
-      Alert.alert("Removed", "Business profile photo removed.");
+      Alert.alert(
+        t("owner.components.businessProfilePhoto.removedTitle"),
+        t("owner.components.businessProfilePhoto.removedMessage"),
+      );
     },
-    onError: (error) => Alert.alert("Error", getErrorMessage(error)),
+    onError: (error) => Alert.alert(t("common.error"), getErrorMessage(error)),
   });
 
   const pickPhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert(
-        "Permission needed",
-        "Allow photo library access to add a business profile picture.",
+        t("owner.components.businessProfilePhoto.permissionTitle"),
+        t("owner.components.businessProfilePhoto.permissionMessage"),
       );
       return;
     }
@@ -59,10 +68,18 @@ export function BusinessProfilePhoto({ business }: BusinessProfilePhotoProps) {
   };
 
   const confirmRemove = () => {
-    Alert.alert("Remove photo?", "Customers will see the default icon instead.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => removeMutation.mutate() },
-    ]);
+    Alert.alert(
+      t("owner.components.businessProfilePhoto.removeTitle"),
+      t("owner.components.businessProfilePhoto.removeMessage"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("owner.components.businessProfilePhoto.remove"),
+          style: "destructive",
+          onPress: () => removeMutation.mutate(),
+        },
+      ],
+    );
   };
 
   const busy = uploadMutation.isPending || removeMutation.isPending;
@@ -70,8 +87,8 @@ export function BusinessProfilePhoto({ business }: BusinessProfilePhotoProps) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>Profile photo</Text>
-      <Text style={styles.hint}>Shown on search, nearby, and your public business page.</Text>
+      <Text style={styles.label}>{t("owner.components.businessProfilePhoto.label")}</Text>
+      <Text style={styles.hint}>{t("owner.components.businessProfilePhoto.hint")}</Text>
 
       <View style={styles.previewRow}>
         {hasPhoto ? (
@@ -97,7 +114,11 @@ export function BusinessProfilePhoto({ business }: BusinessProfilePhotoProps) {
             disabled={busy}
           >
             <Text style={styles.btnPrimaryText}>
-              {busy ? "Saving..." : hasPhoto ? "Change photo" : "Add photo"}
+              {busy
+                ? t("owner.components.businessProfilePhoto.saving")
+                : hasPhoto
+                  ? t("owner.components.businessProfilePhoto.changePhoto")
+                  : t("owner.components.businessProfilePhoto.addPhoto")}
             </Text>
           </Pressable>
           {hasPhoto ? (
@@ -106,7 +127,9 @@ export function BusinessProfilePhoto({ business }: BusinessProfilePhotoProps) {
               onPress={confirmRemove}
               disabled={busy}
             >
-              <Text style={styles.btnOutlineText}>Remove</Text>
+              <Text style={styles.btnOutlineText}>
+                {t("owner.components.businessProfilePhoto.remove")}
+              </Text>
             </Pressable>
           ) : null}
         </View>

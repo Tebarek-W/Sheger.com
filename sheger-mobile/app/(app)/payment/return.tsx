@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/ui/Screen";
 import { colors } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import { verifyChapaPayment } from "@/lib/api/chapa";
 import { buildChapaReceiptUrl } from "@/lib/chapa/receipt";
@@ -20,6 +21,7 @@ export default function PaymentReturnScreen() {
 }
 
 function PaymentReturnContent() {
+  const { t } = useI18n();
   const params = useLocalSearchParams<{
     txRef?: string | string[];
     tx_ref?: string | string[];
@@ -34,7 +36,7 @@ function PaymentReturnContent() {
   const queryClient = useQueryClient();
   const business = useBookingStore((s) => s.business);
   const setChapaReceiptUrl = useBookingStore((s) => s.setChapaReceiptUrl);
-  const [message, setMessage] = useState("Confirming your payment…");
+  const [message, setMessage] = useState(t("payment.return.confirming"));
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -43,7 +45,7 @@ function PaymentReturnContent() {
 
     (async () => {
       if (!txRef) {
-        setMessage("Payment reference missing.");
+        setMessage(t("payment.return.referenceMissing"));
         return;
       }
 
@@ -62,7 +64,7 @@ function PaymentReturnContent() {
         setMessage(getErrorMessage(error));
       }
     })();
-  }, [business?.id, chapaReference, queryClient, setChapaReceiptUrl, txRef]);
+  }, [business?.id, chapaReference, queryClient, setChapaReceiptUrl, t, txRef]);
 
   return (
     <Screen>

@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { getFallbackCoordinates, type Coordinates } from "@/lib/location";
 
 type MapPickerProps = {
@@ -12,7 +13,7 @@ type MapPickerProps = {
 };
 
 // Leaflet + OpenStreetMap tiles. Fully free, no API key, no billing.
-function buildHtml(center: Coordinates, hasMarker: boolean) {
+function buildHtml(center: Coordinates, hasMarker: boolean, hint: string) {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -30,7 +31,7 @@ function buildHtml(center: Coordinates, hasMarker: boolean) {
 </head>
 <body>
   <div id="map"></div>
-  <div class="hint">Tap the map or drag the pin</div>
+  <div class="hint">${hint}</div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     var map = L.map('map', { zoomControl: true, attributionControl: false })
@@ -86,6 +87,7 @@ function buildHtml(center: Coordinates, hasMarker: boolean) {
 }
 
 export function MapPicker({ value, onChange, height = 240 }: MapPickerProps) {
+  const { t } = useI18n();
   const webRef = useRef<WebView>(null);
   const loadedRef = useRef(false);
   // Tracks the last coordinate we sent to or received from the map so we don't
@@ -95,7 +97,7 @@ export function MapPicker({ value, onChange, height = 240 }: MapPickerProps) {
 
   // HTML is built once; later updates go through injectJavaScript.
   const html = useMemo(
-    () => buildHtml(initial, value != null),
+    () => buildHtml(initial, value != null, t("owner.components.mapPicker.hint")),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );

@@ -66,38 +66,23 @@ export async function createAppointmentSlot(
   return data as AppointmentSlot;
 }
 
-export async function updateAppointmentSlot(
-  slotId: string,
-  input: Partial<AppointmentSlotInput>,
-) {
-  const { data, error } = await supabase
-    .from("appointment_slots")
-    .update({
-      day_of_week: input.day_of_week,
-      start_time: input.start_time,
-      max_capacity: input.max_capacity,
-      is_active: input.is_active,
-    })
-    .eq("id", slotId)
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return data as AppointmentSlot;
-}
-
 export async function deleteAppointmentSlot(slotId: string) {
   const { error } = await supabase.from("appointment_slots").delete().eq("id", slotId);
   if (error) throw error;
 }
 
-export async function fetchBookingCountsForDay(businessId: string, date: Date) {
+export async function fetchBookingCountsForDay(
+  businessId: string,
+  date: Date,
+  employeeId?: string | null,
+) {
   const { start, endExclusive } = addisDayBounds(date);
 
   const { data, error } = await supabase.rpc("get_slot_booking_counts", {
     p_business_id: businessId,
     p_range_start: start,
     p_range_end: endExclusive,
+    p_employee_id: employeeId ?? undefined,
   });
 
   if (error) throw error;
@@ -112,13 +97,14 @@ export async function fetchBookingCountsForDay(businessId: string, date: Date) {
 export async function fetchAvailableSlotsForDate(
   businessId: string,
   date: Date,
+  employeeId?: string | null,
 ): Promise<AvailableSlot[]> {
   const dow = dayOfWeekInAddis(date);
   const now = Date.now();
 
   const [slots, counts] = await Promise.all([
     fetchAppointmentSlots(businessId, dow),
-    fetchBookingCountsForDay(businessId, date),
+    fetchBookingCountsForDay(businessId, date, employeeId),
   ]);
 
   const available: AvailableSlot[] = [];
@@ -131,14 +117,15 @@ export async function fetchAvailableSlotsForDate(
     if (!scheduledAt || new Date(scheduledAt).getTime() <= now) continue;
 
     const bookedCount = counts.get(slotInstantKey(scheduledAt)) ?? 0;
-    const remaining = slot.max_capacity - bookedCount;
+    const effectiveCapacity = employeeId ? 1 : slot.max_capacity;
+    const remaining = effectiveCapacity - bookedCount;
     const isFull = remaining <= 0;
 
     available.push({
       id: slot.id,
       scheduledAt,
       startTime: startTime,
-      maxCapacity: slot.max_capacity,
+      maxCapacity: effectiveCapacity,
       bookedCount,
       remainingCapacity: Math.max(remaining, 0),
       isFull,

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { parseTxRefFromUrl, verifyChapaPayment } from "@/lib/api/chapa";
 import { initializeChapaSubscriptionPayment } from "@/lib/api/subscription";
 import { getChapaHttpsReturnUrlPrefix } from "@/lib/chapa/return-url";
@@ -27,6 +28,7 @@ function resolveInterval(value: string | string[] | undefined): BillingInterval 
 }
 
 export default function OwnerBillingCheckoutScreen() {
+  const { t } = useI18n();
   const params = useLocalSearchParams<{
     businessId?: string | string[];
     planId?: string | string[];
@@ -41,27 +43,33 @@ export default function OwnerBillingCheckoutScreen() {
   const queryClient = useQueryClient();
 
   const [status, setStatus] = useState<CheckoutStatus>("preparing");
-  const [message, setMessage] = useState("Preparing secure checkout…");
+  const [message, setMessage] = useState("");
   const [txRef, setTxRef] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const startedRef = useRef(false);
 
+  useEffect(() => {
+    setMessage(t("owner.screens.billingCheckout.preparing"));
+  }, [t]);
+
   const finishSubscription = useCallback(
     async (paymentTxRef: string) => {
       setStatus("verifying");
-      setMessage("Confirming your subscription payment…");
+      setMessage(t("owner.screens.billingCheckout.verifying"));
       await verifyChapaPayment(paymentTxRef);
       if (businessId) {
         queryClient.invalidateQueries({ queryKey: ["subscription-summary", businessId] });
         queryClient.invalidateQueries({ queryKey: ["subscription-payments", businessId] });
       }
       setStatus("done");
-      setMessage("Subscription activated.");
-      Alert.alert("Subscription active", "Your plan is now active.", [
-        { text: "Done", onPress: () => router.replace("/(owner)/billing") },
-      ]);
+      setMessage(t("owner.screens.billingCheckout.activated"));
+      Alert.alert(
+        t("owner.screens.billingCheckout.activeTitle"),
+        t("owner.screens.billingCheckout.activeMessage"),
+        [{ text: t("common.done"), onPress: () => router.replace("/(owner)/billing") }],
+      );
     },
-    [businessId, queryClient],
+    [businessId, queryClient, t],
   );
 
   const confirmPayment = useCallback(async () => {
@@ -78,7 +86,7 @@ export default function OwnerBillingCheckoutScreen() {
     async (url: string, paymentTxRef: string) => {
       const chapaReturnPrefix = getChapaHttpsReturnUrlPrefix();
       setStatus("browser");
-      setMessage("Complete your payment in the Chapa window.");
+      setMessage(t("owner.screens.billingCheckout.browserMessage"));
 
       const session = await WebBrowser.openAuthSessionAsync(url, chapaReturnPrefix);
 
@@ -98,7 +106,7 @@ export default function OwnerBillingCheckoutScreen() {
       } else {
         try {
           setStatus("verifying");
-          setMessage("Confirming your subscription payment…");
+          setMessage(t("owner.screens.billingCheckout.verifying"));
           await finishSubscription(paymentTxRef);
           return;
         } catch {
@@ -107,16 +115,16 @@ export default function OwnerBillingCheckoutScreen() {
       }
 
       setStatus("confirm");
-      setMessage("Finished paying? Tap confirm to activate your subscription.");
+      setMessage(t("owner.screens.billingCheckout.confirmHint"));
     },
-    [finishSubscription],
+    [finishSubscription, t],
   );
 
   const startHostedCheckout = useCallback(async () => {
     if (!businessId || !planId) return;
 
     setStatus("preparing");
-    setMessage("Preparing secure checkout…");
+    setMessage(t("owner.screens.billingCheckout.preparing"));
 
     try {
       const result = await initializeChapaSubscriptionPayment(businessId, planId, interval);
@@ -127,7 +135,7 @@ export default function OwnerBillingCheckoutScreen() {
       setStatus("error");
       setMessage(getErrorMessage(error));
     }
-  }, [businessId, interval, openChapaCheckout, planId]);
+  }, [businessId, interval, openChapaCheckout, planId, t]);
 
   useEffect(() => {
     WebBrowser.maybeCompleteAuthSession();
@@ -142,8 +150,8 @@ export default function OwnerBillingCheckoutScreen() {
   if (!businessId || !planId) {
     return (
       <Screen>
-        <Header title="Subscription payment" showBack backTo="/(owner)/billing" />
-        <Text style={styles.errorText}>Missing plan details. Please choose a plan again.</Text>
+        <Header title={t("owner.screens.billingCheckout.title")} showBack backTo="/(owner)/billing" />
+        <Text style={styles.errorText}>{t("owner.screens.billingCheckout.missingDetails")}</Text>
       </Screen>
     );
   }
@@ -153,7 +161,7 @@ export default function OwnerBillingCheckoutScreen() {
       <View style={styles.container}>
         <View style={styles.headerPad}>
           <Header
-            title="Subscription payment"
+            title={t("owner.screens.billingCheckout.title")}
             subtitle={planName ? `${planName} · ${interval}` : undefined}
             showBack
             backTo="/(owner)/billing"
@@ -161,11 +169,8 @@ export default function OwnerBillingCheckoutScreen() {
         </View>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Secure Chapa checkout</Text>
-          <Text style={styles.infoText}>
-            You'll be redirected to Chapa to complete your subscription payment. Your plan activates
-            as soon as the payment is confirmed.
-          </Text>
+          <Text style={styles.infoTitle}>{t("owner.screens.billingCheckout.infoTitle")}</Text>
+          <Text style={styles.infoText}>{t("owner.screens.billingCheckout.infoText")}</Text>
         </View>
 
         <View style={styles.center}>
@@ -176,18 +181,25 @@ export default function OwnerBillingCheckoutScreen() {
 
           {status === "confirm" && checkoutUrl && txRef ? (
             <>
-              <Button title="Open Chapa checkout" onPress={() => openChapaCheckout(checkoutUrl, txRef)} />
-              <Button title="I've paid — confirm" variant="outline" onPress={confirmPayment} />
+              <Button
+                title={t("owner.screens.billingCheckout.openChapa")}
+                onPress={() => openChapaCheckout(checkoutUrl, txRef)}
+              />
+              <Button
+                title={t("owner.screens.billingCheckout.confirmPaid")}
+                variant="outline"
+                onPress={confirmPayment}
+              />
             </>
           ) : null}
 
           {status === "error" ? (
-            <Button title="Try again" onPress={startHostedCheckout} />
+            <Button title={t("owner.screens.billingCheckout.tryAgain")} onPress={startHostedCheckout} />
           ) : null}
 
           {status === "error" || status === "confirm" ? (
             <Pressable onPress={() => router.replace("/(owner)/billing")}>
-              <Text style={styles.cancelLink}>Back to billing</Text>
+              <Text style={styles.cancelLink}>{t("owner.screens.billingCheckout.backToBilling")}</Text>
             </Pressable>
           ) : null}
         </View>

@@ -7,6 +7,7 @@ import { Header } from "@/components/ui/Header";
 import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import {
   fetchNotifications,
   markAllNotificationsRead,
@@ -21,13 +22,12 @@ type NotificationInboxProps = {
   showBack?: boolean;
 };
 
-export function NotificationInbox({
-  title = "Notifications",
-  showBack = true,
-}: NotificationInboxProps) {
+export function NotificationInbox({ title, showBack = true }: NotificationInboxProps) {
+  const { t } = useI18n();
   const { profile, session } = useAuth();
   const userId = session?.user.id;
   const queryClient = useQueryClient();
+  const inboxTitle = title ?? t("notifications.title");
 
   const { data: notifications, isLoading, refetch, isRefetching } = useQuery({
     queryKey: notificationKeys.list(userId ?? ""),
@@ -73,26 +73,30 @@ export function NotificationInbox({
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
         ListHeaderComponent={
           <>
-            <Header title={title} subtitle="Booking updates and reminders" showBack={showBack} />
+            <Header
+              title={inboxTitle}
+              subtitle={t("notifications.subtitle")}
+              showBack={showBack}
+            />
             {unreadCount > 0 ? (
               <Pressable
                 style={styles.markAll}
                 onPress={() => markAllMutation.mutate()}
                 disabled={markAllMutation.isPending}
               >
-                <Text style={styles.markAllText}>Mark all as read</Text>
+                <Text style={styles.markAllText}>{t("notifications.markAllRead")}</Text>
               </Pressable>
             ) : null}
-            {isLoading || !userId ? <Text style={styles.muted}>Loading notifications…</Text> : null}
+            {isLoading || !userId ? (
+              <Text style={styles.muted}>{t("notifications.loading")}</Text>
+            ) : null}
           </>
         }
         ListEmptyComponent={
           !isLoading && userId ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No notifications yet</Text>
-              <Text style={styles.emptyText}>
-                You will see booking confirmations, reminders, and cancellations here.
-              </Text>
+              <Text style={styles.emptyTitle}>{t("notifications.emptyTitle")}</Text>
+              <Text style={styles.emptyText}>{t("notifications.emptyText")}</Text>
             </View>
           ) : null
         }

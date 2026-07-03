@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { reverseGeocode, searchPlaces, type PlaceResult } from "@/lib/geocoding";
 import { requestUserLocation, type Coordinates } from "@/lib/location";
 
@@ -25,6 +26,7 @@ type LocationSearchBarProps = {
 };
 
 export function LocationSearchBar({ center, onChange }: LocationSearchBarProps) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -69,17 +71,20 @@ export function LocationSearchBar({ center, onChange }: LocationSearchBarProps) 
       const result = await requestUserLocation();
       if (!result.granted || !result.coords) {
         Alert.alert(
-          "Location unavailable",
-          "Allow location access, or search for an area instead.",
+          t("customer.locationSearch.unavailableTitle"),
+          t("customer.locationSearch.unavailableMessage"),
         );
         return;
       }
-      const label = (await reverseGeocode(result.coords)) ?? "My location";
+      const label = (await reverseGeocode(result.coords)) ?? t("customer.locationSearch.myLocation");
       onChange({ coords: result.coords, label, source: "gps" });
       setQuery("");
       setResults([]);
     } catch {
-      Alert.alert("Could not get location", "Try searching for an area instead.");
+      Alert.alert(
+        t("customer.locationSearch.failedTitle"),
+        t("customer.locationSearch.failedMessage"),
+      );
     } finally {
       setLocating(false);
     }
@@ -94,7 +99,7 @@ export function LocationSearchBar({ center, onChange }: LocationSearchBarProps) 
             {center.label}
           </Text>
           <Pressable onPress={() => onChange(null)} hitSlop={8}>
-            <Text style={styles.clear}>Clear</Text>
+            <Text style={styles.clear}>{t("customer.locationSearch.clear")}</Text>
           </Pressable>
         </View>
       ) : (
@@ -104,7 +109,7 @@ export function LocationSearchBar({ center, onChange }: LocationSearchBarProps) 
             <TextInput
               value={query}
               onChangeText={onChangeQuery}
-              placeholder="Area, district or neighborhood"
+              placeholder={t("customer.locationSearch.placeholder")}
               placeholderTextColor={colors.textTertiary}
               style={styles.input}
             />
@@ -118,7 +123,7 @@ export function LocationSearchBar({ center, onChange }: LocationSearchBarProps) 
             {locating ? (
               <ActivityIndicator size="small" color={colors.white} />
             ) : (
-              <Text style={styles.gpsText}>Near me</Text>
+              <Text style={styles.gpsText}>{t("customer.locationSearch.nearMe")}</Text>
             )}
           </Pressable>
         </View>

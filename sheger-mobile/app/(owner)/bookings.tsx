@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
   completeOwnerBooking,
@@ -43,15 +44,25 @@ function isPassedPendingBooking(booking: { status: BookingStatus; scheduled_at: 
   return booking.status === "pending" && new Date(booking.scheduled_at).getTime() < Date.now();
 }
 
-function customerDisplayName(booking: OwnerBooking) {
+function customerDisplayName(booking: OwnerBooking, defaultCustomer: string) {
   const name = booking.profiles?.full_name?.trim();
   if (name) return name;
   const phone = booking.profiles?.phone?.trim();
   if (phone) return phone;
-  return "Sheger customer";
+  return defaultCustomer;
+}
+
+function bookingStatusLabel(
+  status: BookingStatus,
+  isPassed: boolean,
+  t: (key: string) => string,
+) {
+  if (isPassed) return t("owner.screens.bookings.passed");
+  return t(`bookings.status.${status}`);
 }
 
 export default function OwnerBookingsScreen() {
+  const { t } = useI18n();
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
   const [completingBooking, setCompletingBooking] = useState<OwnerBooking | null>(null);
@@ -72,7 +83,7 @@ export default function OwnerBookingsScreen() {
       queryClient.invalidateQueries({ queryKey: ["owner-bookings", business?.id] });
       queryClient.invalidateQueries({ queryKey: ["owner-stats", business?.id] });
     },
-    onError: (e) => Alert.alert("Error", getErrorMessage(e)),
+    onError: (e) => Alert.alert(t("common.error"), getErrorMessage(e)),
   });
 
   const completeMutation = useMutation({
@@ -96,7 +107,7 @@ export default function OwnerBookingsScreen() {
       queryClient.invalidateQueries({ queryKey: ["owner-bookings", business?.id] });
       queryClient.invalidateQueries({ queryKey: ["owner-stats", business?.id] });
     },
-    onError: (e) => Alert.alert("Error", getErrorMessage(e)),
+    onError: (e) => Alert.alert(t("common.error"), getErrorMessage(e)),
   });
 
   const act = (id: string, status: BookingStatus) => {
@@ -125,7 +136,10 @@ export default function OwnerBookingsScreen() {
         completingBooking.pricing_model === "range") &&
       (parsedPrice == null || parsedPrice < 0)
     ) {
-      Alert.alert("Final price required", "Enter the final amount charged for this visit.");
+      Alert.alert(
+        t("owner.screens.bookings.finalPriceRequiredTitle"),
+        t("owner.screens.bookings.finalPriceRequiredMessage"),
+      );
       return;
     }
 
@@ -135,6 +149,8 @@ export default function OwnerBookingsScreen() {
       actualDurationMinutes: parseOptionalNumber(actualDuration),
     });
   };
+
+  const defaultCustomer = t("owner.screens.bookings.defaultCustomer");
 
   return (
     <>
@@ -146,24 +162,32 @@ export default function OwnerBookingsScreen() {
           contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <>
-            <Header title="Bookings" subtitle="Manage incoming appointments" showBack />
+            <Header
+              title={t("owner.screens.bookings.title")}
+              subtitle={t("owner.screens.bookings.subtitle")}
+              showBack
+            />
             <Pressable onPress={() => refetch()} style={styles.refresh}>
-              <Text style={styles.refreshText}>↻ Refresh availability</Text>
+              <Text style={styles.refreshText}>{t("owner.screens.bookings.refresh")}</Text>
             </Pressable>
-            {isLoading ? <Text style={styles.muted}>Loading bookings...</Text> : null}
+            {isLoading ? (
+              <Text style={styles.muted}>{t("owner.screens.bookings.loading")}</Text>
+            ) : null}
           </>
         }
-        ListEmptyComponent={!isLoading ? <Text style={styles.muted}>No bookings yet.</Text> : null}
+        ListEmptyComponent={
+          !isLoading ? <Text style={styles.muted}>{t("owner.screens.bookings.empty")}</Text> : null
+        }
         renderItem={({ item: booking }) => {
           const isPassed = isPassedPendingBooking(booking);
-          const statusLabel = isPassed ? "Passed" : booking.status;
+          const statusLabel = bookingStatusLabel(booking.status, isPassed, t);
           const statusColor = isPassed ? colors.textMuted : STATUS_COLORS[booking.status];
 
           return (
             <View style={styles.card}>
               <View style={styles.cardTop}>
                 <View style={styles.customerBlock}>
-                  <Text style={styles.customer}>{customerDisplayName(booking)}</Text>
+                  <Text style={styles.customer}>{customerDisplayName(booking, defaultCustomer)}</Text>
                   {booking.profiles?.phone?.trim() && booking.profiles?.full_name?.trim() ? (
                     <Text style={styles.customerPhone}>{booking.profiles.phone}</Text>
                   ) : null}
@@ -171,7 +195,8 @@ export default function OwnerBookingsScreen() {
                 <Text style={[styles.status, { color: statusColor }]}>{statusLabel}</Text>
               </View>
               <Text style={styles.service}>
-                {booking.services?.name ?? "Service"} · {formatBookingPrice(booking)}
+                {booking.services?.name ?? t("owner.screens.bookings.defaultService")} ·{" "}
+                {formatBookingPrice(booking)}
               </Text>
               <DualDateTime iso={booking.scheduled_at} compact />
 
@@ -182,13 +207,13 @@ export default function OwnerBookingsScreen() {
                       style={styles.actionBtn}
                       onPress={() => act(booking.id, "confirmed")}
                     >
-                      <Text style={styles.actionPrimary}>Confirm</Text>
+                      <Text style={styles.actionPrimary}>{t("owner.screens.bookings.confirm")}</Text>
                     </Pressable>
                     <Pressable
                       style={styles.actionBtnOutline}
                       onPress={() => act(booking.id, "cancelled")}
                     >
-                      <Text style={styles.actionOutline}>Cancel</Text>
+                      <Text style={styles.actionOutline}>{t("owner.screens.bookings.cancel")}</Text>
                     </Pressable>
                   </>
                 ) : null}
@@ -198,13 +223,13 @@ export default function OwnerBookingsScreen() {
                       style={styles.actionBtn}
                       onPress={() => openComplete(booking)}
                     >
-                      <Text style={styles.actionPrimary}>Complete</Text>
+                      <Text style={styles.actionPrimary}>{t("owner.screens.bookings.complete")}</Text>
                     </Pressable>
                     <Pressable
                       style={styles.actionBtnOutline}
                       onPress={() => act(booking.id, "cancelled")}
                     >
-                      <Text style={styles.actionOutline}>Cancel</Text>
+                      <Text style={styles.actionOutline}>{t("owner.screens.bookings.cancel")}</Text>
                     </Pressable>
                   </>
                 ) : null}
@@ -223,30 +248,28 @@ export default function OwnerBookingsScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Complete visit</Text>
-            <Text style={styles.modalText}>
-              Record the final amount and actual duration for this appointment.
-            </Text>
+            <Text style={styles.modalTitle}>{t("owner.screens.bookings.completeVisitTitle")}</Text>
+            <Text style={styles.modalText}>{t("owner.screens.bookings.completeVisitText")}</Text>
             <Input
-              label="Final price (ETB)"
+              label={t("owner.screens.bookings.finalPrice")}
               value={finalPrice}
               onChangeText={setFinalPrice}
               keyboardType="numeric"
             />
             <Input
-              label="Actual duration (min, optional)"
+              label={t("owner.screens.bookings.actualDuration")}
               value={actualDuration}
               onChangeText={setActualDuration}
               keyboardType="numeric"
             />
             <View style={styles.modalActions}>
               <Button
-                title="Cancel"
+                title={t("common.cancel")}
                 variant="outline"
                 onPress={() => setCompletingBooking(null)}
               />
               <Button
-                title="Complete"
+                title={t("owner.screens.bookings.complete")}
                 onPress={submitComplete}
                 loading={completeMutation.isPending}
               />

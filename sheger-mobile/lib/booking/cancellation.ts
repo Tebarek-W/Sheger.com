@@ -51,13 +51,6 @@ export function getCancellationEligibility(
   };
 }
 
-export function getCancellationConfirmMessage(
-  businessName: string,
-  cancellationHours: number = DEFAULT_CANCELLATION_HOURS,
-): string {
-  return `${getCancellationPolicyText(cancellationHours)}\n\nThis will permanently cancel your appointment at ${businessName}. This action cannot be undone.`;
-}
-
 export function parseCancellationApiError(error: unknown): string {
   const raw = getErrorMessage(error);
 
