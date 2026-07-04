@@ -1,12 +1,14 @@
+import { useCallback, useRef } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   StyleSheet,
   Text,
   type PressableProps,
 } from "react-native";
 
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows } from "@/constants/theme";
 
 type Variant = "primary" | "secondary" | "outline" | "ghost" | "accent";
 
@@ -25,31 +27,54 @@ export function Button({
   ...props
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = useCallback(() => {
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  }, [scale]);
+
+  const onPressOut = useCallback(() => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 40,
+      bounciness: 6,
+    }).start();
+  }, [scale]);
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={isDisabled}
-      style={(state) => {
-        const resolved = typeof style === "function" ? style(state) : style;
-        return [
-          styles.base,
-          styles[variant],
-          state.pressed && !isDisabled && styles.pressed,
-          isDisabled && styles.disabled,
-          resolved,
-        ];
-      }}
-      {...props}
-    >
-      {loading ? (
-        <ActivityIndicator
-          color={variant === "accent" ? colors.brandDark : variant === "primary" ? colors.white : colors.primary}
-        />
-      ) : (
-        <Text style={[styles.text, styles[`${variant}Text` as const]]}>{title}</Text>
-      )}
-    </Pressable>
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        accessibilityRole="button"
+        disabled={isDisabled}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        style={(state) => {
+          const resolved = typeof style === "function" ? style(state) : style;
+          return [
+            styles.base,
+            styles[variant],
+            variant === "primary" && shadows.sm,
+            isDisabled && styles.disabled,
+            resolved,
+          ];
+        }}
+        {...props}
+      >
+        {loading ? (
+          <ActivityIndicator
+            color={variant === "accent" ? colors.brandDark : variant === "primary" ? colors.white : colors.primary}
+          />
+        ) : (
+          <Text style={[styles.text, styles[`${variant}Text` as const]]}>{title}</Text>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -70,7 +95,6 @@ const styles = StyleSheet.create({
   },
   ghost: { backgroundColor: "transparent" },
   accent: { backgroundColor: colors.accentLime },
-  pressed: { opacity: 0.9 },
   disabled: { opacity: 0.5 },
   text: { fontSize: 15, fontWeight: "500" },
   primaryText: { color: colors.white },

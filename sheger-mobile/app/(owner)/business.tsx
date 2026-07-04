@@ -10,7 +10,7 @@ import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchCategories } from "@/lib/api/categories";
@@ -210,8 +210,7 @@ const styles = StyleSheet.create({
   locationSection: { gap: 8 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadows.sm,
     backgroundColor: colors.white,
     borderRadius: radius.full,
     paddingHorizontal: 14,

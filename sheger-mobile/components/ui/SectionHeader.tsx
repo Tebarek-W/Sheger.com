@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors } from "@/constants/theme";
+import { colors, typography } from "@/constants/theme";
 
 type SectionHeaderProps = {
   title: string;
@@ -26,8 +26,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  title: { fontSize: 14, fontWeight: "500", color: colors.text },
-  action: { fontSize: 12, color: colors.primary, fontWeight: "500" },
+  title: { ...typography.h3, color: colors.text },
+  action: { ...typography.label, fontSize: 12, color: colors.primary },
 });

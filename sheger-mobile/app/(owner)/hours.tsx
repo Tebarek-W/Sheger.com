@@ -9,7 +9,7 @@ import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
@@ -305,8 +305,7 @@ function SlotRow({
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: "600",
+    ...typography.label,
     color: colors.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -323,20 +322,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minWidth: 44,
   },
-  dayTabActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  dayTabActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight, ...shadows.sm },
   dayTabText: { fontSize: 12, fontWeight: "600", color: colors.textSecondary },
   dayTabTextActive: { color: colors.primaryDark },
   closedDot: { fontSize: 8, color: colors.error, marginTop: 2 },
   card: {
     backgroundColor: colors.white,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadows.sm,
     padding: ownerLayout.cardPadding,
     gap: ownerLayout.cardGap,
     marginBottom: ownerLayout.cardPadding,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
+  cardTitle: { ...typography.h3, fontWeight: "700", color: colors.primaryDarker },
   cardHint: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
   toggle: { fontSize: 12, fontWeight: "600", color: colors.primary },
   times: { flexDirection: "column", gap: ownerLayout.cardPadding },

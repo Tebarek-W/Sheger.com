@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
@@ -39,11 +40,19 @@ export default function OwnerBillingScreen() {
   const [interval, setInterval] = useState<BillingInterval>("monthly");
   const submittingRef = useRef(false);
 
-  const { data: summary, isLoading } = useQuery({
+  const { data: summary, isLoading, refetch } = useQuery({
     queryKey: ["subscription-summary", business?.id],
     queryFn: () => fetchSubscriptionSummary(business!.id),
     enabled: Boolean(business?.id),
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      if (business?.id) {
+        refetch();
+      }
+    }, [business?.id, refetch]),
+  );
 
   const { data: payments } = useQuery({
     queryKey: ["subscription-payments", business?.id],
@@ -292,7 +301,7 @@ const styles = StyleSheet.create({
     marginTop: ownerLayout.blockGap,
     borderRadius: radius.md,
     padding: ownerLayout.cardPadding,
-    borderWidth: 1,
+    ...shadows.sm,
     gap: 4,
   },
   statusLive: {
@@ -307,8 +316,7 @@ const styles = StyleSheet.create({
     marginTop: ownerLayout.blockGap,
     borderRadius: radius.md,
     padding: ownerLayout.cardPadding,
-    borderWidth: 1,
-    borderColor: "#fde68a",
+    ...shadows.sm,
     backgroundColor: "#fffbeb",
     gap: 4,
   },
@@ -320,8 +328,7 @@ const styles = StyleSheet.create({
     marginTop: ownerLayout.blockGap,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadows.sm,
     padding: ownerLayout.cardPadding,
     gap: 6,
   },
@@ -346,13 +353,14 @@ const styles = StyleSheet.create({
   planCardActive: {
     borderColor: colors.primary,
     backgroundColor: colors.screenBg,
+    ...shadows.sm,
   },
   planHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  planName: { fontSize: 16, fontWeight: "700", color: colors.text },
+  planName: { ...typography.h3, fontWeight: "700", color: colors.text },
   planDesc: { fontSize: 13, color: colors.textMuted, lineHeight: 18 },
   planFeatured: { fontSize: 12, fontWeight: "600", color: "#854f0b" },
   planLimits: { fontSize: 12, color: colors.textSecondary },
@@ -369,6 +377,7 @@ const styles = StyleSheet.create({
   intervalActive: {
     borderColor: colors.primary,
     backgroundColor: colors.screenBg,
+    ...shadows.sm,
   },
   intervalTitle: { fontSize: 14, fontWeight: "600", color: colors.text },
   intervalPrice: { fontSize: 18, fontWeight: "800", color: colors.primary },
@@ -378,6 +387,7 @@ const styles = StyleSheet.create({
     padding: ownerLayout.cardPadding,
     marginTop: ownerLayout.sectionGap - 4,
     marginBottom: ownerLayout.blockGap / 2,
+    ...shadows.sm,
   },
   payRow: {
     flexDirection: "row",
@@ -413,10 +423,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: ownerLayout.cardGap,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadows.sm,
     borderRadius: radius.md,
     padding: ownerLayout.cardPadding,
+    backgroundColor: colors.white,
   },
   historyMain: { flex: 1, gap: 2 },
   historyTitle: { fontSize: 14, fontWeight: "600", color: colors.text },

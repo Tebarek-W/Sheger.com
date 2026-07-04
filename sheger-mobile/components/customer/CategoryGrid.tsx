@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { getCategoryIcon, getCategoryTheme } from "@/constants/categories";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows } from "@/constants/theme";
 import type { Category } from "@/lib/types/database";
 
 type CategoryItem = Pick<Category, "id" | "name" | "slug">;
@@ -21,12 +21,13 @@ export function CategoryGrid({ categories, selectedId, onSelect }: CategoryGridP
         return (
           <Pressable
             key={cat.id}
-            style={styles.item}
+            style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
             onPress={() => onSelect(active ? null : cat.id)}
           >
             <View
               style={[
                 styles.icon,
+                shadows.sm,
                 { backgroundColor: theme.bg },
                 active && styles.iconActive,
               ]}
@@ -54,27 +55,30 @@ const styles = StyleSheet.create({
   item: {
     width: "25%",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 12,
+    gap: 7,
+    marginBottom: 14,
     paddingHorizontal: 2,
   },
+  itemPressed: {
+    transform: [{ scale: 0.93 }],
+  },
   icon: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
   iconActive: {
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: colors.primary,
   },
-  iconText: { fontSize: 22 },
+  iconText: { fontSize: 24 },
   label: {
-    fontSize: 10,
+    fontSize: 11,
     color: colors.textSecondary,
     textAlign: "center",
-    lineHeight: 13,
+    lineHeight: 14,
   },
   labelActive: { color: colors.primary, fontWeight: "600" },
 });

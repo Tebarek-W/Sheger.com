@@ -1,4 +1,10 @@
-import { ScrollView, StyleSheet, View, type ViewProps } from "react-native";
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+  type ViewProps,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors } from "@/constants/theme";
@@ -7,6 +13,8 @@ type ScreenProps = ViewProps & {
   scroll?: boolean;
   padded?: boolean;
   backgroundColor?: string;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 };
 
 export function Screen({
@@ -14,6 +22,8 @@ export function Screen({
   scroll,
   padded = true,
   backgroundColor = colors.background,
+  onRefresh,
+  refreshing = false,
   style,
   ...props
 }: ScreenProps) {
@@ -30,6 +40,16 @@ export function Screen({
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+              />
+            ) : undefined
+          }
         >
           {content}
         </ScrollView>

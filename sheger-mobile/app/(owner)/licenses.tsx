@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchBusinessDocuments, uploadBusinessDocument } from "@/lib/api/business-license";
@@ -168,6 +168,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     borderRadius: radius.md,
     padding: ownerLayout.cardPadding,
+    ...shadows.sm,
   },
   noticeText: { color: colors.primaryDarker, fontSize: 14, lineHeight: 20 },
 });

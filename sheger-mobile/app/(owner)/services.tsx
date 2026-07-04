@@ -7,7 +7,7 @@ import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { createService, fetchMyServices, updateService } from "@/lib/api/owner";
@@ -391,13 +391,12 @@ const styles = StyleSheet.create({
   addCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: ownerLayout.cardPadding,
     gap: ownerLayout.cardGap,
     marginBottom: ownerLayout.sectionGap,
+    ...shadows.sm,
   },
-  addTitle: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
+  addTitle: { ...typography.h3, color: colors.primaryDarker },
   pickerBlock: { gap: 8 },
   pickerLabel: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
   pickerRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -412,6 +411,7 @@ const styles = StyleSheet.create({
   pickerChipActive: {
     borderColor: colors.primary,
     backgroundColor: colors.primaryLight,
+    ...shadows.sm,
   },
   pickerChipText: { fontSize: 12, fontWeight: "600", color: colors.textSecondary },
   pickerChipTextActive: { color: colors.primaryDarker },
@@ -419,8 +419,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: ownerLayout.cardGap },
   half: { flex: 1 },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    ...typography.h2,
     color: colors.primaryDarker,
     marginBottom: ownerLayout.sectionTitleBottom,
   },
@@ -431,10 +430,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: colors.white,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: ownerLayout.cardPadding,
     gap: ownerLayout.cardGap,
+    ...shadows.sm,
   },
   itemInfo: { flex: 1, gap: 4 },
   itemName: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },

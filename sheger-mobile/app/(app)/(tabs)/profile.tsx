@@ -1,13 +1,22 @@
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { HEADER_GRADIENT_COLORS } from "@/components/navigation/CustomerTabHeader";
 import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
 import { SignOutButton } from "@/components/ui/SignOutButton";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
+
+type MenuItemConfig = {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+};
 
 export default function ProfileScreen() {
   const { session, profile, user, signOut } = useAuth();
@@ -47,23 +56,38 @@ export default function ProfileScreen() {
     );
   }
 
+  const menuItems: MenuItemConfig[] = [
+    { label: t("profile.editProfile"), icon: "create-outline", onPress: () => router.push("/(app)/edit-profile") },
+    { label: t("profile.myBookings"), icon: "calendar-outline", onPress: () => router.push("/(app)/(tabs)/bookings") },
+    { label: t("profile.searchServices"), icon: "search-outline", onPress: () => router.push("/(app)/(tabs)/search") },
+  ];
+
   return (
     <Screen scroll padded={false} backgroundColor={colors.screenBg}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={HEADER_GRADIENT_COLORS}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <View style={styles.headerTop}>
           <SignOutButton onPress={signOut} variant="light" />
         </View>
-        <View style={styles.avatarLarge}>
-          <Text style={styles.avatarLargeText}>{initials}</Text>
+        <View style={styles.avatarRing}>
+          <View style={styles.avatarLarge}>
+            <Text style={styles.avatarLargeText}>{initials}</Text>
+          </View>
         </View>
         <Text style={styles.name}>{profile?.full_name ?? t("profile.defaultName")}</Text>
         <Text style={styles.email}>{user?.email}</Text>
-      </View>
+      </LinearGradient>
 
       <View style={styles.body}>
         <View style={styles.card}>
           <Row label={t("profile.phone")} value={profile?.phone ?? t("common.notSet")} />
+          <View style={styles.divider} />
           <Row label={t("profile.accountType")} value={t("common.customer")} />
+          <View style={styles.divider} />
           <Row
             label={t("profile.memberSince")}
             value={
@@ -77,29 +101,17 @@ export default function ProfileScreen() {
           />
         </View>
 
-        <Pressable
-          style={styles.menuItem}
-          onPress={() => router.push("/(app)/edit-profile")}
-        >
-          <Text style={styles.menuLabel}>{t("profile.editProfile")}</Text>
-          <Text style={styles.menuChevron}>›</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.menuItem}
-          onPress={() => router.push("/(app)/(tabs)/bookings")}
-        >
-          <Text style={styles.menuLabel}>{t("profile.myBookings")}</Text>
-          <Text style={styles.menuChevron}>›</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.menuItem}
-          onPress={() => router.push("/(app)/(tabs)/search")}
-        >
-          <Text style={styles.menuLabel}>{t("profile.searchServices")}</Text>
-          <Text style={styles.menuChevron}>›</Text>
-        </Pressable>
+        {menuItems.map((item) => (
+          <Pressable
+            key={item.label}
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            onPress={item.onPress}
+          >
+            <Ionicons name={item.icon} size={20} color={colors.primary} />
+            <Text style={styles.menuLabel}>{item.label}</Text>
+            <Text style={styles.menuChevron}>›</Text>
+          </Pressable>
+        ))}
 
         <LanguageSwitcher />
       </View>
@@ -118,20 +130,20 @@ function Row({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: colors.brandDark,
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 28,
+    paddingBottom: 30,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
     alignItems: "center",
+    overflow: "hidden",
   },
   guestHeader: {
     alignItems: "center",
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 8,
-    gap: 8,
+    gap: 10,
   },
   headerTop: {
     width: "100%",
@@ -140,61 +152,77 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: colors.primaryLight,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
+    ...shadows.sm,
   },
-  avatarText: { fontSize: 32 },
-  avatarLarge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "rgba(255,255,255,0.15)",
+  avatarText: { fontSize: 34 },
+  avatarRing: {
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.25)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
-  avatarLargeText: { fontSize: 24, fontWeight: "600", color: colors.accentLime },
-  name: { fontSize: 20, fontWeight: "500", color: colors.white },
-  guestName: { fontSize: 20, fontWeight: "500", color: colors.text },
-  email: { fontSize: 13, color: "rgba(255,255,255,0.65)", marginTop: 4 },
+  avatarLarge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarLargeText: { fontSize: 24, fontWeight: "700", color: colors.accentLime },
+  name: { fontSize: 20, fontWeight: "600", color: colors.white },
+  guestName: { ...typography.h2, color: colors.text },
+  email: { fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 },
   hint: {
-    fontSize: 14,
+    ...typography.body,
     color: colors.textSecondary,
     textAlign: "center",
     lineHeight: 21,
   },
-  body: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 24, gap: 12 },
+  body: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 24, gap: 12 },
   card: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
     padding: 16,
-    gap: 12,
+    ...shadows.sm,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginVertical: 4,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
+    paddingVertical: 4,
     gap: 12,
   },
-  rowLabel: { fontSize: 13, color: colors.textSecondary },
-  rowValue: { fontSize: 13, fontWeight: "500", color: colors.text, textAlign: "right", flex: 1 },
+  rowLabel: { ...typography.small, color: colors.textSecondary },
+  rowValue: { ...typography.label, fontSize: 13, color: colors.text, textAlign: "right", flex: 1 },
   menuItem: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 12,
+    ...shadows.sm,
   },
-  menuLabel: { fontSize: 14, fontWeight: "500", color: colors.text },
+  menuItemPressed: {
+    transform: [{ scale: 0.98 }],
+  },
+  menuLabel: { ...typography.bodyMedium, color: colors.text, flex: 1 },
   menuChevron: { fontSize: 20, color: colors.textTertiary },
 });

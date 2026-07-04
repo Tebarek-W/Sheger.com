@@ -1,7 +1,7 @@
 import type { Href } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors } from "@/constants/theme";
+import { colors, typography } from "@/constants/theme";
 import { CUSTOMER_HOME, goBackSafely } from "@/lib/routing";
 
 type HeaderProps = {
@@ -28,7 +28,7 @@ export function Header({ title, subtitle, showBack, backTo = CUSTOMER_HOME }: He
 const styles = StyleSheet.create({
   wrap: { marginBottom: 20, gap: 4 },
   back: { marginBottom: 8 },
-  backText: { color: colors.primary, fontSize: 16, fontWeight: "600" },
-  title: { fontSize: 28, fontWeight: "700", color: colors.primaryDarker },
+  backText: { color: colors.primary, ...typography.h3 },
+  title: { ...typography.h1, color: colors.primaryDarker },
   subtitle: { fontSize: 15, color: colors.textMuted, lineHeight: 22 },
 });

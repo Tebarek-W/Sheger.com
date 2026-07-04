@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { ownerLayout } from "@/constants/owner-layout";
 
 type MenuCardProps = {
@@ -16,7 +16,9 @@ export function MenuCard({ title, subtitle, icon, onPress }: MenuCardProps) {
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <Text style={styles.icon}>{icon}</Text>
+      <View style={styles.iconCircle}>
+        <Text style={styles.icon}>{icon}</Text>
+      </View>
       <View style={styles.text}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
@@ -30,17 +32,24 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    gap: ownerLayout.cardPadding - 2,
+    gap: ownerLayout.cardPadding,
     backgroundColor: colors.white,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: ownerLayout.cardPadding,
+    ...shadows.sm,
   },
-  pressed: { backgroundColor: colors.surface },
-  icon: { fontSize: 24 },
-  text: { flex: 1, gap: 2 },
-  title: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
+  pressed: { transform: [{ scale: 0.98 }] },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  icon: { fontSize: 22 },
+  text: { flex: 1, gap: 3 },
+  title: { ...typography.h3, color: colors.primaryDarker },
   subtitle: { fontSize: 13, color: colors.textMuted },
   chevron: { fontSize: 22, color: colors.primary, fontWeight: "600" },
 });

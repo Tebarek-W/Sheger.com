@@ -10,7 +10,7 @@ import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { uploadBusinessDocument } from "@/lib/api/business-license";
@@ -287,14 +287,13 @@ export default function RegisterBusinessScreen() {
 const styles = StyleSheet.create({
   form: { gap: ownerLayout.sectionGap },
   label: { fontSize: 14, fontWeight: "600", color: colors.primaryDarker },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
+  sectionTitle: { ...typography.h3, fontWeight: "700", color: colors.primaryDarker },
   sectionHint: { fontSize: 12, color: colors.textSecondary, lineHeight: 16 },
   docSection: { gap: ownerLayout.cardGap },
   locationSection: { gap: 8 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadows.sm,
     backgroundColor: colors.white,
     borderRadius: radius.full,
     paddingHorizontal: 14,

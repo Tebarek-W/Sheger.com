@@ -8,7 +8,7 @@ import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
@@ -214,20 +214,18 @@ const styles = StyleSheet.create({
     marginTop: ownerLayout.blockGap,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadows.sm,
     padding: ownerLayout.cardPadding,
     gap: ownerLayout.blockGap / 2,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
+  cardTitle: { ...typography.h3, fontWeight: "700", color: colors.primaryDarker },
   cardText: { fontSize: 14, color: colors.textMuted, lineHeight: 21 },
   commission: { fontSize: 14, fontWeight: "600", color: colors.primary },
   activeCard: {
     marginTop: ownerLayout.blockGap,
     backgroundColor: "#e8f6ee",
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: "#b9e3cb",
+    ...shadows.sm,
     padding: ownerLayout.cardPadding,
     gap: 4,
   },
@@ -238,8 +236,7 @@ const styles = StyleSheet.create({
     marginTop: ownerLayout.blockGap,
     backgroundColor: "#fff4e8",
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: "#f0d2a8",
+    ...shadows.sm,
     padding: ownerLayout.cardPadding,
     gap: 6,
   },
@@ -249,8 +246,7 @@ const styles = StyleSheet.create({
     marginTop: ownerLayout.blockGap,
     backgroundColor: colors.errorBg,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: "#fecaca",
+    ...shadows.sm,
     padding: ownerLayout.cardPadding,
     gap: ownerLayout.listGap,
   },

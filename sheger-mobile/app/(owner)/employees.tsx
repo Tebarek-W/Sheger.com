@@ -7,7 +7,7 @@ import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { createEmployee, fetchMyEmployees, updateEmployee } from "@/lib/api/owner";
@@ -120,16 +120,14 @@ const styles = StyleSheet.create({
   addCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: ownerLayout.cardPadding,
     gap: ownerLayout.cardGap,
     marginBottom: ownerLayout.sectionGap,
+    ...shadows.sm,
   },
-  addTitle: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
+  addTitle: { ...typography.h3, color: colors.primaryDarker },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    ...typography.h2,
     color: colors.primaryDarker,
     marginBottom: ownerLayout.sectionTitleBottom,
   },
@@ -140,9 +138,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: colors.white,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: ownerLayout.cardPadding,
+    ...shadows.sm,
   },
   itemInfo: { flex: 1, gap: 4 },
   itemName: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },

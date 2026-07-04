@@ -16,7 +16,7 @@ import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import {
@@ -185,6 +185,7 @@ export default function OwnerBookingsScreen() {
 
           return (
             <View style={styles.card}>
+              <View style={[styles.accentBar, { backgroundColor: statusColor }]} />
               <View style={styles.cardTop}>
                 <View style={styles.customerBlock}>
                   <Text style={styles.customer}>{customerDisplayName(booking, defaultCustomer)}</Text>
@@ -290,14 +291,23 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: ownerLayout.cardPadding,
     gap: ownerLayout.blockGap / 2,
+    overflow: "hidden",
+    ...shadows.sm,
+  },
+  accentBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: radius.lg,
+    borderBottomLeftRadius: radius.lg,
   },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
   customerBlock: { flex: 1, gap: 2 },
-  customer: { fontSize: 17, fontWeight: "700", color: colors.primaryDarker },
+  customer: { ...typography.h3, color: colors.primaryDarker },
   customerPhone: { fontSize: 12, color: colors.textSecondary },
   status: { fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
   service: { fontSize: 14, color: colors.primary, fontWeight: "600" },
@@ -308,6 +318,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: 10,
     alignItems: "center",
+    ...shadows.sm,
   },
   actionPrimary: { color: colors.white, fontWeight: "700", fontSize: 14 },
   actionBtnOutline: {
@@ -331,6 +342,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: ownerLayout.screenPadding,
     gap: ownerLayout.cardGap,
+    ...shadows.lg,
   },
   modalTitle: { fontSize: 18, fontWeight: "700", color: colors.primaryDarker },
   modalText: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },

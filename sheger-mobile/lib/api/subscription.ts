@@ -20,6 +20,7 @@ export async function fetchSubscriptionSummary(businessId: string): Promise<Subs
   });
 
   if (error) throw error;
+
   return data as SubscriptionSummary;
 }
 

@@ -9,7 +9,7 @@ import { Header } from "@/components/ui/Header";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { Screen } from "@/components/ui/Screen";
 import { SignOutButton } from "@/components/ui/SignOutButton";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { ownerLayout } from "@/constants/owner-layout";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
@@ -268,11 +268,10 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 4,
+    ...shadows.sm,
   },
   notifIcon: { fontSize: 20 },
   notifDot: {
@@ -288,10 +287,9 @@ const styles = StyleSheet.create({
     marginTop: ownerLayout.sectionGap,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: ownerLayout.sectionGap,
     gap: ownerLayout.cardGap,
+    ...shadows.md,
   },
   emptyTitle: { fontSize: 22, fontWeight: "700", color: colors.primaryDarker },
   emptyText: { fontSize: 15, color: colors.textMuted, lineHeight: 22 },
@@ -312,6 +310,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#fecaca",
     gap: 4,
+    ...shadows.sm,
   },
   licenseBannerTitle: { fontSize: 14, fontWeight: "700", color: colors.error },
   licenseBannerText: { fontSize: 13, color: "#991b1b", lineHeight: 19 },
@@ -323,6 +322,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f0d9b5",
     gap: 4,
+    ...shadows.sm,
   },
   locationBannerTitle: { fontSize: 14, fontWeight: "700", color: "#854f0b" },
   locationBannerText: { fontSize: 13, color: "#854f0b", lineHeight: 19 },
@@ -334,6 +334,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#fecaca",
     gap: 4,
+    ...shadows.sm,
   },
   subscriptionBannerTitle: { fontSize: 14, fontWeight: "700", color: colors.error },
   subscriptionBannerText: { fontSize: 13, color: "#991b1b", lineHeight: 19 },
@@ -345,6 +346,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#c7daf5",
     gap: 4,
+    ...shadows.sm,
   },
   payoutBannerTitle: { fontSize: 14, fontWeight: "700", color: "#1e4f8f" },
   payoutBannerText: { fontSize: 13, color: "#33557f", lineHeight: 19 },
@@ -356,6 +358,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f0d9b5",
     gap: 4,
+    ...shadows.sm,
   },
   limitBannerTitle: { fontSize: 14, fontWeight: "700", color: "#854f0b" },
   limitBannerText: { fontSize: 13, color: "#854f0b", lineHeight: 19 },
@@ -364,19 +367,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: ownerLayout.cardPadding,
     alignItems: "center",
     gap: 4,
+    ...shadows.sm,
   },
-  statValue: { fontSize: 20, fontWeight: "800", color: colors.primaryDarker },
+  statValue: { fontSize: 20, fontWeight: "700", color: colors.primaryDarker },
   statLabel: { fontSize: 11, color: colors.textMuted, fontWeight: "600" },
   sectionTitle: {
     marginTop: ownerLayout.sectionGap + 4,
     marginBottom: ownerLayout.sectionTitleBottom,
-    fontSize: 18,
-    fontWeight: "700",
+    ...typography.h2,
     color: colors.primaryDarker,
   },
   menu: { gap: ownerLayout.listGap, paddingBottom: ownerLayout.bottomPadding },

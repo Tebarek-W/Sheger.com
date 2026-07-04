@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { ownerLayout } from "@/constants/owner-layout";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchOwnerStats } from "@/lib/api/owner";
@@ -95,8 +95,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadows.sm,
     padding: ownerLayout.cardPadding,
     gap: 6,
   },
@@ -107,8 +106,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.white,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadows.sm,
     padding: ownerLayout.cardPadding,
     alignItems: "center",
     gap: 4,
@@ -122,7 +120,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.primaryDarker,
   },
-  bars: { gap: ownerLayout.listGap, paddingBottom: ownerLayout.bottomPadding },
+  bars: { gap: ownerLayout.listGap, paddingBottom: ownerLayout.bottomPadding, ...shadows.sm, backgroundColor: colors.white, borderRadius: radius.lg, padding: ownerLayout.cardPadding },
   barRow: { gap: 6 },
   barHeader: { flexDirection: "row", justifyContent: "space-between" },
   barLabel: { fontSize: 14, fontWeight: "600", color: colors.primaryDarker, textTransform: "capitalize" },

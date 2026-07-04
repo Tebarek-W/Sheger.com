@@ -3,7 +3,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { colors } from "@/constants/theme";
+import { colors, shadows } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 
 type TabConfig = {
@@ -27,7 +27,7 @@ export function CustomerTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+    <View style={[styles.wrap, shadows.top, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       {TABS.map((tab) => {
         const routeIndex = state.routes.findIndex((r) => r.name === tab.name);
         if (routeIndex < 0) return null;
@@ -49,7 +49,7 @@ export function CustomerTabBar({ state, navigation }: BottomTabBarProps) {
         if (tab.fab) {
           return (
             <Pressable key={tab.name} onPress={onPress} style={styles.fabSlot}>
-              <View style={styles.fab}>
+              <View style={[styles.fab, shadows.md]}>
                 <Ionicons name={tab.icon} size={24} color={colors.white} />
               </View>
               <Text style={[styles.label, focused && styles.labelActive]}>{t(tab.labelKey)}</Text>
@@ -58,12 +58,17 @@ export function CustomerTabBar({ state, navigation }: BottomTabBarProps) {
         }
 
         return (
-          <Pressable key={tab.name} onPress={onPress} style={styles.item}>
+          <Pressable
+            key={tab.name}
+            onPress={onPress}
+            style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+          >
             <Ionicons
               name={focused ? tab.iconFocused : tab.icon}
               size={22}
               color={color}
             />
+            {focused ? <View style={styles.activeDot} /> : null}
             <Text style={[styles.label, focused && styles.labelActive]}>{t(tab.labelKey)}</Text>
           </Pressable>
         );
@@ -78,8 +83,6 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     justifyContent: "space-around",
     backgroundColor: colors.white,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
     paddingTop: 10,
     paddingHorizontal: 8,
   },
@@ -88,6 +91,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 3,
     paddingBottom: 2,
+  },
+  itemPressed: {
+    transform: [{ scale: 0.92 }],
+  },
+  activeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.primary,
+    marginTop: -1,
   },
   fabSlot: {
     flex: 1,
@@ -111,6 +124,6 @@ const styles = StyleSheet.create({
   },
   labelActive: {
     color: colors.primary,
-    fontWeight: "500",
+    fontWeight: "600",
   },
 });

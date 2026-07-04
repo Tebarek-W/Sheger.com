@@ -68,11 +68,17 @@ async function fetchCustomerBookingsDirect(customerId: string) {
     .from("bookings")
     .select("*, businesses(name, address, city, cancellation_hours), services(name, price)")
     .eq("customer_id", customerId)
-    .order("scheduled_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(50);
 
   if (error) throw error;
   return (data ?? []) as CustomerBooking[];
+}
+
+function sortNewestFirst(bookings: CustomerBooking[]): CustomerBooking[] {
+  return bookings.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 }
 
 export async function fetchCustomerBookings(customerId: string) {
@@ -85,7 +91,7 @@ export async function fetchCustomerBookings(customerId: string) {
   if (!error && data && typeof data === "object" && "rows" in data) {
     const page = data as BookingCardsPage;
     if (Array.isArray(page.rows)) {
-      return page.rows;
+      return sortNewestFirst(page.rows);
     }
   }
 

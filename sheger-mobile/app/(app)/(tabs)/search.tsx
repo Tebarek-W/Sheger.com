@@ -1,4 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import {
@@ -15,9 +17,10 @@ import { BusinessMap, type MapBusiness } from "@/components/customer/BusinessMap
 import { DiscoveryFilterSheet } from "@/components/customer/DiscoveryFilterSheet";
 import { LocationSearchBar, type LocationCenter } from "@/components/customer/LocationSearchBar";
 import { formatRating } from "@/components/customer/StarRating";
+import { HEADER_GRADIENT_COLORS } from "@/components/navigation/CustomerTabHeader";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import {
   fetchMarketplaceBusinessesPage,
@@ -141,11 +144,16 @@ export default function SearchScreen() {
 
   return (
     <Screen scroll padded={false} backgroundColor={colors.screenBg}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={HEADER_GRADIENT_COLORS}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <Text style={styles.title}>{t("search.discover")}</Text>
 
         <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -162,10 +170,11 @@ export default function SearchScreen() {
         </View>
 
         <LocationSearchBar center={center} onChange={setCenter} />
-      </View>
+      </LinearGradient>
 
       <View style={styles.controls}>
         <Pressable style={styles.filterBtn} onPress={() => setFilterOpen(true)}>
+          <Ionicons name="options-outline" size={16} color={colors.text} />
           <Text style={styles.filterBtnText}>{t("search.filters")}</Text>
           {filterCount > 0 ? (
             <View style={styles.badge}>
@@ -270,25 +279,25 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: colors.brandDark,
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
     gap: 12,
+    overflow: "hidden",
   },
-  title: { fontSize: 22, fontWeight: "500", color: colors.white },
+  title: { ...typography.h2, color: colors.white },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.white,
     borderRadius: radius.md,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 8,
+    paddingVertical: 11,
+    gap: 10,
+    ...shadows.sm,
   },
-  searchIcon: { fontSize: 16, color: colors.textMuted },
   searchInput: { flex: 1, fontSize: 15, color: colors.text, paddingVertical: 2 },
   clear: { fontSize: 14, color: colors.textMuted, padding: 4 },
   controls: {
@@ -301,15 +310,14 @@ const styles = StyleSheet.create({
   filterBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 7,
     backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.full,
     paddingHorizontal: 16,
-    paddingVertical: 9,
+    paddingVertical: 10,
+    ...shadows.sm,
   },
-  filterBtnText: { fontSize: 14, fontWeight: "600", color: colors.text },
+  filterBtnText: { ...typography.label, color: colors.text },
   badge: {
     minWidth: 20,
     height: 20,
@@ -323,36 +331,36 @@ const styles = StyleSheet.create({
   toggle: {
     flexDirection: "row",
     backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.full,
     padding: 3,
+    ...shadows.sm,
   },
   toggleItem: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: radius.full,
   },
   toggleItemActive: { backgroundColor: colors.primary },
-  toggleText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+  toggleText: { ...typography.label, fontSize: 13, color: colors.textSecondary },
   toggleTextActive: { color: colors.white },
   body: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 },
   center: { alignItems: "center", paddingVertical: 48 },
-  empty: { alignItems: "center", paddingVertical: 48, gap: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: "500", color: colors.text },
+  empty: { alignItems: "center", paddingVertical: 56, gap: 10 },
+  emptyTitle: { ...typography.h3, color: colors.text },
   emptyText: {
-    fontSize: 14,
+    ...typography.body,
     color: colors.textSecondary,
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 21,
     paddingHorizontal: 24,
   },
   resetBtn: {
-    marginTop: 12,
+    marginTop: 14,
     backgroundColor: colors.primary,
     borderRadius: radius.md,
-    paddingHorizontal: 20,
-    paddingVertical: 11,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    ...shadows.sm,
   },
   resetBtnText: { color: colors.white, fontWeight: "600", fontSize: 13 },
 });

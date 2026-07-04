@@ -1,7 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ReviewForm } from "@/components/customer/ReviewForm";
@@ -11,7 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { DualDateTime } from "@/components/ui/DualDateTime";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchCustomerBookings } from "@/lib/api/bookings";
@@ -20,14 +27,14 @@ import { fetchReviewedBookingIds } from "@/lib/api/reviews";
 import { formatBookingPrice } from "@/lib/services/pricing";
 import type { BookingStatus } from "@/lib/types/database";
 
-const STATUS_STYLES: Record<BookingStatus, { bg: string; text: string }> = {
-  pending: { bg: "#faeeda", text: "#854f0b" },
-  confirmed: { bg: colors.primaryLight, text: colors.primaryDark },
-  cancelled: { bg: colors.errorBg, text: colors.error },
-  completed: { bg: "#e6f1fb", text: "#185fa5" },
+const STATUS_STYLES: Record<BookingStatus, { bg: string; text: string; accent: string }> = {
+  pending: { bg: "#faeeda", text: "#854f0b", accent: colors.gold },
+  confirmed: { bg: colors.primaryLight, text: colors.primaryDark, accent: colors.primary },
+  cancelled: { bg: colors.errorBg, text: colors.error, accent: colors.error },
+  completed: { bg: "#e6f1fb", text: "#185fa5", accent: "#185fa5" },
 };
 
-const PASSED_STATUS_STYLE = { bg: "#f3f4f6", text: "#6b7280" };
+const PASSED_STATUS_STYLE = { bg: "#f3f4f6", text: "#6b7280", accent: "#9ca3af" };
 
 function isPassedPendingBooking(booking: { status: BookingStatus; scheduled_at: string }) {
   return booking.status === "pending" && new Date(booking.scheduled_at).getTime() < Date.now();
@@ -50,6 +57,8 @@ export default function BookingsScreen() {
     queryFn: () => fetchReviewedBookingIds(user!.id),
     enabled: Boolean(user?.id),
   });
+
+  const onRefresh = useCallback(() => { refetch(); }, [refetch]);
 
   if (!session) {
     return (
@@ -75,6 +84,14 @@ export default function BookingsScreen() {
         data={bookings ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       ListHeaderComponent={
         <>
           <CustomerTabTitleHeader title={t("bookings.title")} subtitle={t("bookings.subtitle")} />
@@ -118,6 +135,8 @@ export default function BookingsScreen() {
 
         return (
           <View style={styles.card}>
+            <View style={[styles.accentBar, { backgroundColor: statusStyle.accent }]} />
+            <View style={styles.cardContent}>
             <View style={styles.cardTop}>
               <Text style={styles.serviceName}>{booking.services?.name ?? "Service"}</Text>
               <View style={[styles.badge, { backgroundColor: statusStyle.bg }]}>
@@ -170,6 +189,7 @@ export default function BookingsScreen() {
                 refetch();
               }}
             />
+            </View>
           </View>
         );
       }}
@@ -179,7 +199,7 @@ export default function BookingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 24 },
+  body: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 24 },
   listScreen: { flex: 1, backgroundColor: colors.screenBg },
   listContent: { paddingBottom: 24, flexGrow: 1 },
   guest: {
@@ -187,25 +207,32 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
-    gap: 12,
+    gap: 14,
   },
-  guestEmoji: { fontSize: 48, marginBottom: 8 },
-  guestTitle: { fontSize: 22, fontWeight: "500", color: colors.text },
-  guestText: { fontSize: 14, color: colors.textSecondary, textAlign: "center", lineHeight: 21 },
+  guestEmoji: { fontSize: 52, marginBottom: 8 },
+  guestTitle: { ...typography.h2, color: colors.text },
+  guestText: { ...typography.body, color: colors.textSecondary, textAlign: "center", lineHeight: 21 },
   center: { alignItems: "center", paddingVertical: 48 },
-  empty: { alignItems: "center", paddingVertical: 48, gap: 10, paddingHorizontal: 16 },
-  emptyEmoji: { fontSize: 40 },
-  emptyTitle: { fontSize: 16, fontWeight: "500", color: colors.text },
-  emptyText: { fontSize: 14, color: colors.textSecondary, textAlign: "center", lineHeight: 21 },
+  empty: { alignItems: "center", paddingVertical: 56, gap: 12, paddingHorizontal: 16 },
+  emptyEmoji: { fontSize: 44 },
+  emptyTitle: { ...typography.h3, color: colors.text },
+  emptyText: { ...typography.body, color: colors.textSecondary, textAlign: "center", lineHeight: 21 },
   card: {
+    flexDirection: "row",
     backgroundColor: colors.white,
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    padding: 16,
     marginBottom: 12,
     marginHorizontal: 16,
-    gap: 4,
+    overflow: "hidden",
+    ...shadows.sm,
+  },
+  accentBar: {
+    width: 4,
+  },
+  cardContent: {
+    flex: 1,
+    padding: 16,
+    gap: 5,
   },
   cardTop: {
     flexDirection: "row",
@@ -213,15 +240,15 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
   },
-  serviceName: { fontSize: 15, fontWeight: "500", color: colors.text, flex: 1 },
+  serviceName: { fontSize: 15, fontWeight: "600", color: colors.text, flex: 1 },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.full,
   },
-  badgeText: { fontSize: 10, fontWeight: "600", textTransform: "capitalize" },
+  badgeText: { fontSize: 10, fontWeight: "700", textTransform: "capitalize" },
   businessName: { fontSize: 13, color: colors.primary, fontWeight: "500" },
-  meta: { fontSize: 12, color: colors.textSecondary },
-  price: { fontSize: 14, fontWeight: "500", color: colors.text, marginTop: 4 },
+  meta: { ...typography.small, color: colors.textSecondary },
+  price: { ...typography.bodyMedium, color: colors.text, marginTop: 4 },
   reviewBtn: { marginTop: 10 },
 });

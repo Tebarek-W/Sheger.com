@@ -95,6 +95,29 @@ function PaymentScreenContent() {
         paymentStatus: bookingPaymentStatusForMethod(method),
       });
 
+      // #region agent log
+      fetch("http://127.0.0.1:7897/ingest/87bc8cdc-bf90-4031-80cf-4a94e06c1294", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "2e6b91" },
+        body: JSON.stringify({
+          sessionId: "2e6b91",
+          runId: "pre-fix",
+          hypothesisId: "H1-H4",
+          location: "payment/index.tsx:confirm",
+          message: "booking created before chapa checkout",
+          data: {
+            bookingId: booking.id,
+            status: booking.status,
+            paymentStatus: booking.payment_status,
+            servicePrice: service.price,
+            usesChapa,
+            scheduledAt,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
       setBookingId(booking.id);
       queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
       queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });

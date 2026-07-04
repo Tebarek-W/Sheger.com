@@ -1,13 +1,14 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { BusinessCard } from "@/components/customer/BusinessCard";
 import { CustomerTabTitleHeader } from "@/components/navigation/CustomerTabHeader";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { fetchMarketplaceBusinessesPage } from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
@@ -89,8 +90,10 @@ export default function NearbyScreen() {
     label: value == null ? t("nearby.radiusAll") : `${value} km`,
   }));
 
+  const onRefresh = useCallback(() => { refetch(); }, [refetch]);
+
   return (
-    <Screen scroll padded={false} backgroundColor={colors.screenBg}>
+    <Screen scroll padded={false} backgroundColor={colors.screenBg} onRefresh={onRefresh} refreshing={isRefetching}>
       <CustomerTabTitleHeader
         title={t("nearby.title")}
         subtitle={
@@ -117,6 +120,7 @@ export default function NearbyScreen() {
         ) : null}
         {granted === false ? (
           <View style={styles.banner}>
+            <Ionicons name="location-outline" size={20} color={colors.primaryDark} style={{ marginBottom: 4 }} />
             <Text style={styles.bannerText}>{t("nearby.enableLocationText")}</Text>
             <Pressable onPress={refresh} style={styles.bannerBtn}>
               <Text style={styles.bannerBtnText}>{t("nearby.enableLocation")}</Text>
@@ -211,7 +215,7 @@ export default function NearbyScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 24 },
+  body: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 24 },
   categoryRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -223,23 +227,26 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     paddingHorizontal: 14,
     paddingVertical: 7,
+    ...shadows.sm,
   },
-  categoryChipText: { fontSize: 13, fontWeight: "600", color: colors.primaryDark },
-  clearCategory: { fontSize: 13, fontWeight: "600", color: colors.primary },
+  categoryChipText: { ...typography.label, color: colors.primaryDark },
+  clearCategory: { ...typography.label, color: colors.primary },
   banner: {
     backgroundColor: colors.primaryLight,
-    borderRadius: radius.md,
-    padding: 14,
+    borderRadius: radius.lg,
+    padding: 16,
     marginBottom: 16,
     gap: 10,
+    ...shadows.sm,
   },
-  bannerText: { fontSize: 13, color: colors.primaryDark, lineHeight: 18 },
+  bannerText: { fontSize: 13, color: colors.primaryDark, lineHeight: 19 },
   bannerBtn: {
     alignSelf: "flex-start",
     backgroundColor: colors.primary,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: radius.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    ...shadows.sm,
   },
   bannerBtnText: { color: colors.white, fontWeight: "600", fontSize: 13 },
   radiusRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
@@ -249,16 +256,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radius.full,
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 8,
   },
-  radiusChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  radiusChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    ...shadows.sm,
+  },
   radiusText: { fontSize: 13, fontWeight: "500", color: colors.text },
   radiusTextActive: { color: colors.white },
   center: { alignItems: "center", paddingVertical: 48, gap: 12 },
   loadingText: { color: colors.textMuted, fontSize: 14 },
-  empty: { alignItems: "center", paddingVertical: 48, gap: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: "500", color: colors.text },
-  emptyText: { fontSize: 14, color: colors.textSecondary, textAlign: "center" },
-  otherSection: { marginTop: 24 },
-  otherHint: { fontSize: 12, color: colors.textSecondary, marginTop: -4, marginBottom: 12 },
+  empty: { alignItems: "center", paddingVertical: 56, gap: 10 },
+  emptyTitle: { ...typography.h3, color: colors.text },
+  emptyText: { ...typography.body, color: colors.textSecondary, textAlign: "center" },
+  otherSection: { marginTop: 28 },
+  otherHint: { ...typography.small, color: colors.textSecondary, marginTop: -4, marginBottom: 12 },
 });

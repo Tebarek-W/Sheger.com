@@ -19,6 +19,7 @@ import {
 import { getChapaHttpsReturnUrlPrefix } from "@/lib/chapa/return-url";
 import { buildChapaReceiptUrl, parseChapaReferenceFromUrl } from "@/lib/chapa/receipt";
 import { getErrorMessage } from "@/lib/errors";
+import { supabase } from "@/lib/supabase";
 import { useBookingStore } from "@/stores/bookingStore";
 
 type CheckoutStatus = "preparing" | "browser" | "confirm" | "verifying" | "error";
@@ -128,15 +129,66 @@ function PaymentCheckoutContent() {
 
     try {
       const result = await initializeChapaBookingPayment(bookingId);
+      // #region agent log
+      fetch("http://127.0.0.1:7897/ingest/87bc8cdc-bf90-4031-80cf-4a94e06c1294", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "2e6b91" },
+        body: JSON.stringify({
+          sessionId: "2e6b91",
+          runId: "pre-fix",
+          hypothesisId: "H2",
+          location: "payment/checkout.tsx:startHostedCheckout",
+          message: "chapa initialize ok",
+          data: { bookingId, txRef: result.tx_ref },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       setTxRef(result.tx_ref);
       setCheckoutUrl(result.checkout_url);
       setBookingId(bookingId);
       await openChapaCheckout(result.checkout_url, result.tx_ref);
     } catch (error) {
+      const errMsg = getErrorMessage(error);
+      // #region agent log
+      fetch("http://127.0.0.1:7897/ingest/87bc8cdc-bf90-4031-80cf-4a94e06c1294", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "2e6b91" },
+        body: JSON.stringify({
+          sessionId: "2e6b91",
+          runId: "pre-fix",
+          hypothesisId: "H2",
+          location: "payment/checkout.tsx:startHostedCheckout",
+          message: "chapa initialize failed",
+          data: { bookingId, error: errMsg },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       setStatus("error");
-      setMessage(getErrorMessage(error));
+      setMessage(errMsg);
       try {
-        await cancelChapaPayment({ bookingId });
+        const cancelResult = await cancelChapaPayment({ bookingId });
+        const { data: bookingAfterCancel } = await supabase
+          .from("bookings")
+          .select("status, payment_status")
+          .eq("id", bookingId)
+          .single();
+        // #region agent log
+        fetch("http://127.0.0.1:7897/ingest/87bc8cdc-bf90-4031-80cf-4a94e06c1294", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "2e6b91" },
+          body: JSON.stringify({
+            sessionId: "2e6b91",
+            runId: "pre-fix",
+            hypothesisId: "H3-H5",
+            location: "payment/checkout.tsx:startHostedCheckout",
+            message: "state after cancel attempt",
+            data: { bookingId, cancelResult, bookingAfterCancel },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
       } catch {
         // Booking may already be cancelled server-side.
       }

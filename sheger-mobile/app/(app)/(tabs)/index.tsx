@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,10 +12,13 @@ import {
 
 import { BusinessCard } from "@/components/customer/BusinessCard";
 import { CategoryGrid } from "@/components/customer/CategoryGrid";
-import { customerTabHeaderContainerStyle } from "@/components/navigation/CustomerTabHeader";
+import {
+  customerTabHeaderContainerStyle,
+  HEADER_GRADIENT_COLORS,
+} from "@/components/navigation/CustomerTabHeader";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
@@ -50,9 +54,22 @@ export default function HomeScreen() {
   const firstName = profile?.full_name?.split(" ")[0] ?? t("common.there");
   const displayName = session ? `${firstName} 👋` : `${t("common.guest")} 👋`;
 
+  const handleRefresh = useCallback(() => { refetch(); }, [refetch]);
+
   return (
-    <Screen scroll padded={false} backgroundColor={colors.screenBg}>
-      <View style={styles.header}>
+    <Screen
+      scroll
+      padded={false}
+      backgroundColor={colors.screenBg}
+      onRefresh={handleRefresh}
+      refreshing={isRefetching}
+    >
+      <LinearGradient
+        colors={HEADER_GRADIENT_COLORS}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.greeting}>{t(getTimeGreetingKey())}</Text>
@@ -74,7 +91,7 @@ export default function HomeScreen() {
           <Text style={styles.searchIcon}>🔍</Text>
           <Text style={styles.searchPlaceholder}>{t("home.searchPlaceholder")}</Text>
         </Pressable>
-      </View>
+      </LinearGradient>
 
       <View style={styles.body}>
         <SectionHeader title={t("home.categories")} />
@@ -140,23 +157,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  greeting: { fontSize: 12, color: "rgba(255,255,255,0.7)" },
-  name: { fontSize: 16, fontWeight: "500", color: colors.white, marginTop: 2 },
+  greeting: { fontSize: 13, color: "rgba(255,255,255,0.75)", letterSpacing: 0.2 },
+  name: { ...typography.h3, color: colors.white, marginTop: 3 },
   notif: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.14)",
     alignItems: "center",
     justifyContent: "center",
   },
-  notifIcon: { fontSize: 16 },
+  notifIcon: { fontSize: 18 },
   notifDot: {
     position: "absolute",
-    top: 6,
-    right: 6,
-    width: 7,
-    height: 7,
+    top: 7,
+    right: 7,
+    width: 8,
+    height: 8,
     borderRadius: 4,
     backgroundColor: colors.accentLime,
     borderWidth: 1.5,
@@ -168,37 +185,38 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: radius.md,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 8,
+    paddingVertical: 13,
+    gap: 10,
   },
-  searchIcon: { fontSize: 16, opacity: 0.7 },
+  searchIcon: { fontSize: 16, opacity: 0.8 },
   searchPlaceholder: {
     flex: 1,
     fontSize: 14,
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(255,255,255,0.55)",
   },
   body: {
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 22,
     paddingBottom: 24,
   },
   center: { alignItems: "center", paddingVertical: 48, gap: 12 },
   loadingText: { color: colors.textMuted, fontSize: 14 },
   empty: {
     alignItems: "center",
-    paddingVertical: 48,
+    paddingVertical: 56,
     paddingHorizontal: 24,
-    gap: 8,
+    gap: 10,
   },
-  emptyEmoji: { fontSize: 40, marginBottom: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: "500", color: colors.text },
-  emptyText: { fontSize: 14, color: colors.textSecondary, textAlign: "center", lineHeight: 21 },
+  emptyEmoji: { fontSize: 48, marginBottom: 8 },
+  emptyTitle: { ...typography.h3, color: colors.text },
+  emptyText: { ...typography.body, color: colors.textSecondary, textAlign: "center", lineHeight: 21 },
   retryBtn: {
-    marginTop: 12,
+    marginTop: 14,
     backgroundColor: colors.primary,
     borderRadius: radius.md,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 13,
+    ...shadows.sm,
   },
-  retryText: { color: colors.white, fontWeight: "600" },
+  retryText: { color: colors.white, fontWeight: "600", fontSize: 14 },
 });
