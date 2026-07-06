@@ -50,10 +50,41 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
+    // Deferred bookings never created a row, so they don't appear above. Their
+    // abandoned checkout transactions still hold live Chapa links — expire them.
+    const draftCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    let draftsCancelled = 0;
+
+    const { data: staleDrafts } = await supabase
+      .from("payment_transactions")
+      .select("id, tx_ref")
+      .eq("purpose", "booking")
+      .is("booking_id", null)
+      .eq("status", "initialized")
+      .lt("created_at", draftCutoff);
+
+    for (const draft of staleDrafts ?? []) {
+      if (!draft.tx_ref) continue;
+      try {
+        const result = await chapaCancel(draft.tx_ref);
+        if (result.cancelled || result.skipped) {
+          draftsCancelled += 1;
+        }
+      } catch (cancelError) {
+        console.warn("expire-unpaid-bookings draft:", draft.tx_ref, cancelError);
+      }
+
+      await supabase
+        .from("payment_transactions")
+        .update({ status: "cancelled", updated_at: new Date().toISOString() })
+        .eq("id", draft.id);
+    }
+
     return jsonResponse({
       ok: true,
       expired: data ?? 0,
       chapa_cancel_attempts: chapaCancelled,
+      drafts_cancelled: draftsCancelled,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

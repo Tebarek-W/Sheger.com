@@ -11,6 +11,12 @@ type VerifyBody = {
   txRef?: string;
 };
 
+type TxnMetadata = {
+  customer_id?: string;
+  business_id?: string;
+  booking_draft?: Record<string, unknown>;
+};
+
 /**
  * Client-triggered payment verification for both booking and subscription
  * payments.
@@ -36,7 +42,7 @@ Deno.serve(async (req) => {
     const supabase = adminClient();
     const { data: txn, error: txnError } = await supabase
       .from("payment_transactions")
-      .select("purpose, booking_id, business_id, status, metadata")
+      .select("purpose, booking_id, business_id, status, chapa_reference, payment_method, metadata")
       .eq("tx_ref", txRef)
       .single();
 
@@ -45,7 +51,7 @@ Deno.serve(async (req) => {
     }
     if (!txn) return jsonResponse({ error: "Payment not found" }, 404);
 
-    const metadata = txn.metadata as { customer_id?: string; business_id?: string } | null;
+    const metadata = txn.metadata as TxnMetadata | null;
     const isSubscription = txn.purpose === "subscription";
 
     if (isSubscription) {
@@ -60,19 +66,29 @@ Deno.serve(async (req) => {
       if (business?.owner_id !== user.id) {
         return jsonResponse({ error: "Not authorized" }, 403);
       }
-    } else {
-      if (!txn.booking_id) return jsonResponse({ error: "Payment not found" }, 404);
-
-      if (metadata?.customer_id && metadata.customer_id !== user.id) {
+    } else if (txn.purpose === "booking") {
+      if (txn.booking_id) {
         const { data: booking } = await supabase
           .from("bookings")
           .select("customer_id")
           .eq("id", txn.booking_id)
           .single();
-        if (booking?.customer_id !== user.id) {
+        const ownerId = booking?.customer_id ?? metadata?.customer_id ?? null;
+        if (!ownerId || ownerId !== user.id) {
           return jsonResponse({ error: "Not authorized" }, 403);
         }
+      } else {
+        // Deferred booking: row is created in finalize_chapa_payment after verify.
+        const customerId = metadata?.customer_id ?? null;
+        if (!customerId || customerId !== user.id) {
+          return jsonResponse({ error: "Not authorized" }, 403);
+        }
+        if (!metadata?.booking_draft) {
+          return jsonResponse({ error: "Payment not found" }, 404);
+        }
       }
+    } else {
+      return jsonResponse({ error: "Payment not found" }, 404);
     }
 
     if (txn.status === "success") {
@@ -84,22 +100,20 @@ Deno.serve(async (req) => {
           payment_status: "paid",
           already_finalized: true,
           chapa_status: "success",
+          chapa_reference: txn.chapa_reference ?? null,
+          chapa_payment_method: txn.payment_method ?? null,
         });
       }
-
-      const { data: booking } = await supabase
-        .from("bookings")
-        .select("id, payment_status")
-        .eq("id", txn.booking_id)
-        .single();
 
       return jsonResponse({
         ok: true,
         purpose: "booking",
         booking_id: txn.booking_id,
-        payment_status: booking?.payment_status ?? "paid",
+        payment_status: "paid",
         already_finalized: true,
         chapa_status: "success",
+        chapa_reference: txn.chapa_reference ?? null,
+        chapa_payment_method: txn.payment_method ?? null,
       });
     }
 
@@ -119,7 +133,13 @@ Deno.serve(async (req) => {
       }, result.status === "pending" ? 202 : 402);
     }
 
-    return jsonResponse(result);
+    return jsonResponse({
+      ...result,
+      purpose: isSubscription ? "subscription" : "booking",
+      business_id: isSubscription
+        ? (txn.business_id ?? metadata?.business_id ?? null)
+        : undefined,
+    });
   } catch (error) {
     const message = formatEdgeError(error);
     console.error("chapa-verify:", message, error);

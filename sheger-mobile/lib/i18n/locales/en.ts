@@ -172,8 +172,10 @@ export const en = {
     cash: "Cash on arrival",
     cashDesc: "Pay at the business when you arrive",
     notAvailable: "Not available for this service",
+    chapaPayoutNotConfigured:
+      "This business has not set up online payouts yet. Pay with cash when you arrive.",
     chapaNote:
-      "You will be redirected to Chapa's secure checkout to choose Telebirr, CBE Birr, cards, and more. Your slot is held for 15 minutes.",
+      "You will be redirected to Chapa's secure checkout to choose Telebirr, CBE Birr, cards, and more. Your booking is created only after your payment is confirmed.",
     checkout: {
       title: "Secure checkout",
       preparing: "Preparing secure checkout…",
@@ -190,20 +192,23 @@ export const en = {
       confirmPayment: "Confirm payment",
       cancelLink: "Cancel",
       cancelTitle: "Cancel payment?",
-      cancelMessage: "Your booking will be cancelled and the time slot will be released.",
+      cancelMessage: "Your payment will be cancelled and no booking will be created.",
       cancelKeep: "Keep paying",
-      cancelConfirm: "Cancel booking",
-      bookingNotFound: "Booking not found.",
+      cancelConfirm: "Cancel payment",
+      bookingNotFound: "Payment session not found.",
       goBack: "Go back",
     },
     continueToPayment: "Continue to payment",
     confirmBooking: "Confirm booking",
     bookingFailed: "Booking failed",
+    paymentUnavailable: "Payment unavailable",
     staff: "Staff member",
     staffOptional: "Optional — pick a team member or leave as any available",
     return: {
       confirming: "Confirming your payment…",
       referenceMissing: "Payment reference missing.",
+      retry: "Try again",
+      goBack: "Go back",
     },
   },
   booking: {
@@ -369,6 +374,8 @@ export const en = {
         infoTitle: "Secure Chapa checkout",
         infoText:
           "You'll be redirected to Chapa to complete your subscription payment. Your plan activates as soon as the payment is confirmed.",
+        testModeNote:
+          "In Chapa test mode the hosted page may show Pay with Test Mode instead of the full live method list. Switch to live mode for real payments.",
         preparing: "Preparing secure checkout…",
         browserMessage: "Complete your payment in the Chapa window.",
         verifying: "Confirming your subscription payment…",
@@ -380,6 +387,12 @@ export const en = {
         confirmPaid: "I've paid — confirm",
         tryAgain: "Try again",
         backToBilling: "Back to billing",
+        cancelLink: "Cancel payment",
+        cancelTitle: "Cancel payment?",
+        cancelMessage: "Your subscription checkout will be cancelled.",
+        cancelKeep: "Keep paying",
+        cancelConfirm: "Cancel payment",
+        viewReceipt: "View receipt",
       },
       employees: {
         title: "Employees",

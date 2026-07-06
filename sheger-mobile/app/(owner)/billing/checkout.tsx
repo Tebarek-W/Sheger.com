@@ -9,8 +9,9 @@ import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
-import { parseTxRefFromUrl, verifyChapaPayment } from "@/lib/api/chapa";
+import { cancelChapaPayment, parseTxRefFromUrl, verifyChapaPayment } from "@/lib/api/chapa";
 import { initializeChapaSubscriptionPayment } from "@/lib/api/subscription";
+import { buildChapaReceiptUrl } from "@/lib/chapa/receipt";
 import { getChapaHttpsReturnUrlPrefix } from "@/lib/chapa/return-url";
 import { getErrorMessage } from "@/lib/errors";
 import type { BillingInterval } from "@/lib/types/database";
@@ -56,21 +57,63 @@ export default function OwnerBillingCheckoutScreen() {
     async (paymentTxRef: string) => {
       setStatus("verifying");
       setMessage(t("owner.screens.billingCheckout.verifying"));
-      await verifyChapaPayment(paymentTxRef);
+      const verified = await verifyChapaPayment(paymentTxRef);
       if (businessId) {
         queryClient.invalidateQueries({ queryKey: ["subscription-summary", businessId] });
         queryClient.invalidateQueries({ queryKey: ["subscription-payments", businessId] });
       }
       setStatus("done");
       setMessage(t("owner.screens.billingCheckout.activated"));
+
+      const receiptRef = verified.chapa_reference ?? null;
+      const receiptUrl = receiptRef ? buildChapaReceiptUrl(receiptRef) : null;
+
       Alert.alert(
         t("owner.screens.billingCheckout.activeTitle"),
         t("owner.screens.billingCheckout.activeMessage"),
-        [{ text: t("common.done"), onPress: () => router.replace("/(owner)/billing") }],
+        [
+          ...(receiptUrl
+            ? [{
+                text: t("owner.screens.billingCheckout.viewReceipt"),
+                onPress: () => {
+                  void WebBrowser.openBrowserAsync(receiptUrl);
+                  router.replace("/(owner)/billing");
+                },
+              }]
+            : []),
+          { text: t("common.done"), onPress: () => router.replace("/(owner)/billing") },
+        ],
       );
     },
     [businessId, queryClient, t],
   );
+
+  const cancelCheckout = useCallback(() => {
+    if (!txRef) {
+      router.replace("/(owner)/billing");
+      return;
+    }
+
+    Alert.alert(
+      t("owner.screens.billingCheckout.cancelTitle"),
+      t("owner.screens.billingCheckout.cancelMessage"),
+      [
+        { text: t("owner.screens.billingCheckout.cancelKeep"), style: "cancel" },
+        {
+          text: t("owner.screens.billingCheckout.cancelConfirm"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await cancelChapaPayment({ txRef });
+            } catch {
+              // Checkout may already be expired on Chapa's side.
+            }
+            router.replace("/(owner)/billing");
+          },
+        },
+      ],
+    );
+  }, [t, txRef]);
 
   const confirmPayment = useCallback(async () => {
     if (!txRef) return;
@@ -171,6 +214,7 @@ export default function OwnerBillingCheckoutScreen() {
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>{t("owner.screens.billingCheckout.infoTitle")}</Text>
           <Text style={styles.infoText}>{t("owner.screens.billingCheckout.infoText")}</Text>
+          <Text style={styles.infoNote}>{t("owner.screens.billingCheckout.testModeNote")}</Text>
         </View>
 
         <View style={styles.center}>
@@ -202,6 +246,12 @@ export default function OwnerBillingCheckoutScreen() {
               <Text style={styles.cancelLink}>{t("owner.screens.billingCheckout.backToBilling")}</Text>
             </Pressable>
           ) : null}
+
+          {status === "confirm" || status === "browser" ? (
+            <Pressable onPress={cancelCheckout}>
+              <Text style={styles.cancelLink}>{t("owner.screens.billingCheckout.cancelLink")}</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </Screen>
@@ -224,6 +274,7 @@ const styles = StyleSheet.create({
   },
   infoTitle: { fontSize: 15, fontWeight: "700", color: colors.primaryDarker },
   infoText: { fontSize: 14, color: colors.textMuted, lineHeight: 21 },
+  infoNote: { fontSize: 13, color: colors.textMuted, lineHeight: 20, fontStyle: "italic" },
   center: {
     flex: 1,
     alignItems: "center",

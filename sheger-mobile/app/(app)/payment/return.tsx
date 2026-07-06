@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
+import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
 import { colors } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
@@ -35,42 +36,84 @@ function PaymentReturnContent() {
     : params.chapa_reference;
   const queryClient = useQueryClient();
   const business = useBookingStore((s) => s.business);
+  const setBookingId = useBookingStore((s) => s.setBookingId);
   const setChapaReceiptUrl = useBookingStore((s) => s.setChapaReceiptUrl);
   const [message, setMessage] = useState(t("payment.return.confirming"));
+  const [failed, setFailed] = useState(false);
   const startedRef = useRef(false);
+
+  const confirmPayment = useCallback(async () => {
+    if (!txRef) {
+      setFailed(true);
+      setMessage(t("payment.return.referenceMissing"));
+      return;
+    }
+
+    setFailed(false);
+    setMessage(t("payment.return.confirming"));
+
+    try {
+      const verified = await verifyChapaPayment(txRef);
+      if (verified.booking_id) {
+        setBookingId(verified.booking_id);
+      }
+      const receiptRef = verified.chapa_reference ?? chapaReference ?? null;
+      if (receiptRef) {
+        setChapaReceiptUrl(buildChapaReceiptUrl(receiptRef));
+      }
+      if (business?.id) {
+        queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
+
+      if (verified.purpose === "subscription") {
+        const subBusinessId = verified.business_id;
+        if (subBusinessId) {
+          queryClient.invalidateQueries({ queryKey: ["subscription-summary", subBusinessId] });
+          queryClient.invalidateQueries({ queryKey: ["subscription-payments", subBusinessId] });
+        }
+        router.replace("/(owner)/billing");
+        return;
+      }
+
+      router.replace("/(app)/confirmation");
+    } catch (error) {
+      setFailed(true);
+      setMessage(getErrorMessage(error));
+    }
+  }, [
+    business?.id,
+    chapaReference,
+    queryClient,
+    setBookingId,
+    setChapaReceiptUrl,
+    t,
+    txRef,
+  ]);
 
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-
-    (async () => {
-      if (!txRef) {
-        setMessage(t("payment.return.referenceMissing"));
-        return;
-      }
-
-      try {
-        const verified = await verifyChapaPayment(txRef);
-        const receiptRef = verified.chapa_reference ?? chapaReference ?? null;
-        if (receiptRef) {
-          setChapaReceiptUrl(buildChapaReceiptUrl(receiptRef));
-        }
-        if (business?.id) {
-          queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
-        }
-        queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
-        router.replace("/(app)/confirmation");
-      } catch (error) {
-        setMessage(getErrorMessage(error));
-      }
-    })();
-  }, [business?.id, chapaReference, queryClient, setChapaReceiptUrl, t, txRef]);
+    void confirmPayment();
+  }, [confirmPayment]);
 
   return (
     <Screen>
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        {!failed ? <ActivityIndicator size="large" color={colors.primary} /> : null}
         <Text style={styles.text}>{message}</Text>
+        {failed ? (
+          <>
+            {txRef ? (
+              <Button title={t("payment.return.retry")} onPress={confirmPayment} />
+            ) : null}
+            <Button
+              title={t("payment.return.goBack")}
+              variant="outline"
+              onPress={() => router.back()}
+            />
+          </>
+        ) : null}
       </View>
     </Screen>
   );

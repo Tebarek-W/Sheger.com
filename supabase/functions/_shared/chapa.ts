@@ -530,11 +530,7 @@ function formatChapaApiError(body: unknown, fallback: string): string {
     const nested = message as Record<string, unknown>;
     const splitValueErrors = nested["subaccounts.split_value"];
     if (Array.isArray(splitValueErrors) && splitValueErrors.length > 0) {
-      const detail = String(splitValueErrors[0]);
-      if (detail.toLowerCase().includes("transaction fee")) {
-        return "This booking amount is too low for online payment after commission and Chapa processing fees. Pay cash at the business or choose a higher-priced service.";
-      }
-      return detail;
+      return String(splitValueErrors[0]);
     }
     return JSON.stringify(message);
   }

@@ -55,7 +55,11 @@ Deno.serve(async (req) => {
       charge_type?: string;
     } | null;
 
-    if (metadata?.customer_id && metadata.customer_id !== user.id) {
+    if (metadata?.customer_id) {
+      if (metadata.customer_id !== user.id) {
+        return jsonResponse({ error: "Not authorized" }, 403);
+      }
+    } else if (txn.booking_id) {
       const { data: booking } = await supabase
         .from("bookings")
         .select("customer_id")
@@ -64,6 +68,8 @@ Deno.serve(async (req) => {
       if (booking?.customer_id !== user.id) {
         return jsonResponse({ error: "Not authorized" }, 403);
       }
+    } else {
+      return jsonResponse({ error: "Not authorized" }, 403);
     }
 
     const chapaReference = reference ?? metadata?.chapa_reference;

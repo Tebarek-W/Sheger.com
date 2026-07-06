@@ -1,11 +1,16 @@
 import {
-  assertBookingSplitViableForChapa,
   BookingPaymentError,
   buildBookingChapaSubaccountSplit,
+  cancelStaleDraftCheckouts,
   cancelStaleInitializedCheckout,
   findReusableHostedCheckout,
+  insertBookingDraftPaymentTransaction,
   insertBookingPaymentTransaction,
   prepareBookingChapaPayment,
+  prepareBookingDraftChapaPayment,
+  type BookingDraftInput,
+  type PreparedBookingDraftPayment,
+  type PreparedBookingPayment,
 } from "../_shared/chapa-booking-payment.ts";
 import {
   buildChapaReturnUrl,
@@ -22,7 +27,10 @@ import {
 } from "../_shared/supabase.ts";
 
 type InitializeBody = {
+  /** Legacy flow: booking already exists (payment_status = awaiting_payment). */
   bookingId?: string;
+  /** Deferred flow: booking is created only after payment succeeds. */
+  draft?: BookingDraftInput;
 };
 
 Deno.serve(async (req) => {
@@ -37,45 +45,55 @@ Deno.serve(async (req) => {
     const { user } = await requireUser(req);
     const body = (await req.json()) as InitializeBody;
     const bookingId = body.bookingId?.trim();
+    const draft = body.draft;
 
-    if (!bookingId) {
-      return jsonResponse({ error: "bookingId is required" }, 400);
+    if (!bookingId && !draft) {
+      return jsonResponse({ error: "bookingId or draft is required" }, 400);
     }
 
     const supabase = adminClient();
     const functionsBase = supabaseFunctionsBaseUrl();
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-    const { data: bookingRow, error: bookingRowError } = await supabase
-      .from("bookings")
-      .select("business_id, listed_price")
-      .eq("id", bookingId)
-      .single();
+    let prepared: PreparedBookingPayment | PreparedBookingDraftPayment;
+    let isDraft = false;
 
-    if (bookingRowError || !bookingRow) {
-      return jsonResponse({ error: "Booking not found" }, 404);
+    if (draft) {
+      // Deferred flow — no booking row yet; validate, then create a fresh
+      // checkout after clearing any abandoned drafts for this customer.
+      isDraft = true;
+      await cancelStaleDraftCheckouts(supabase, user.id);
+      prepared = await prepareBookingDraftChapaPayment(supabase, user.id, draft);
+    } else {
+      const { data: bookingRow, error: bookingRowError } = await supabase
+        .from("bookings")
+        .select("business_id, listed_price")
+        .eq("id", bookingId!)
+        .single();
+
+      if (bookingRowError || !bookingRow) {
+        return jsonResponse({ error: "Booking not found" }, 404);
+      }
+
+      const amount = Number(bookingRow.listed_price);
+      const reusable = await findReusableHostedCheckout(
+        supabase,
+        bookingId!,
+        bookingRow.business_id,
+        amount,
+      );
+      if (reusable) {
+        return jsonResponse({
+          checkout_url: reusable.checkoutUrl,
+          tx_ref: reusable.txRef,
+          return_url: buildChapaReturnUrl(functionsBase, reusable.txRef, anonKey),
+          reused: true,
+        });
+      }
+
+      await cancelStaleInitializedCheckout(supabase, bookingId!);
+      prepared = await prepareBookingChapaPayment(supabase, user.id, bookingId!);
     }
-
-    const amount = Number(bookingRow.listed_price);
-    const reusable = await findReusableHostedCheckout(
-      supabase,
-      bookingId,
-      bookingRow.business_id,
-      amount,
-    );
-    if (reusable) {
-      return jsonResponse({
-        checkout_url: reusable.checkoutUrl,
-        tx_ref: reusable.txRef,
-        return_url: buildChapaReturnUrl(functionsBase, reusable.txRef, anonKey),
-        reused: true,
-      });
-    }
-
-    await cancelStaleInitializedCheckout(supabase, bookingId);
-
-    const prepared = await prepareBookingChapaPayment(supabase, user.id, bookingId);
-    assertBookingSplitViableForChapa(prepared.split, prepared.amount);
 
     const initResult = await chapaInitialize({
       amount: formatChapaAmount(prepared.amount),
@@ -92,7 +110,7 @@ Deno.serve(async (req) => {
         description: `${prepared.serviceLabel} at ${prepared.businessLabel}`,
       },
       meta: {
-        booking_id: prepared.bookingId,
+        booking_id: isDraft ? null : (prepared as PreparedBookingPayment).bookingId,
         customer_id: prepared.customerId,
         purpose: "booking",
         payment_reason: `Sheger booking — ${prepared.serviceLabel}`,
@@ -113,10 +131,25 @@ Deno.serve(async (req) => {
       ),
     });
 
-    await insertBookingPaymentTransaction(supabase, prepared, {
-      checkout_url: initResult.checkout_url,
-      payment_flow: "hosted_checkout",
-    });
+    if (isDraft) {
+      await insertBookingDraftPaymentTransaction(
+        supabase,
+        prepared as PreparedBookingDraftPayment,
+        {
+          checkout_url: initResult.checkout_url,
+          payment_flow: "hosted_checkout",
+        },
+      );
+    } else {
+      await insertBookingPaymentTransaction(
+        supabase,
+        prepared as PreparedBookingPayment,
+        {
+          checkout_url: initResult.checkout_url,
+          payment_flow: "hosted_checkout",
+        },
+      );
+    }
 
     return jsonResponse({
       checkout_url: initResult.checkout_url,

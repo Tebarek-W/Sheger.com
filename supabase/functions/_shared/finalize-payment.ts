@@ -1,7 +1,7 @@
 import { chapaMode, chapaVerify, isChapaSuccessfulStatus } from "./chapa.ts";
 import { adminClient, formatEdgeError } from "./supabase.ts";
 
-/** Chapa may report subtotal while we store the customer-facing total (incl. fees). */
+/** Chapa verify amount vs stored service price (fees may be passed to the customer). */
 function paymentAmountsMatch(expected: number, verified: number): boolean {
   const bookingAmount = Number(expected);
   const chapaAmount = Number(verified);
@@ -14,8 +14,15 @@ function paymentAmountsMatch(expected: number, verified: number): boolean {
     return true;
   }
 
-  // Paid total can exceed merchant subtotal by a small Chapa/processing fee.
-  if (chapaAmount < bookingAmount && bookingAmount - chapaAmount <= 5) {
+  const diff = chapaAmount - bookingAmount;
+  // Customer may pay a processing fee on top of the service price.
+  const maxOverpay = Math.max(5, Math.ceil(bookingAmount * 0.10 * 100) / 100);
+  if (diff > 0 && diff <= maxOverpay) {
+    return true;
+  }
+
+  // Chapa may report merchant subtotal slightly below the initialized amount.
+  if (diff < 0 && bookingAmount - chapaAmount <= 5) {
     return true;
   }
 
@@ -76,9 +83,20 @@ export async function finalizeVerifiedPayment(txRef: string) {
     throw new Error(formatEdgeError(finalizeError, "Could not finalize payment"));
   }
 
+  const finalizeRecord =
+    finalizeResult && typeof finalizeResult === "object"
+      ? (finalizeResult as Record<string, unknown>)
+      : null;
+  // Deferred bookings are created inside finalize_chapa_payment, so the booking
+  // id comes back on the RPC result rather than on the transaction row.
+  const bookingId =
+    (typeof finalizeRecord?.booking_id === "string" && finalizeRecord.booking_id) ||
+    txn.booking_id ||
+    null;
+
   return {
     ok: true as const,
-    booking_id: txn.booking_id,
+    booking_id: bookingId,
     payment_status: "paid",
     chapa_status: verified.status,
     chapa_reference: verified.reference ?? null,

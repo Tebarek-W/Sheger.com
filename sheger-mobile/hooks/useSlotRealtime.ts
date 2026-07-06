@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 import { addisDayBounds } from "@/lib/calendar/timezone";
 import { supabase } from "@/lib/supabase";
@@ -17,6 +18,7 @@ export function useSlotRealtimeRefresh(
 ) {
   const queryClient = useQueryClient();
   const dateKey = date.toDateString();
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!businessId) return;
@@ -24,33 +26,55 @@ export function useSlotRealtimeRefresh(
     const { start, endExclusive } = addisDayBounds(date);
     const rangeStart = new Date(start).getTime();
     const rangeEnd = new Date(endExclusive).getTime();
+    const channelName = `slots-${businessId}-${dateKey}-${employeeId ?? "any"}`;
+    let cancelled = false;
 
-    const channel = supabase
-      .channel(`slots-${businessId}-${dateKey}-${employeeId ?? "any"}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "bookings",
-          filter: `business_id=eq.${businessId}`,
-        },
-        (payload) => {
-          const row = (payload.new ?? payload.old) as BookingRow | null;
-          if (!row?.scheduled_at) return;
+    const subscribe = async () => {
+      // Supabase reuses channel instances by topic; tear down before re-binding.
+      await supabase.removeChannel(supabase.channel(channelName));
+      if (cancelled) return;
 
-          const instant = new Date(row.scheduled_at).getTime();
-          if (instant < rangeStart || instant >= rangeEnd) return;
+      const channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "bookings",
+            filter: `business_id=eq.${businessId}`,
+          },
+          (payload) => {
+            const row = (payload.new ?? payload.old) as BookingRow | null;
+            if (!row?.scheduled_at) return;
 
-          queryClient.invalidateQueries({
-            queryKey: ["available-slots", businessId, dateKey, employeeId ?? null],
-          });
-        },
-      )
-      .subscribe();
+            const instant = new Date(row.scheduled_at).getTime();
+            if (instant < rangeStart || instant >= rangeEnd) return;
+
+            queryClient.invalidateQueries({
+              queryKey: ["available-slots", businessId, dateKey, employeeId ?? null],
+            });
+          },
+        )
+        .subscribe();
+
+      if (cancelled) {
+        void supabase.removeChannel(channel);
+        return;
+      }
+
+      channelRef.current = channel;
+    };
+
+    void subscribe();
 
     return () => {
-      void supabase.removeChannel(channel);
+      cancelled = true;
+      const channel = channelRef.current;
+      channelRef.current = null;
+      if (channel) {
+        void supabase.removeChannel(channel);
+      }
     };
   }, [businessId, dateKey, employeeId, queryClient, date]);
 }

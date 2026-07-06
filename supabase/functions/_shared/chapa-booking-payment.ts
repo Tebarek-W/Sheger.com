@@ -34,6 +34,29 @@ export type PreparedBookingPayment = {
   returnUrl: string;
 };
 
+/** Booking details captured before payment — no `bookings` row exists yet. */
+export type BookingDraftInput = {
+  businessId: string;
+  serviceId: string;
+  employeeId?: string | null;
+  scheduledAt: string;
+};
+
+/** Persisted on the payment transaction so finalize can create the booking. */
+export type BookingDraft = {
+  customer_id: string;
+  business_id: string;
+  service_id: string;
+  employee_id: string | null;
+  scheduled_at: string;
+  duration_minutes: number;
+  payment_method: string;
+};
+
+export type PreparedBookingDraftPayment = Omit<PreparedBookingPayment, "bookingId"> & {
+  draft: BookingDraft;
+};
+
 export class BookingPaymentError extends Error {
   constructor(
     message: string,
@@ -49,6 +72,13 @@ export function makeBookingTxRef(bookingId: string): string {
   const stamp = Date.now().toString(36);
   const shortId = bookingId.replace(/-/g, "").slice(0, 8);
   return `sheger-bkg-${shortId}-${stamp}`;
+}
+
+/** No booking id exists yet for deferred bookings, so use a random suffix. */
+export function makeDraftTxRef(): string {
+  const stamp = Date.now().toString(36);
+  const rand = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
+  return `sheger-bkg-${rand}-${stamp}`;
 }
 
 function parseSplit(split: unknown): BookingSplit {
@@ -76,42 +106,15 @@ function parseSplit(split: unknown): BookingSplit {
   };
 }
 
-/**
- * Chapa deducts processing fees from the main merchant (Sheger) share of a split payment.
- * @see https://developer.chapa.co/integrations/split-payment
- */
-export function estimateChapaMerchantFeeEtb(amountEtb: number): number {
-  const rateFee = Math.ceil(amountEtb * 0.06 * 100) / 100;
-  return Math.max(6, rateFee);
-}
-
-export function assertBookingSplitViableForChapa(
-  split: BookingSplit,
-  amountEtb: number,
-): void {
-  const estimatedFee = estimateChapaMerchantFeeEtb(amountEtb);
-  if (split.commission_amount_etb >= estimatedFee) return;
-
-  const minAmount = split.commission_rate > 0
-    ? Math.ceil((estimatedFee / split.commission_rate) * 100) / 100
-    : amountEtb;
-
-  throw new BookingPaymentError(
-    `Online payment requires a service price of at least ${minAmount.toFixed(0)} ETB so Sheger's commission can cover Chapa fees. This booking is ${amountEtb.toFixed(0)} ETB — choose cash at the business or pick a higher-priced service.`,
-    400,
-    "amount_too_low_for_chapa_split",
-  );
-}
-
-/** Flat ETB commission is explicit and avoids percentage rounding on small totals. */
+/** Platform commission as a percentage (0–1). Chapa supports split from 1 ETB. @see https://developer.chapa.co/integrations/split-payment */
 export function buildBookingChapaSubaccountSplit(
   split: BookingSplit,
   chapaSubaccountId: string,
 ): ChapaSplitSubaccount {
   return {
     id: chapaSubaccountId,
-    split_type: "flat",
-    split_value: split.commission_amount_etb,
+    split_type: "percentage",
+    split_value: split.commission_rate,
   };
 }
 
@@ -204,6 +207,177 @@ export async function prepareBookingChapaPayment(
     callbackUrl: buildChapaCallbackUrl(functionsBase),
     returnUrl: buildChapaReturnUrl(functionsBase, txRef, anonKey),
   };
+}
+
+/**
+ * Prepare a Chapa payment for a booking that has NOT been created yet. The
+ * booking is only inserted after payment succeeds (see finalize_chapa_payment).
+ * Validation mirrors the booking insert trigger via validate_booking_draft.
+ */
+export async function prepareBookingDraftChapaPayment(
+  supabase: SupabaseClient,
+  userId: string,
+  input: BookingDraftInput,
+): Promise<PreparedBookingDraftPayment> {
+  const scheduledAt = input.scheduledAt?.trim();
+  if (!input.businessId || !input.serviceId || !scheduledAt) {
+    throw new BookingPaymentError("Incomplete booking details", 400);
+  }
+
+  const employeeId = input.employeeId?.trim() || null;
+
+  const { data: validation, error: validationError } = await supabase.rpc(
+    "validate_booking_draft",
+    {
+      p_customer_id: userId,
+      p_business_id: input.businessId,
+      p_service_id: input.serviceId,
+      p_employee_id: employeeId,
+      p_scheduled_at: scheduledAt,
+    },
+  );
+
+  if (validationError) {
+    throw new BookingPaymentError(
+      validationError.message ?? "This booking is no longer available",
+      400,
+    );
+  }
+
+  const validated = validation as {
+    listed_price?: number;
+    duration_minutes?: number;
+  } | null;
+
+  const amount = Number(validated?.listed_price);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new BookingPaymentError("Invalid booking amount", 400);
+  }
+  const durationMinutes = Number(validated?.duration_minutes) || 30;
+
+  const functionsBase = supabaseFunctionsBaseUrl();
+
+  const [{ data: profile }, { data: business }, { data: service }, { data: payoutAccount }, { data: split }] =
+    await Promise.all([
+      supabase.from("profiles").select("full_name, phone").eq("id", userId).single(),
+      supabase.from("businesses").select("name").eq("id", input.businessId).single(),
+      supabase.from("services").select("name").eq("id", input.serviceId).single(),
+      supabase
+        .from("business_chapa_subaccounts")
+        .select("chapa_subaccount_id, status")
+        .eq("business_id", input.businessId)
+        .eq("status", "active")
+        .maybeSingle(),
+      supabase.rpc("compute_booking_split", {
+        p_amount: amount,
+        p_business_id: input.businessId,
+      }),
+    ]);
+
+  if (!payoutAccount?.chapa_subaccount_id) {
+    throw new BookingPaymentError(
+      "This business has not set up bank payout details yet. Online payment is unavailable until the owner configures payouts.",
+      400,
+      "payout_not_configured",
+    );
+  }
+
+  const parsedSplit = parseSplit(split);
+  const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+  const email = authUser.user?.email ?? `customer+${userId.slice(0, 8)}@sheger.app`;
+  const names = splitFullName(profile?.full_name);
+  const txRef = makeDraftTxRef();
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  const phone = profile?.phone ?? undefined;
+
+  return {
+    customerId: userId,
+    businessId: input.businessId,
+    amount,
+    txRef,
+    email,
+    firstName: sanitizeChapaText(names.first_name, "Sheger", 50),
+    lastName: sanitizeChapaText(names.last_name, "Customer", 50),
+    phone: phone ?? undefined,
+    serviceLabel: sanitizeChapaText(service?.name, "Service", 50),
+    businessLabel: sanitizeChapaText(business?.name, "Business", 50),
+    split: parsedSplit,
+    chapaSubaccountId: payoutAccount.chapa_subaccount_id,
+    callbackUrl: buildChapaCallbackUrl(functionsBase),
+    returnUrl: buildChapaReturnUrl(functionsBase, txRef, anonKey),
+    draft: {
+      customer_id: userId,
+      business_id: input.businessId,
+      service_id: input.serviceId,
+      employee_id: employeeId,
+      scheduled_at: scheduledAt,
+      duration_minutes: durationMinutes,
+      payment_method: "chapa",
+    },
+  };
+}
+
+export async function insertBookingDraftPaymentTransaction(
+  supabase: SupabaseClient,
+  prepared: PreparedBookingDraftPayment,
+  metadata: Record<string, unknown>,
+) {
+  const { error: insertError } = await supabase.from("payment_transactions").insert({
+    purpose: "booking",
+    booking_id: null,
+    tx_ref: prepared.txRef,
+    amount_etb: prepared.amount,
+    currency: "ETB",
+    status: "initialized",
+    chapa_mode: chapaMode(),
+    chapa_subaccount_id: prepared.chapaSubaccountId,
+    commission_rate: prepared.split.commission_rate,
+    commission_amount_etb: prepared.split.commission_amount_etb,
+    owner_net_etb: prepared.split.owner_net_etb,
+    metadata: {
+      customer_id: prepared.customerId,
+      split: prepared.split,
+      booking_draft: prepared.draft,
+      ...metadata,
+    },
+  });
+
+  if (insertError) throw insertError;
+}
+
+/**
+ * A customer only checks out one booking at a time. Cancel any prior initialized
+ * draft checkouts for them (on Chapa + locally) before opening a new one, so
+ * abandoned checkouts don't linger as live Chapa links.
+ */
+export async function cancelStaleDraftCheckouts(
+  supabase: SupabaseClient,
+  customerId: string,
+) {
+  const { data: staleTxns } = await supabase
+    .from("payment_transactions")
+    .select("id, tx_ref")
+    .eq("purpose", "booking")
+    .is("booking_id", null)
+    .eq("status", "initialized")
+    .eq("metadata->>customer_id", customerId);
+
+  for (const stale of staleTxns ?? []) {
+    if (!stale.tx_ref) continue;
+    try {
+      const result = await chapaCancel(stale.tx_ref);
+      if (!result.cancelled && !result.skipped) {
+        console.warn("cancelStaleDraftCheckouts:", stale.tx_ref, result.reason);
+      }
+    } catch (error) {
+      console.warn("cancelStaleDraftCheckouts:", stale.tx_ref, error);
+    }
+
+    await supabase
+      .from("payment_transactions")
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .eq("id", stale.id);
+  }
 }
 
 export async function insertBookingPaymentTransaction(

@@ -15,7 +15,9 @@ type ChapaInitializeResponse = {
 
 type ChapaVerifyResponse = {
   ok: boolean;
+  purpose?: "booking" | "subscription";
   booking_id?: string;
+  business_id?: string | null;
   payment_status?: string;
   status?: string;
   chapa_status?: string;
@@ -95,10 +97,22 @@ async function resolveVerifyResponse(
   return asVerifyResponse(body);
 }
 
-export async function initializeChapaBookingPayment(bookingId: string) {
+export type ChapaBookingDraft = {
+  businessId: string;
+  serviceId: string;
+  employeeId?: string | null;
+  scheduledAt: string;
+};
+
+/**
+ * Starts a Chapa checkout for a booking that has NOT been created yet. The
+ * booking is only inserted after the payment is verified, so the slot is never
+ * held for an incomplete payment.
+ */
+export async function initializeChapaBookingPayment(draft: ChapaBookingDraft) {
   const { data, error } = await supabase.functions.invoke<ChapaInitializeResponse>(
     "chapa-initialize",
-    { body: { bookingId } },
+    { body: { draft } },
   );
 
   if (error || !data?.checkout_url || !data.tx_ref) {

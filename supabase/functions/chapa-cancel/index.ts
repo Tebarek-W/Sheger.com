@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     let txnQuery = supabase
       .from("payment_transactions")
-      .select("id, tx_ref, booking_id, status")
+      .select("id, tx_ref, booking_id, business_id, purpose, status, metadata")
       .in("status", ["initialized", "failed"]);
 
     if (txRef) {
@@ -49,19 +49,48 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: true, skipped: true, reason: "no active transaction" });
     }
 
-    const { data: booking, error: bookingError } = await supabase
-      .from("bookings")
-      .select("id, customer_id, status, payment_status")
-      .eq("id", txn.booking_id)
-      .single();
+    // Authorize: booking customer, draft owner, or subscription business owner.
+    let booking:
+      | { id: string; customer_id: string; status: string; payment_status: string }
+      | null = null;
 
-    if (bookingError) throw bookingError;
-    if (booking.customer_id !== user.id) {
-      return jsonResponse({ error: "Not authorized" }, 403);
+    if (txn.purpose === "subscription") {
+      const businessId =
+        txn.business_id ??
+        (txn.metadata as { business_id?: string } | null)?.business_id ??
+        null;
+      if (!businessId) {
+        return jsonResponse({ error: "Not authorized" }, 403);
+      }
+      const { data: business } = await supabase
+        .from("businesses")
+        .select("owner_id")
+        .eq("id", businessId)
+        .single();
+      if (business?.owner_id !== user.id) {
+        return jsonResponse({ error: "Not authorized" }, 403);
+      }
+    } else if (txn.booking_id) {
+      const { data: bookingRow, error: bookingError } = await supabase
+        .from("bookings")
+        .select("id, customer_id, status, payment_status")
+        .eq("id", txn.booking_id)
+        .single();
+
+      if (bookingError) throw bookingError;
+      booking = bookingRow;
+      if (booking.customer_id !== user.id) {
+        return jsonResponse({ error: "Not authorized" }, 403);
+      }
+    } else {
+      const meta = txn.metadata as { customer_id?: string } | null;
+      if (!meta?.customer_id || meta.customer_id !== user.id) {
+        return jsonResponse({ error: "Not authorized" }, 403);
+      }
     }
 
     // If payment already succeeded on Chapa, finalize instead of cancelling.
-    // @see https://developer.chapa.co/integrations/verify-payments
+    // For drafts this also creates the booking. @see finalize_chapa_payment
     try {
       const verified = await chapaVerify(txn.tx_ref);
       if (isChapaSuccessfulStatus(verified.status)) {
@@ -93,6 +122,7 @@ Deno.serve(async (req) => {
     }
 
     if (
+      booking &&
       booking.status === "pending" &&
       booking.payment_status === "awaiting_payment"
     ) {
@@ -104,7 +134,7 @@ Deno.serve(async (req) => {
 
     return jsonResponse({
       ok: true,
-      booking_id: booking.id,
+      booking_id: booking?.id ?? null,
       cancelled: true,
       chapa_checkout_expired: true,
     });

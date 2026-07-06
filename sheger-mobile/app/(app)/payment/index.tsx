@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
@@ -12,6 +12,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import { createBooking } from "@/lib/api/bookings";
+import { checkChapaBookingEligibility } from "@/lib/api/chapa-eligibility";
+import { initializeChapaBookingPayment } from "@/lib/api/chapa";
 import { DEFAULT_CANCELLATION_HOURS, getCancellationPolicyText } from "@/lib/booking/cancellation";
 import {
   bookingPaymentStatusForMethod,
@@ -67,14 +69,23 @@ function PaymentScreenContent() {
   const submittingRef = useRef(false);
 
   const checkoutPrice = service ? getCheckoutPriceLabel(service) : null;
-  const onlinePayAvailable = checkoutPrice?.showExactTotal ?? false;
+  const hasExactTotal = checkoutPrice?.showExactTotal ?? false;
+
+  const { data: chapaEligibility, isLoading: chapaEligibilityLoading } = useQuery({
+    queryKey: ["chapa-eligibility", business?.id],
+    queryFn: () => checkChapaBookingEligibility(business!.id),
+    enabled: Boolean(business?.id && hasExactTotal),
+  });
+
+  const onlinePayAvailable =
+    hasExactTotal && (chapaEligibility?.eligible ?? false);
   const usesChapa = onlinePayAvailable && isChapaOnlineMethod(method);
 
   useEffect(() => {
-    if (!onlinePayAvailable) {
+    if (!chapaEligibilityLoading && !onlinePayAvailable) {
       setMethod(PAYMENT_METHOD_CASH);
     }
-  }, [onlinePayAvailable]);
+  }, [chapaEligibilityLoading, onlinePayAvailable]);
 
   const confirm = async () => {
     if (!user || !business || !service || !scheduledAt) return;
@@ -84,6 +95,26 @@ function PaymentScreenContent() {
     try {
       setPaymentMethod(method);
 
+      if (usesChapa) {
+        // Do NOT create a booking yet. The booking is created only after the
+        // Chapa payment is verified (see finalize_chapa_payment), so an
+        // incomplete payment never reserves the slot.
+        const result = await initializeChapaBookingPayment({
+          businessId: business.id,
+          serviceId: service.id,
+          employeeId,
+          scheduledAt,
+        });
+
+        submittingRef.current = false;
+        router.push({
+          pathname: "/(app)/payment/checkout",
+          params: { txRef: result.tx_ref, checkoutUrl: result.checkout_url },
+        });
+        return;
+      }
+
+      // Cash on arrival: no online payment, so create the booking immediately.
       const booking = await createBooking({
         customerId: user.id,
         businessId: business.id,
@@ -95,45 +126,16 @@ function PaymentScreenContent() {
         paymentStatus: bookingPaymentStatusForMethod(method),
       });
 
-      // #region agent log
-      fetch("http://127.0.0.1:7897/ingest/87bc8cdc-bf90-4031-80cf-4a94e06c1294", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "2e6b91" },
-        body: JSON.stringify({
-          sessionId: "2e6b91",
-          runId: "pre-fix",
-          hypothesisId: "H1-H4",
-          location: "payment/index.tsx:confirm",
-          message: "booking created before chapa checkout",
-          data: {
-            bookingId: booking.id,
-            status: booking.status,
-            paymentStatus: booking.payment_status,
-            servicePrice: service.price,
-            usesChapa,
-            scheduledAt,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-
       setBookingId(booking.id);
       queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
       queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
 
-      if (usesChapa) {
-        submittingRef.current = false;
-        router.push({
-          pathname: "/(app)/payment/checkout",
-          params: { bookingId: booking.id },
-        });
-        return;
-      }
-
       router.replace("/(app)/confirmation");
     } catch (error) {
-      Alert.alert(t("payment.bookingFailed"), getErrorMessage(error));
+      Alert.alert(
+        usesChapa ? t("payment.paymentUnavailable") : t("payment.bookingFailed"),
+        getErrorMessage(error),
+      );
       submittingRef.current = false;
     } finally {
       setLoading(false);
@@ -232,6 +234,10 @@ function PaymentScreenContent() {
             );
           })}
         </View>
+
+        {hasExactTotal && !chapaEligibilityLoading && !onlinePayAvailable ? (
+          <Text style={styles.chapaNote}>{t("payment.chapaPayoutNotConfigured")}</Text>
+        ) : null}
 
         {usesChapa ? <Text style={styles.chapaNote}>{t("payment.chapaNote")}</Text> : null}
 

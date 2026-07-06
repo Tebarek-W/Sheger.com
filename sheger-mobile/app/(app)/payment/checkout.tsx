@@ -12,14 +12,12 @@ import { useI18n } from "@/hooks/useI18n";
 import { RequireAuth } from "@/hooks/useRequireAuth";
 import {
   cancelChapaPayment,
-  initializeChapaBookingPayment,
   parseTxRefFromUrl,
   verifyChapaPayment,
 } from "@/lib/api/chapa";
 import { getChapaHttpsReturnUrlPrefix } from "@/lib/chapa/return-url";
 import { buildChapaReceiptUrl, parseChapaReferenceFromUrl } from "@/lib/chapa/receipt";
 import { getErrorMessage } from "@/lib/errors";
-import { supabase } from "@/lib/supabase";
 import { useBookingStore } from "@/stores/bookingStore";
 
 type CheckoutStatus = "preparing" | "browser" | "confirm" | "verifying" | "error";
@@ -32,14 +30,18 @@ export default function PaymentCheckoutScreen() {
   );
 }
 
-function resolveBookingId(value: string | string[] | undefined): string | null {
+function resolveParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value?.trim() || null;
 }
 
 function PaymentCheckoutContent() {
-  const params = useLocalSearchParams<{ bookingId?: string | string[] }>();
-  const bookingId = resolveBookingId(params.bookingId);
+  const params = useLocalSearchParams<{
+    txRef?: string | string[];
+    checkoutUrl?: string | string[];
+  }>();
+  const txRef = resolveParam(params.txRef);
+  const checkoutUrl = resolveParam(params.checkoutUrl);
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const business = useBookingStore((s) => s.business);
@@ -48,15 +50,18 @@ function PaymentCheckoutContent() {
 
   const [status, setStatus] = useState<CheckoutStatus>("preparing");
   const [message, setMessage] = useState(() => t("payment.checkout.preparing"));
-  const [txRef, setTxRef] = useState<string | null>(null);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const startedRef = useRef(false);
 
+  // Verifies the payment and, on success, the booking now exists server-side
+  // (it is created inside finalize_chapa_payment only after payment succeeds).
   const finishPaidBooking = useCallback(
     async (paymentTxRef: string, returnUrl?: string | null) => {
       setStatus("verifying");
       setMessage(t("payment.checkout.verifying"));
       const verified = await verifyChapaPayment(paymentTxRef);
+      if (verified.booking_id) {
+        setBookingId(verified.booking_id);
+      }
       const chapaRef =
         verified.chapa_reference ??
         (returnUrl ? parseChapaReferenceFromUrl(returnUrl) : null);
@@ -69,7 +74,7 @@ function PaymentCheckoutContent() {
       queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
       router.replace("/(app)/confirmation");
     },
-    [business?.id, queryClient, setChapaReceiptUrl, t],
+    [business?.id, queryClient, setBookingId, setChapaReceiptUrl, t],
   );
 
   const confirmPayment = useCallback(async () => {
@@ -121,89 +126,15 @@ function PaymentCheckoutContent() {
     [finishPaidBooking, t],
   );
 
-  const startHostedCheckout = useCallback(async () => {
-    if (!bookingId) return;
-
-    setStatus("preparing");
-    setMessage(t("payment.checkout.preparing"));
-
-    try {
-      const result = await initializeChapaBookingPayment(bookingId);
-      // #region agent log
-      fetch("http://127.0.0.1:7897/ingest/87bc8cdc-bf90-4031-80cf-4a94e06c1294", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "2e6b91" },
-        body: JSON.stringify({
-          sessionId: "2e6b91",
-          runId: "pre-fix",
-          hypothesisId: "H2",
-          location: "payment/checkout.tsx:startHostedCheckout",
-          message: "chapa initialize ok",
-          data: { bookingId, txRef: result.tx_ref },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-      setTxRef(result.tx_ref);
-      setCheckoutUrl(result.checkout_url);
-      setBookingId(bookingId);
-      await openChapaCheckout(result.checkout_url, result.tx_ref);
-    } catch (error) {
-      const errMsg = getErrorMessage(error);
-      // #region agent log
-      fetch("http://127.0.0.1:7897/ingest/87bc8cdc-bf90-4031-80cf-4a94e06c1294", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "2e6b91" },
-        body: JSON.stringify({
-          sessionId: "2e6b91",
-          runId: "pre-fix",
-          hypothesisId: "H2",
-          location: "payment/checkout.tsx:startHostedCheckout",
-          message: "chapa initialize failed",
-          data: { bookingId, error: errMsg },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-      setStatus("error");
-      setMessage(errMsg);
-      try {
-        const cancelResult = await cancelChapaPayment({ bookingId });
-        const { data: bookingAfterCancel } = await supabase
-          .from("bookings")
-          .select("status, payment_status")
-          .eq("id", bookingId)
-          .single();
-        // #region agent log
-        fetch("http://127.0.0.1:7897/ingest/87bc8cdc-bf90-4031-80cf-4a94e06c1294", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "2e6b91" },
-          body: JSON.stringify({
-            sessionId: "2e6b91",
-            runId: "pre-fix",
-            hypothesisId: "H3-H5",
-            location: "payment/checkout.tsx:startHostedCheckout",
-            message: "state after cancel attempt",
-            data: { bookingId, cancelResult, bookingAfterCancel },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
-      } catch {
-        // Booking may already be cancelled server-side.
-      }
-    }
-  }, [bookingId, openChapaCheckout, setBookingId, t]);
-
   useEffect(() => {
     WebBrowser.maybeCompleteAuthSession();
   }, []);
 
   useEffect(() => {
-    if (!bookingId || startedRef.current) return;
+    if (!txRef || !checkoutUrl || startedRef.current) return;
     startedRef.current = true;
-    void startHostedCheckout();
-  }, [bookingId, startHostedCheckout]);
+    void openChapaCheckout(checkoutUrl, txRef);
+  }, [txRef, checkoutUrl, openChapaCheckout]);
 
   const onCancel = () => {
     Alert.alert(
@@ -217,16 +148,13 @@ function PaymentCheckoutContent() {
           onPress: async () => {
             WebBrowser.dismissBrowser();
             try {
-              const result = await cancelChapaPayment({
-                bookingId: bookingId!,
-                txRef: txRef ?? undefined,
-              });
+              const result = await cancelChapaPayment({ txRef: txRef ?? undefined });
               if (result?.paid && txRef) {
                 await finishPaidBooking(txRef);
                 return;
               }
             } catch {
-              // Ignore cleanup errors on manual cancel.
+              // Ignore cleanup errors on manual cancel — no booking exists yet.
             }
             router.back();
           },
@@ -235,7 +163,7 @@ function PaymentCheckoutContent() {
     );
   };
 
-  if (!bookingId) {
+  if (!txRef || !checkoutUrl) {
     return (
       <Screen padded={false} style={styles.screen}>
         <View style={styles.pad}>
@@ -270,7 +198,7 @@ function PaymentCheckoutContent() {
           ) : null}
           <Text style={status === "error" ? styles.errorText : styles.statusText}>{message}</Text>
 
-          {status === "confirm" && checkoutUrl && txRef ? (
+          {status === "confirm" ? (
             <>
               <Button
                 title={t("payment.checkout.openChapa")}

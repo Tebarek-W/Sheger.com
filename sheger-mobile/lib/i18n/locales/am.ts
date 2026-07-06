@@ -174,8 +174,10 @@ export const am: TranslationTree = {
     cash: "በመድረሻ ጥሬ ገንዘብ",
     cashDesc: "ወደ ንግዱ ሲደርሱ ይክፈሉ",
     notAvailable: "ለዚህ አገልግሎት አይገኝም",
+    chapaPayoutNotConfigured:
+      "ይህ ንግድ ኦንላይን ክፍያ ገቢ መቀበያ ገና አልተዋቀረም። በመድረሻ ጥሬ ገንዘብ ይክፈሉ።",
     chapaNote:
-      "ወደ ቻፓ ደህንነቱ የተጠበቀ የክፍያ ገጽ ይመራሉ — ቴሌብር፣ ሲቢኢ ብር፣ ካርድ እና ሌሎችን ይምረጣሉ። ቦታዎ ለ 15 ደቂቃዎች ይታሸጋል።",
+      "ወደ ቻፓ ደህንነቱ የተጠበቀ የክፍያ ገጽ ይመራሉ — ቴሌብር፣ ሲቢኢ ብር፣ ካርድ እና ሌሎችን ይምረጣሉ። ቀጠሮዎ የሚፈጠረው ክፍያዎ ከተረጋገጠ በኋላ ብቻ ነው።",
     checkout: {
       title: "ደህንነቱ የተጠበቀ ክፍያ",
       preparing: "ደህንነቱ የተጠበቀ ክፍያ በመዘጋጀት ላይ…",
@@ -191,20 +193,23 @@ export const am: TranslationTree = {
       confirmPayment: "ክፍያ አረጋግጥ",
       cancelLink: "ሰርዝ",
       cancelTitle: "ክፍያ ይሰረዝ?",
-      cancelMessage: "ቀጠሮዎ ይሰረዛል እና የጊዜ ቦታው ይለቀቃል።",
+      cancelMessage: "ክፍያዎ ይሰረዛል እና ምንም ቀጠሮ አይፈጠርም።",
       cancelKeep: "ክፍያ ቀጥል",
-      cancelConfirm: "ቀጠሮ ሰርዝ",
-      bookingNotFound: "ቀጠሮ አልተገኘም።",
+      cancelConfirm: "ክፍያ ሰርዝ",
+      bookingNotFound: "የክፍያ ክፍለ ጊዜ አልተገኘም።",
       goBack: "ተመለስ",
     },
     continueToPayment: "ወደ ክፍያ ቀጥል",
     confirmBooking: "ቀጠሮ አረጋግጥ",
     bookingFailed: "ቀጠሮ አልተሳካም",
+    paymentUnavailable: "ክፍያ አይገኝም",
     staff: "ሰራተኛ",
     staffOptional: "አማራጭ — የቡድን አባል ይምረጡ ወይም ማንኛውም ተገኝ",
     return: {
       confirming: "ክፍያዎን በመረጋገጥ ላይ…",
       referenceMissing: "የክፍያ ማጣቀሻ ጠፍቷል።",
+      retry: "እንደገና ሞክር",
+      goBack: "ተመለስ",
     },
   },
   booking: {
@@ -365,6 +370,8 @@ export const am: TranslationTree = {
         infoTitle: "የቻፓ ደህንነቱ የተጠበቀ ክፍያ",
         infoText:
           "የደንበኝነት ክፍያዎን ለማጠናቀቅ ወደ ቻፓ ይመራሉ። ክፍያ ከተረጋገጠ በኋላ ዕቅድዎ ይንቃል።",
+        testModeNote:
+          "በቻፓ ፈተና ሁነታ የተደራጀ ገጹ Pay with Test Mode ሊያሳይ ይችላል። እውነተኛ ክፍያዎች ለቻፓ live ሁነታ ይሂዱ።",
         preparing: "ደህንነቱ የተጠበቀ ክፍያ በመዘጋጀት ላይ…",
         browserMessage: "ክፍያውን በቻፓ መስኮት ያጠናቅቁ።",
         verifying: "የደንበኝነት ክፍያ በመረጋገጥ ላይ…",
@@ -376,6 +383,12 @@ export const am: TranslationTree = {
         confirmPaid: "ከፍያዬ — አረጋግጥ",
         tryAgain: "እንደገና ሞክር",
         backToBilling: "ወደ ክፍያ ተመለስ",
+        cancelLink: "ክፍያ ሰርዝ",
+        cancelTitle: "ክፍያ ይሰረዝ?",
+        cancelMessage: "የደንበኝነት ክፍያ መስኮትዎ ይሰረዛል።",
+        cancelKeep: "መክፈል ቀጥል",
+        cancelConfirm: "ክፍያ ሰርዝ",
+        viewReceipt: "ደረሰኝ ይመልከቱ",
       },
       employees: {
         title: "ሰራተኞች",

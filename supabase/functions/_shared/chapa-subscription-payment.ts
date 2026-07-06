@@ -2,6 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1
 import {
   buildChapaCallbackUrl,
   buildChapaReturnUrl,
+  chapaCancel,
   chapaMode,
   sanitizeChapaText,
   splitFullName,
@@ -143,4 +144,34 @@ export async function insertSubscriptionPaymentTransaction(
   });
 
   if (insertError) throw insertError;
+}
+
+/** Cancel abandoned subscription checkouts before starting a new one. */
+export async function cancelStaleSubscriptionCheckouts(
+  supabase: SupabaseClient,
+  businessId: string,
+) {
+  const { data: staleTxns } = await supabase
+    .from("payment_transactions")
+    .select("id, tx_ref")
+    .eq("purpose", "subscription")
+    .eq("business_id", businessId)
+    .eq("status", "initialized");
+
+  for (const stale of staleTxns ?? []) {
+    if (!stale.tx_ref) continue;
+    try {
+      const result = await chapaCancel(stale.tx_ref);
+      if (!result.cancelled && !result.skipped) {
+        console.warn("cancelStaleSubscriptionCheckouts:", stale.tx_ref, result.reason);
+      }
+    } catch (error) {
+      console.warn("cancelStaleSubscriptionCheckouts:", stale.tx_ref, error);
+    }
+
+    await supabase
+      .from("payment_transactions")
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .eq("id", stale.id);
+  }
 }

@@ -5,6 +5,7 @@ import {
   sanitizeChapaText,
 } from "../_shared/chapa.ts";
 import {
+  cancelStaleSubscriptionCheckouts,
   insertSubscriptionPaymentTransaction,
   isBillingInterval,
   prepareSubscriptionChapaPayment,
@@ -46,6 +47,8 @@ Deno.serve(async (req) => {
     }
 
     const supabase = adminClient();
+
+    await cancelStaleSubscriptionCheckouts(supabase, businessId);
 
     const prepared = await prepareSubscriptionChapaPayment(
       supabase,

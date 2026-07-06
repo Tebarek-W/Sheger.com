@@ -1474,9 +1474,9 @@ export type Database = {
       get_slot_booking_counts: {
         Args: {
           p_business_id: string
+          p_employee_id?: string
           p_range_end: string
           p_range_start: string
-          p_employee_id?: string
         }
         Returns: {
           booking_count: number
@@ -1608,6 +1608,16 @@ export type Database = {
       sync_business_featured_search: {
         Args: { p_business_id: string }
         Returns: undefined
+      }
+      validate_booking_draft: {
+        Args: {
+          p_business_id: string
+          p_customer_id: string
+          p_employee_id: string
+          p_scheduled_at: string
+          p_service_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {

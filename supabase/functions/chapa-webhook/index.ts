@@ -1,6 +1,6 @@
 import { isValidChapaWebhookSignature } from "../_shared/chapa.ts";
 import { finalizeVerifiedPayment } from "../_shared/finalize-payment.ts";
-import { handleCors, jsonResponse } from "../_shared/supabase.ts";
+import { adminClient, handleCors, jsonResponse } from "../_shared/supabase.ts";
 
 type WebhookPayload = {
   event?: string;
@@ -35,6 +35,23 @@ Deno.serve(async (req) => {
       payload.status === "success";
 
     if (!isSuccess) {
+      const isFailure =
+        payload.event === "charge.failed" ||
+        payload.status === "failed" ||
+        payload.status === "cancelled";
+
+      if (isFailure && txRef) {
+        const supabase = adminClient();
+        await supabase
+          .from("payment_transactions")
+          .update({
+            status: payload.status === "cancelled" ? "cancelled" : "failed",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("tx_ref", txRef)
+          .in("status", ["initialized", "failed"]);
+      }
+
       return jsonResponse({ ok: true, skipped: true, event: payload.event ?? payload.status });
     }
 
