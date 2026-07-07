@@ -400,7 +400,6 @@ BEGIN
         RAISE EXCEPTION 'Booking draft is missing for this payment';
       END IF;
 
-      SAVEPOINT create_booking_from_payment;
       BEGIN
         INSERT INTO public.bookings (
           customer_id,
@@ -428,10 +427,8 @@ BEGIN
         RETURNING * INTO booking_row;
       EXCEPTION
         WHEN unique_violation THEN
-          ROLLBACK TO SAVEPOINT create_booking_from_payment;
           slot_unavailable := true;
         WHEN OTHERS THEN
-          ROLLBACK TO SAVEPOINT create_booking_from_payment;
           IF SQLERRM LIKE '%fully booked%'
              OR SQLERRM LIKE '%not available at this time%'
              OR SQLERRM LIKE '%not available for booking%'

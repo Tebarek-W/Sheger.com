@@ -1394,6 +1394,10 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: number
       }
+      check_chapa_booking_eligibility: {
+        Args: { p_amount?: number; p_business_id: string }
+        Returns: Json
+      }
       claim_notification_deliveries: {
         Args: { p_limit?: number }
         Returns: {
@@ -1653,6 +1657,7 @@ export type Database = {
         | "success"
         | "failed"
         | "cancelled"
+        | "paid_unfulfilled"
       promotion_status: "pending" | "active" | "expired" | "cancelled"
       promotion_type: "featured_search" | "category_banner" | "home_spotlight"
       push_platform: "ios" | "android"
