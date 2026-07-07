@@ -24,6 +24,7 @@ type ChapaVerifyResponse = {
   chapa_reference?: string | null;
   chapa_payment_method?: string | null;
   already_finalized?: boolean;
+  code?: string;
   error?: string;
 };
 
@@ -48,6 +49,10 @@ function coerceChapaStatus(value: unknown): string | null {
 }
 
 function throwVerifyPaymentFailure(data: ChapaVerifyResponse | null | undefined): never {
+  if (data?.code === "slot_unavailable") {
+    throw new Error("SLOT_UNAVAILABLE");
+  }
+
   const status =
     coerceChapaStatus(data?.chapa_status) ?? coerceChapaStatus(data?.status);
 

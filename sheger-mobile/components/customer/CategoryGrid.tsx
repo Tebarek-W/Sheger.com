@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { getCategoryIcon, getCategoryTheme } from "@/constants/categories";
 import { colors, radius, shadows } from "@/constants/theme";
 import type { Category } from "@/lib/types/database";
+import { formatCategoryDisplayName } from "@/lib/text/formatCategoryName";
 
 type CategoryItem = Pick<Category, "id" | "name" | "slug">;
 
@@ -37,7 +38,7 @@ export function CategoryGrid({ categories, selectedId, onSelect }: CategoryGridP
               </Text>
             </View>
             <Text style={[styles.label, active && styles.labelActive]} numberOfLines={2}>
-              {cat.name}
+              {formatCategoryDisplayName(cat.name)}
             </Text>
           </Pressable>
         );

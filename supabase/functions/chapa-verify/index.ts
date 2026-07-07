@@ -121,9 +121,33 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: false, status: "cancelled" }, 410);
     }
 
+    if (txn.status === "paid_unfulfilled") {
+      return jsonResponse({
+        ok: false,
+        code: "slot_unavailable",
+        error:
+          "Payment received, but this time slot is no longer available. Please contact support for a refund.",
+        payment_status: "paid_unfulfilled",
+        chapa_reference: txn.chapa_reference ?? null,
+        chapa_payment_method: txn.payment_method ?? null,
+      }, 409);
+    }
+
     const result = await finalizeVerifiedPayment(txRef);
 
     if (!result.ok) {
+      if ("code" in result && result.code === "slot_unavailable") {
+        return jsonResponse({
+          ok: false,
+          code: "slot_unavailable",
+          error:
+            "Payment received, but this time slot is no longer available. Please contact support for a refund.",
+          payment_status: result.payment_status ?? "paid_unfulfilled",
+          chapa_reference: result.chapa_reference ?? null,
+          chapa_payment_method: result.chapa_payment_method ?? null,
+        }, 409);
+      }
+
       return jsonResponse({
         ok: false,
         status: result.status,

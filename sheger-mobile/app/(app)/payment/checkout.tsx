@@ -35,6 +35,10 @@ function resolveParam(value: string | string[] | undefined): string | null {
   return value?.trim() || null;
 }
 
+function isSlotUnavailableError(error: unknown): boolean {
+  return getErrorMessage(error) === "SLOT_UNAVAILABLE";
+}
+
 function PaymentCheckoutContent() {
   const params = useLocalSearchParams<{
     txRef?: string | string[];
@@ -58,21 +62,36 @@ function PaymentCheckoutContent() {
     async (paymentTxRef: string, returnUrl?: string | null) => {
       setStatus("verifying");
       setMessage(t("payment.checkout.verifying"));
-      const verified = await verifyChapaPayment(paymentTxRef);
-      if (verified.booking_id) {
-        setBookingId(verified.booking_id);
+      try {
+        const verified = await verifyChapaPayment(paymentTxRef);
+        if (verified.booking_id) {
+          setBookingId(verified.booking_id);
+        }
+        const chapaRef =
+          verified.chapa_reference ??
+          (returnUrl ? parseChapaReferenceFromUrl(returnUrl) : null);
+        if (chapaRef) {
+          setChapaReceiptUrl(buildChapaReceiptUrl(chapaRef));
+        }
+        if (business?.id) {
+          queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
+        }
+        queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
+        router.replace("/(app)/confirmation");
+      } catch (error) {
+        if (isSlotUnavailableError(error)) {
+          if (business?.id) {
+            queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
+          }
+          Alert.alert(t("payment.bookingFailed"), t("payment.slotUnavailablePaid"), [
+            { text: t("common.ok"), onPress: () => router.replace("/(app)/book") },
+          ]);
+          setStatus("error");
+          setMessage(t("payment.slotUnavailablePaid"));
+          return;
+        }
+        throw error;
       }
-      const chapaRef =
-        verified.chapa_reference ??
-        (returnUrl ? parseChapaReferenceFromUrl(returnUrl) : null);
-      if (chapaRef) {
-        setChapaReceiptUrl(buildChapaReceiptUrl(chapaRef));
-      }
-      if (business?.id) {
-        queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
-      }
-      queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
-      router.replace("/(app)/confirmation");
     },
     [business?.id, queryClient, setBookingId, setChapaReceiptUrl, t],
   );
@@ -83,7 +102,11 @@ function PaymentCheckoutContent() {
       await finishPaidBooking(txRef);
     } catch (error) {
       setStatus("confirm");
-      setMessage(getErrorMessage(error));
+      setMessage(
+        isSlotUnavailableError(error)
+          ? t("payment.slotUnavailablePaid")
+          : getErrorMessage(error),
+      );
     }
   }, [finishPaidBooking, txRef]);
 

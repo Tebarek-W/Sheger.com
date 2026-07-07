@@ -27,6 +27,7 @@ import {
   formatServiceDuration,
   getCheckoutPriceLabel,
 } from "@/lib/services/pricing";
+import { fetchAvailableSlotsForDate, slotInstantKey } from "@/lib/api/slots";
 import { useBookingStore } from "@/stores/bookingStore";
 
 const PAYMENT_OPTIONS = [
@@ -93,6 +94,17 @@ function PaymentScreenContent() {
     submittingRef.current = true;
     setLoading(true);
     try {
+      const slotDate = new Date(scheduledAt);
+      const slots = await fetchAvailableSlotsForDate(business.id, slotDate, employeeId);
+      const selectedSlot = slots.find(
+        (slot) => slotInstantKey(slot.scheduledAt) === slotInstantKey(scheduledAt),
+      );
+      if (!selectedSlot || selectedSlot.isFull) {
+        Alert.alert(t("payment.bookingFailed"), t("payment.slotUnavailable"));
+        submittingRef.current = false;
+        return;
+      }
+
       setPaymentMethod(method);
 
       if (usesChapa) {

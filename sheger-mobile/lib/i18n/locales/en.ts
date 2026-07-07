@@ -24,6 +24,7 @@ export const en = {
     language: "Language",
     english: "English",
     amharic: "Amharic",
+    oromo: "Oromo",
   },
   tabs: {
     home: "Home",
@@ -201,6 +202,10 @@ export const en = {
     continueToPayment: "Continue to payment",
     confirmBooking: "Confirm booking",
     bookingFailed: "Booking failed",
+    slotUnavailable:
+      "This time slot is no longer available. Choose another time and try again.",
+    slotUnavailablePaid:
+      "Your payment was received, but this time slot is no longer available. Please contact support for a refund.",
     paymentUnavailable: "Payment unavailable",
     staff: "Staff member",
     staffOptional: "Optional — pick a team member or leave as any available",

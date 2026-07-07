@@ -18,7 +18,7 @@ export const useLocaleStore = create<LocaleState>((set) => ({
   hydrate: async () => {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored === "en" || stored === "am") {
+      if (stored === "en" || stored === "am" || stored === "om") {
         set({ locale: stored, hydrated: true });
         return;
       }

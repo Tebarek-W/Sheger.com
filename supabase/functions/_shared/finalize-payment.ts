@@ -87,6 +87,22 @@ export async function finalizeVerifiedPayment(txRef: string) {
     finalizeResult && typeof finalizeResult === "object"
       ? (finalizeResult as Record<string, unknown>)
       : null;
+
+  if (
+    finalizeRecord &&
+    finalizeRecord.ok === false &&
+    finalizeRecord.code === "slot_unavailable"
+  ) {
+    return {
+      ok: false as const,
+      code: "slot_unavailable" as const,
+      payment_status: "paid_unfulfilled",
+      chapa_status: verified.status,
+      chapa_reference: verified.reference ?? null,
+      chapa_payment_method: verified.payment_method ?? null,
+    };
+  }
+
   // Deferred bookings are created inside finalize_chapa_payment, so the booking
   // id comes back on the RPC result rather than on the transaction row.
   const bookingId =

@@ -11,6 +11,7 @@ type LanguageSwitcherProps = {
 const OPTIONS: { locale: AppLocale; labelKey: string }[] = [
   { locale: "en", labelKey: "common.english" },
   { locale: "am", labelKey: "common.amharic" },
+  { locale: "om", labelKey: "common.oromo" },
 ];
 
 export function LanguageSwitcher({ variant = "card" }: LanguageSwitcherProps) {
@@ -77,10 +78,13 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    gap: 10,
+    flexWrap: "wrap",
+    gap: 8,
   },
   btn: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: "30%",
+    minWidth: 96,
     borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -102,6 +106,7 @@ const styles = StyleSheet.create({
   },
   inlineRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   inlineBtn: {

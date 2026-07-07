@@ -2,10 +2,11 @@ import { getLocales } from "expo-localization";
 
 import { am } from "./locales/am";
 import { en } from "./locales/en";
+import { om } from "./locales/om";
 
-export type AppLocale = "en" | "am";
+export type AppLocale = "en" | "am" | "om";
 
-const catalogs = { en, am } as const;
+const catalogs = { en, am, om } as const;
 
 type TranslationParams = Record<string, string | number>;
 
@@ -42,6 +43,7 @@ export function detectDeviceLocale(): AppLocale {
   try {
     const code = getLocales()[0]?.languageCode?.toLowerCase();
     if (code === "am" || code?.startsWith("am")) return "am";
+    if (code === "om" || code?.startsWith("om")) return "om";
   } catch {
     // ignore
   }

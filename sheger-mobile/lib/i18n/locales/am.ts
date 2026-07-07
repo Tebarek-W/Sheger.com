@@ -26,6 +26,7 @@ export const am: TranslationTree = {
     language: "ቋንቋ",
     english: "English",
     amharic: "አማርኛ",
+    oromo: "Afaan Oromoo",
   },
   tabs: {
     home: "መነሻ",
@@ -202,6 +203,10 @@ export const am: TranslationTree = {
     continueToPayment: "ወደ ክፍያ ቀጥል",
     confirmBooking: "ቀጠሮ አረጋግጥ",
     bookingFailed: "ቀጠሮ አልተሳካም",
+    slotUnavailable:
+      "ይህ የጊዜ ክፍተት አሁን አይገኝም። ሌላ ጊዜ ይምረጡና እንደገና ይሞክሩ።",
+    slotUnavailablePaid:
+      "ክፍያዎ ተቀብሏል፣ ነገር ግን ይህ የጊዜ ክፍተት አሁን አይገኝም። ለመመለስ ድጋፍን ያግኙ።",
     paymentUnavailable: "ክፍያ አይገኝም",
     staff: "ሰራተኛ",
     staffOptional: "አማራጭ — የቡድን አባል ይምረጡ ወይም ማንኛውም ተገኝ",
