@@ -170,13 +170,18 @@ export const en = {
     methodSection: "Payment method",
     chapa: "Chapa",
     chapaDesc: "Pay online — Telebirr, CBE Birr, cards & more",
-    cash: "Cash on arrival",
-    cashDesc: "Pay at the business when you arrive",
-    notAvailable: "Not available for this service",
     chapaPayoutNotConfigured:
-      "This business has not set up online payouts yet. Pay with cash when you arrive.",
+      "This business has not set up online payouts yet. Online booking is unavailable until payouts are configured.",
+    flexiblePayNote:
+      "Final price will be confirmed at your visit. You can book now without paying online.",
+    dueNow: "Due now",
+    depositNoticeTitle: "Minimum payment due now",
+    depositNotice:
+      "You will pay {{amount}} now via Chapa. This is the starting price — the final cost may be higher at your visit. Any remaining balance is paid at the business.",
     chapaNote:
       "You will be redirected to Chapa's secure checkout to choose Telebirr, CBE Birr, cards, and more. Your booking is created only after your payment is confirmed.",
+    chapaDepositNote:
+      "You will pay the minimum amount on Chapa now. Your booking is created after payment is confirmed. Final price may be higher at your visit.",
     checkout: {
       title: "Secure checkout",
       preparing: "Preparing secure checkout…",
@@ -207,8 +212,6 @@ export const en = {
     slotUnavailablePaid:
       "Your payment was received, but this time slot is no longer available. Please contact support for a refund.",
     paymentUnavailable: "Payment unavailable",
-    staff: "Staff member",
-    staffOptional: "Optional — pick a team member or leave as any available",
     return: {
       confirming: "Confirming your payment…",
       referenceMissing: "Payment reference missing.",
@@ -247,6 +250,9 @@ export const en = {
     subtitle:
       "Your appointment is pending confirmation from the business. You'll receive a notification once it's approved.",
     paidNote: " Your payment has been received.",
+    depositPaidNote:
+      " You paid the minimum amount online. Any remaining balance is paid at your visit.",
+    dueNow: "Paid now",
     policySuffix: "Manage cancellations from My bookings.",
     service: "Service",
     business: "Business",

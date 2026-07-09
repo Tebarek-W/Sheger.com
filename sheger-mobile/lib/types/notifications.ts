@@ -17,11 +17,3 @@ export interface AppNotification {
   read_at: string | null;
   created_at: string;
 }
-
-export interface PushToken {
-  id: string;
-  user_id: string;
-  expo_push_token: string;
-  platform: PushPlatform;
-  updated_at: string;
-}

@@ -81,6 +81,8 @@ npm run ci
 
 Full guide: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
 
+**Client handoff:** **[HANDOFF.md](HANDOFF.md)** — step-by-step backend deploy, accounts to create, and checklists.
+
 | Component | Platform | Trigger |
 |-----------|----------|---------|
 | Database | Supabase | Manual: Actions → Deploy Database (after GitHub secrets are set) |

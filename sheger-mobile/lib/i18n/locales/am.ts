@@ -172,13 +172,18 @@ export const am: TranslationTree = {
     methodSection: "የክፍያ ዘዴ",
     chapa: "ቻፓ",
     chapaDesc: "ኦንላይን ይክፈሉ — ቴሌብር፣ CBE ብር፣ ካርድ እና ሌሎች",
-    cash: "በመድረሻ ጥሬ ገንዘብ",
-    cashDesc: "ወደ ንግዱ ሲደርሱ ይክፈሉ",
-    notAvailable: "ለዚህ አገልግሎት አይገኝም",
     chapaPayoutNotConfigured:
-      "ይህ ንግድ ኦንላይን ክፍያ ገቢ መቀበያ ገና አልተዋቀረም። በመድረሻ ጥሬ ገንዘብ ይክፈሉ።",
+      "ይህ ንግድ ኦንላይን ክፍያ ገቢ መቀበያ ገና አልተዋቀረም። ክፍያ እስኪዋቀር ድረስ ኦንላይን ቀጠሮ አይገኝም።",
+    flexiblePayNote:
+      "የመጨረሻ ዋጋ በጉብኝትዎ ጊዜ ይረጋገጣል። ያለ ኦንላይን ክፍያ አሁን መያዝ ይችላሉ።",
+    dueNow: "አሁን የሚከፈል",
+    depositNoticeTitle: "አነስተኛ ክፍያ አሁን ይከፈላል",
+    depositNotice:
+      "አሁን በቻፓ {{amount}} ይከፍላሉ። ይህ የመነሻ ዋጋ ነው — የመጨረሻው ዋጋ በጉብኝትዎ ከፍ ያለ ሊሆን ይችላል። የቀረው በንግዱ ይከፈላል።",
     chapaNote:
       "ወደ ቻፓ ደህንነቱ የተጠበቀ የክፍያ ገጽ ይመራሉ — ቴሌብር፣ ሲቢኢ ብር፣ ካርድ እና ሌሎችን ይምረጣሉ። ቀጠሮዎ የሚፈጠረው ክፍያዎ ከተረጋገጠ በኋላ ብቻ ነው።",
+    chapaDepositNote:
+      "አሁን አነስተኛውን መጠን በቻፓ ይከፍላሉ። ክፍያ ከተረጋገጠ በኋላ ቀጠሮ ይፈጠራል። የመጨረሻ ዋጋ በጉብኝት ከፍ ሊል ይችላል።",
     checkout: {
       title: "ደህንነቱ የተጠበቀ ክፍያ",
       preparing: "ደህንነቱ የተጠበቀ ክፍያ በመዘጋጀት ላይ…",
@@ -208,8 +213,6 @@ export const am: TranslationTree = {
     slotUnavailablePaid:
       "ክፍያዎ ተቀብሏል፣ ነገር ግን ይህ የጊዜ ክፍተት አሁን አይገኝም። ለመመለስ ድጋፍን ያግኙ።",
     paymentUnavailable: "ክፍያ አይገኝም",
-    staff: "ሰራተኛ",
-    staffOptional: "አማራጭ — የቡድን አባል ይምረጡ ወይም ማንኛውም ተገኝ",
     return: {
       confirming: "ክፍያዎን በመረጋገጥ ላይ…",
       referenceMissing: "የክፍያ ማጣቀሻ ጠፍቷል።",
@@ -248,6 +251,9 @@ export const am: TranslationTree = {
     subtitle:
       "ቀጠሮዎ የንግዱ ማረጋገጫ በመጠባበቅ ላይ ነው። ከተረጋገጠ በኋላ ማሳወቂያ ይደርስዎታል።",
     paidNote: " ክፍያዎ ተቀብሏል።",
+    depositPaidNote:
+      " አነስተኛውን መጠን ኦንላይን ከፍለዋል። የቀረው በጉብኝትዎ ይከፈላል።",
+    dueNow: "አሁን የተከፈለ",
     policySuffix: "መሰረዝን ከ«የእኔ ቀጠሮዎች» ያስተዳድሩ።",
     service: "አገልግሎት",
     business: "ንግድ",

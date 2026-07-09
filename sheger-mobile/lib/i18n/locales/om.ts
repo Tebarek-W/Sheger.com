@@ -132,14 +132,20 @@ export const om = {
     title: "Kaffaltii",
     total: "Ida'ama",
     price: "Gatii",
-    cash: "Maallaqa qalla",
-    cashDesc: "Yeroo gahuu daldala irratti kaffali.",
     chapa: "Chapa",
     chapaDesc: "Toora interneetii irratti kaffali — Telebirr, CBE Birr, kaardii fi kkf.",
     chapaNote:
       "Kaffaltii mirkanaa'uun booda qabannoo uumama. Beellamni yeroo kaffaltiin milkaa'utti qabama.",
     chapaPayoutNotConfigured:
-      "Kaffaltiin toora interneetii daldala kanaaf hin jiru. Maallaqa qalla fayyadami.",
+      "Kaffaltiin toora interneetii daldala kanaaf hin jiru. Kaffaltiin qindaayutti beellamni toora interneetii hin jiru.",
+    flexiblePayNote:
+      "Gatiin xumuraa yeroo daawwannaa kee mirkanaa'a. Kaffaltii toora interneetii malee amma qabadhuu dandeessa.",
+    dueNow: "Amma kaffalamu",
+    depositNoticeTitle: "Kaffaltiin xiqqaa amma barbaachisa",
+    depositNotice:
+      "Amma Chapa irratti {{amount}} kaffalta. Kun gatii jalqabaati — gatiin xumuraa yeroo daawwannaa ol ka'uu danda'a. Hafeen daldala irratti kaffalama.",
+    chapaDepositNote:
+      "Amma gatii xiqqaa Chapa irratti kaffalta. Kaffaltiin mirkanaa'uun booda beellamni uumama. Gatiin xumuraa yeroo daawwannaa ol ka'uu danda'a.",
     continueToPayment: "Gara kaffaltii itti fufi",
     confirmBooking: "Beellama mirkaneessi",
     bookingFailed: "Beellamni hin milkoofne",

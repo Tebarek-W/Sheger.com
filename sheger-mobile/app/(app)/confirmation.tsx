@@ -35,6 +35,8 @@ function ConfirmationScreenContent() {
   const checkoutPrice = service ? getCheckoutPriceLabel(service) : null;
   const paymentLabel = paymentMethodLabel(paymentMethod);
   const paidOnline = paymentMethod ? isChapaOnlineMethod(paymentMethod) : false;
+  const isDeposit = checkoutPrice?.isDeposit ?? false;
+  const dueNowAmount = checkoutPrice?.dueNowAmount;
 
   const done = () => {
     reset();
@@ -50,7 +52,11 @@ function ConfirmationScreenContent() {
         <Text style={styles.title}>{t("confirmation.title")}</Text>
         <Text style={styles.subtitle}>
           {t("confirmation.subtitle")}
-          {paidOnline ? t("confirmation.paidNote") : ""}
+          {paidOnline
+            ? isDeposit
+              ? t("confirmation.depositPaidNote")
+              : t("confirmation.paidNote")
+            : ""}
         </Text>
         <Text style={styles.policy}>
           {getCancellationPolicyText(
@@ -67,6 +73,12 @@ function ConfirmationScreenContent() {
           ) : null}
           {checkoutPrice ? (
             <Row label={t("confirmation.price")} value={checkoutPrice.primary} />
+          ) : null}
+          {paidOnline && isDeposit && dueNowAmount != null ? (
+            <Row
+              label={t("confirmation.dueNow")}
+              value={`${Math.round(dueNowAmount)} ETB`}
+            />
           ) : null}
           {scheduledAt ? (
             <View style={styles.whenBlock}>

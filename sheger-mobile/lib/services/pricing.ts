@@ -79,6 +79,7 @@ export function formatServiceDuration(service: ServiceDisplayFields): string {
 export function requiresBookingFinalization(booking: BookingPriceFields): boolean {
   return booking.pricing_model === "variable"
     || booking.pricing_model === "range"
+    || booking.pricing_model === "starting_from"
     || booking.duration_model === "flexible"
     || booking.duration_model === "estimated";
 }
@@ -114,35 +115,85 @@ export function getBookingRevenueAmount(booking: BookingPriceFields & { services
   return Number(booking.services?.price ?? 0);
 }
 
+/**
+ * Amount charged on Chapa at booking time.
+ * - fixed: full price
+ * - starting_from / range / variable (with min): the "from" / minimum as a deposit
+ * - variable with no min: null (pay at visit only)
+ */
+export function getOnlineChargeableAmount(service: ServiceDisplayFields): number | null {
+  switch (service.pricing_model) {
+    case "fixed":
+      return service.price != null && Number(service.price) > 0 ? Number(service.price) : null;
+    case "starting_from":
+      return service.price != null && Number(service.price) > 0 ? Number(service.price) : null;
+    case "range":
+    case "variable":
+      return service.price_min != null && Number(service.price_min) > 0
+        ? Number(service.price_min)
+        : null;
+    default:
+      return null;
+  }
+}
+
+/** True when Chapa charge is a minimum/deposit, not the final bill. */
+export function isOnlineDepositCharge(service: ServiceDisplayFields): boolean {
+  if (service.pricing_model === "fixed") return false;
+  return getOnlineChargeableAmount(service) != null;
+}
+
 export function getCheckoutPriceLabel(service: ServiceDisplayFields): {
   primary: string;
   secondary?: string;
   showExactTotal: boolean;
+  /** Amount due now on Chapa when online payment applies. */
+  dueNowAmount: number | null;
+  isDeposit: boolean;
 } {
+  const dueNowAmount = getOnlineChargeableAmount(service);
+  const isDeposit = isOnlineDepositCharge(service);
+
   switch (service.pricing_model) {
     case "starting_from":
       return {
         primary: service.price != null ? `From ${formatEtb(service.price)}` : "From price on request",
-        secondary: "Final cost may vary based on the service provided.",
+        secondary: dueNowAmount
+          ? `Pay ${formatEtb(dueNowAmount)} now. Final cost may be higher at your visit.`
+          : "Final cost may vary based on the service provided.",
         showExactTotal: false,
+        dueNowAmount,
+        isDeposit,
       };
     case "range":
       return {
         primary: formatServicePrice(service),
-        secondary: "Final price will be confirmed after your visit.",
+        secondary: dueNowAmount
+          ? `Pay ${formatEtb(dueNowAmount)} now (minimum). Final price confirmed at your visit.`
+          : "Final price will be confirmed after your visit.",
         showExactTotal: false,
+        dueNowAmount,
+        isDeposit,
       };
     case "variable":
       return {
-        primary: "Price determined at visit",
-        secondary: "You will pay after your consultation or treatment.",
+        primary: dueNowAmount
+          ? `From ${formatEtb(dueNowAmount)}`
+          : "Price determined at visit",
+        secondary: dueNowAmount
+          ? `Pay ${formatEtb(dueNowAmount)} now. Any remaining balance is paid at the business.`
+          : "You will pay after your consultation or treatment.",
         showExactTotal: false,
+        dueNowAmount,
+        isDeposit,
       };
     case "fixed":
     default:
       return {
         primary: service.price != null ? formatEtb(service.price) : "—",
         showExactTotal: true,
+        dueNowAmount,
+        isDeposit: false,
       };
   }
 }
