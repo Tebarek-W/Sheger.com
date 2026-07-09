@@ -51,6 +51,14 @@ export default function ProfileScreen() {
           />
 
           <LanguageSwitcher />
+
+          <Text style={styles.legalSection}>{t("legal.sectionTitle")}</Text>
+          <Pressable onPress={() => router.push("/legal/terms")}>
+            <Text style={styles.legalLink}>{t("profile.terms")}</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push("/legal/privacy")}>
+            <Text style={styles.legalLink}>{t("profile.privacy")}</Text>
+          </Pressable>
         </View>
       </Screen>
     );
@@ -60,6 +68,13 @@ export default function ProfileScreen() {
     { label: t("profile.editProfile"), icon: "create-outline", onPress: () => router.push("/(app)/edit-profile") },
     { label: t("profile.myBookings"), icon: "calendar-outline", onPress: () => router.push("/(app)/(tabs)/bookings") },
     { label: t("profile.searchServices"), icon: "search-outline", onPress: () => router.push("/(app)/(tabs)/search") },
+    { label: t("profile.terms"), icon: "document-text-outline", onPress: () => router.push("/legal/terms") },
+    { label: t("profile.privacy"), icon: "shield-checkmark-outline", onPress: () => router.push("/legal/privacy") },
+    {
+      label: t("profile.cancellation"),
+      icon: "close-circle-outline",
+      onPress: () => router.push("/legal/cancellation"),
+    },
   ];
 
   return (
@@ -225,4 +240,15 @@ const styles = StyleSheet.create({
   },
   menuLabel: { ...typography.bodyMedium, color: colors.text, flex: 1 },
   menuChevron: { fontSize: 20, color: colors.textTertiary },
+  legalSection: {
+    ...typography.label,
+    color: colors.textSecondary,
+    marginTop: 8,
+    marginBottom: 2,
+  },
+  legalLink: {
+    ...typography.bodyMedium,
+    color: colors.primary,
+    paddingVertical: 4,
+  },
 });

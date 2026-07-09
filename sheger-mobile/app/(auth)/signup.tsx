@@ -25,6 +25,7 @@ export default function SignupScreen() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [agreedToLegal, setAgreedToLegal] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const onChangePhone = (value: string) => {
@@ -36,6 +37,11 @@ export default function SignupScreen() {
   const onSignup = async () => {
     if (!fullName || !email || !password) {
       Alert.alert(t("auth.missingFields"), t("auth.fillNameEmailPassword"));
+      return;
+    }
+
+    if (!agreedToLegal) {
+      Alert.alert(t("auth.missingFields"), t("legal.mustAgree"));
       return;
     }
 
@@ -148,6 +154,29 @@ export default function SignupScreen() {
             onChangeText={setPassword}
             placeholder={t("auth.passwordPlaceholder")}
           />
+
+          <Pressable
+            style={styles.agreeRow}
+            onPress={() => setAgreedToLegal((value) => !value)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: agreedToLegal }}
+          >
+            <View style={[styles.checkbox, agreedToLegal && styles.checkboxOn]}>
+              {agreedToLegal ? <Text style={styles.checkboxMark}>✓</Text> : null}
+            </View>
+            <Text style={styles.agreeText}>
+              {t("legal.agreePrefix")}{" "}
+              <Text style={styles.agreeLink} onPress={() => router.push("/legal/terms")}>
+                {t("profile.terms")}
+              </Text>{" "}
+              {t("common.and")}{" "}
+              <Text style={styles.agreeLink} onPress={() => router.push("/legal/privacy")}>
+                {t("profile.privacy")}
+              </Text>
+              .
+            </Text>
+          </Pressable>
+
           <Button
             title={
               accountType === "business_owner"
@@ -183,14 +212,19 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: "500", color: colors.text },
   subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 4, lineHeight: 20 },
   card: {
-    flex: 1,
     backgroundColor: colors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 40,
   },
-  typeLabel: { fontSize: 13, fontWeight: "500", color: colors.textSecondary, marginTop: 8, marginBottom: 8 },
+  typeLabel: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.textSecondary,
+    marginTop: 8,
+    marginBottom: 8,
+  },
   typeRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
   typeBtn: {
     flex: 1,
@@ -205,5 +239,36 @@ const styles = StyleSheet.create({
   typeText: { fontWeight: "500", color: colors.text, fontSize: 14 },
   typeTextActive: { color: colors.white },
   form: { gap: 16 },
+  agreeRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.screenBg,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+  },
+  checkboxOn: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  checkboxMark: { color: colors.white, fontSize: 13, fontWeight: "700" },
+  agreeText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 19,
+  },
+  agreeLink: {
+    color: colors.primary,
+    fontWeight: "600",
+  },
   link: { textAlign: "center", color: colors.primary, fontWeight: "500", marginTop: 8 },
 });

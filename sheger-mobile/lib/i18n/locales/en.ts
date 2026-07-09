@@ -25,6 +25,21 @@ export const en = {
     english: "English",
     amharic: "Amharic",
     oromo: "Oromo",
+    and: "and",
+  },
+  legal: {
+    title: "Legal",
+    termsTitle: "Terms of Service",
+    privacyTitle: "Privacy Policy",
+    businessTitle: "Business Terms",
+    cancellationTitle: "Cancellation & refunds",
+    notFound: "This document could not be found.",
+    placeholderNotice:
+      "This is placeholder legal text for the product. Replace it with counsel-approved Terms before production or store submission.",
+    lastUpdated: "Last updated: July 2026",
+    agreePrefix: "I agree to the",
+    mustAgree: "Please agree to the Terms of Service and Privacy Policy to continue.",
+    sectionTitle: "Legal",
   },
   tabs: {
     home: "Home",
@@ -108,6 +123,9 @@ export const en = {
     editSaved: "Your profile has been updated.",
     editEmailConfirm: "Profile saved. Check your inbox to confirm the new email address.",
     editFailed: "Could not save profile",
+    terms: "Terms of Service",
+    privacy: "Privacy Policy",
+    cancellation: "Cancellation & refunds",
   },
   bookings: {
     title: "My bookings",
@@ -273,6 +291,9 @@ export const en = {
     registerTitle: "Register your business",
     registerText:
       "Add your salon, barbershop, clinic, or studio. After admin approval, customers can find and book you on Sheger.",
+    registerAgreeNote:
+      "By registering a business you also agree to the Business Terms covering listings, payouts, and commissions.",
+    businessTermsLink: "Business Terms",
     registerButton: "Register Business",
     addLocationTitle: "📍 Add your location",
     addLocationText:
@@ -311,6 +332,8 @@ export const en = {
       reportsSub: "Revenue and booking stats",
       payout: "Bank payouts",
       payoutSub: "Receive online payments automatically",
+      legal: "Legal",
+      legalSub: "Terms, privacy, and business rules",
     },
     payout: {
       title: "Bank payouts",
@@ -318,6 +341,8 @@ export const en = {
       howItWorksTitle: "Automatic split payments",
       howItWorksText:
         "When a customer pays with Chapa, Sheger keeps a platform commission and the rest is sent to your bank account automatically.",
+      legalNote:
+        "Payouts are subject to the Business Terms and Chapa’s settlement rules.",
       commissionRate: "Your current commission rate: {{rate}}",
       activeTitle: "Payout account connected",
       missingTitle: "Payout account required",

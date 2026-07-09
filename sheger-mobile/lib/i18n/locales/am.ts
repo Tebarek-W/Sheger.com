@@ -27,6 +27,21 @@ export const am: TranslationTree = {
     english: "English",
     amharic: "አማርኛ",
     oromo: "Afaan Oromoo",
+    and: "እና",
+  },
+  legal: {
+    title: "ህጋዊ",
+    termsTitle: "የአገልግሎት ውሎች",
+    privacyTitle: "የግላዊነት ፖሊሲ",
+    businessTitle: "የንግድ ውሎች",
+    cancellationTitle: "መሰረዝ እና ተመላሽ",
+    notFound: "ይህ ሰነድ አልተገኘም።",
+    placeholderNotice:
+      "ይህ ለምርቱ የጊዜያዊ ህጋዊ ጽሑፍ ነው። ከማምረት ወይም ከመደብር ማስገባት በፊት በህግ አማካሪ የጸደቀ ጽሑፍ ይተኩ።",
+    lastUpdated: "መጨረሻ የተሻሻለው፡ ሐምሌ 2026",
+    agreePrefix: "እስማማለሁ በ",
+    mustAgree: "ለመቀጠል የአገልግሎት ውሎችን እና የግላዊነት ፖሊሲን ይቀበሉ።",
+    sectionTitle: "ህጋዊ",
   },
   tabs: {
     home: "መነሻ",
@@ -110,6 +125,9 @@ export const am: TranslationTree = {
     editSaved: "መገለጫዎ ተዘምኗል።",
     editEmailConfirm: "መገለጫ ተቀምጧል። አዲሱን ኢሜይል ለማረጋገጥ የገቢ ሳጥንዎን ይመልከቱ።",
     editFailed: "መገለጫ ማስቀመጥ አልተሳካም",
+    terms: "የአገልግሎት ውሎች",
+    privacy: "የግላዊነት ፖሊሲ",
+    cancellation: "መሰረዝ እና ተመላሽ",
   },
   bookings: {
     title: "የእኔ ቀጠሮዎች",
@@ -274,6 +292,9 @@ export const am: TranslationTree = {
     registerTitle: "ንግድዎን ይመዝገቡ",
     registerText:
       "ሳሎን፣ አሳዳጊ ቤት፣ ክሊኒክ ወይም ስቱዲዮ ይጨምሩ። ከአስተዳዳሪ ፈቃድ በኋላ ደንበኞች ያገኙዎታል።",
+    registerAgreeNote:
+      "ንግድ በመመዝገብ የዝርዝር፣ ክፍያ እና ኮሚሽን የሚሸፍኑ የንግድ ውሎችንም ይቀበላሉ።",
+    businessTermsLink: "የንግድ ውሎች",
     registerButton: "ንግድ ይመዝገቡ",
     addLocationTitle: "📍 ቦታዎን ይጨምሩ",
     addLocationText: "ደንበኞች በቅርብ ፍለጋ ያገኙዎት። ለመጨመር ይንኩ።",
@@ -310,6 +331,8 @@ export const am: TranslationTree = {
       reportsSub: "ገቢ እና የቀጠሮ ስታትስቲክስ",
       payout: "የባንክ ክፍያ",
       payoutSub: "የመስመር ላይ ክፍያዎችን በራስ-ሰር ይቀበሉ",
+      legal: "ህጋዊ",
+      legalSub: "ውሎች፣ ግላዊነት እና የንግድ ደንቦች",
     },
     payout: {
       title: "የባንክ ክፍያ",
@@ -317,6 +340,7 @@ export const am: TranslationTree = {
       howItWorksTitle: "ራስ-ሰር የተከፋፈለ ክፍያ",
       howItWorksText:
         "ደንበኛ በቻፓ ሲከፍል ሸገር የመድረክ ኮሚሽን ይወስዳል እና ያለፈው ወደ ባንክ መለያዎ በራስ-ሰር ይላካል።",
+      legalNote: "ክፍያዎች ለንግድ ውሎች እና የቻፓ የሰፈራ ደንቦች ተገዢ ናቸው።",
       commissionRate: "የአሁኑ ኮሚሽን መጠን፦ {{rate}}",
       activeTitle: "የክፍያ መለያ ተገናኝቷል",
       missingTitle: "የክፍያ መለያ ያስፈልጋል",

@@ -40,6 +40,7 @@ module.exports = {
   },
   android: {
     package: "com.sheger.app",
+    softwareKeyboardLayoutMode: "resize",
     adaptiveIcon: {
       backgroundColor: "#0d4d0d",
       foregroundImage: "./assets/android-icon-foreground.png",

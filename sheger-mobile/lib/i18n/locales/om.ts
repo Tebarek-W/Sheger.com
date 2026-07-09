@@ -26,6 +26,21 @@ export const om = {
     english: "Ingliffa",
     amharic: "Amhariffa",
     oromo: "Afaan Oromoo",
+    and: "fi",
+  },
+  legal: {
+    title: "Seera",
+    termsTitle: "Haala Tajaajilaa",
+    privacyTitle: "Imaammata Dhuunfaa",
+    businessTitle: "Haala Daldalaa",
+    cancellationTitle: "Haqi fi deebisuu",
+    notFound: "Sanadiin kun hin argamne.",
+    placeholderNotice:
+      "Kun barreeffama seeraa yeroof ti. Oomisha dura barreeffama abbaa seeraatiin mirkanaa'e fayyadami.",
+    lastUpdated: "Haaromfame: Adoolessa 2026",
+    agreePrefix: "Waliigaleera",
+    mustAgree: "Itti fufuuf Haala Tajaajilaa fi Imaammata Dhuunfaa fudhadhu.",
+    sectionTitle: "Seera",
   },
   tabs: {
     home: "Mana",
@@ -98,6 +113,9 @@ export const om = {
     saveChanges: "Jijjiiramoota ol kaa'i",
     editSaved: "Ibsi kee haaromfameera.",
     editFailed: "Ibsa ol ka'uu hin dandeenye",
+    terms: "Haala Tajaajilaa",
+    privacy: "Imaammata Dhuunfaa",
+    cancellation: "Haqi fi deebisuu",
   },
   bookings: {
     title: "Beellamoota koo",

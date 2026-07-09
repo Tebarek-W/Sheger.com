@@ -274,6 +274,11 @@ export default function RegisterBusinessScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
         />
+        <Text style={styles.agreeNote}>{t("owner.registerAgreeNote")}</Text>
+        <Pressable onPress={() => router.push("/legal/business")}>
+          <Text style={styles.agreeLink}>{t("owner.businessTermsLink")}</Text>
+        </Pressable>
+
         <Button
           title={t("owner.screens.register.submit")}
           onPress={onSubmit}
@@ -302,4 +307,14 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.primaryDarker, fontWeight: "600", fontSize: 13 },
   chipTextActive: { color: colors.white },
+  agreeNote: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  agreeLink: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.primary,
+  },
 });

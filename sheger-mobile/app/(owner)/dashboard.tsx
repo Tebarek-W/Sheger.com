@@ -249,6 +249,12 @@ export default function OwnerDashboardScreen() {
           subtitle={t("owner.menu.reportsSub")}
           onPress={() => router.push("/(owner)/reports")}
         />
+        <MenuCard
+          icon="📄"
+          title={t("owner.menu.legal")}
+          subtitle={t("owner.menu.legalSub")}
+          onPress={() => router.push("/legal/business")}
+        />
         <LanguageSwitcher />
       </View>
     </Screen>

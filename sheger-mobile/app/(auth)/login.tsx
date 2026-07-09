@@ -115,12 +115,11 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: "500", color: colors.text },
   subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 4, lineHeight: 20 },
   card: {
-    flex: 1,
     backgroundColor: colors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 40,
   },
   form: { gap: 16, marginTop: 8 },
   link: { textAlign: "center", color: colors.primary, fontWeight: "500", marginTop: 8 },

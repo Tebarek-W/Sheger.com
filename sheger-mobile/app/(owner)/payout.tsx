@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { BankPicker } from "@/components/owner/BankPicker";
 import { Button } from "@/components/ui/Button";
@@ -137,6 +138,10 @@ export default function OwnerPayoutScreen() {
             })}
           </Text>
         ) : null}
+        <Text style={styles.legalNote}>{t("owner.payout.legalNote")}</Text>
+        <Pressable onPress={() => router.push("/legal/business")}>
+          <Text style={styles.legalLink}>{t("owner.businessTermsLink")}</Text>
+        </Pressable>
       </View>
 
       {payoutAccount ? (
@@ -221,6 +226,8 @@ const styles = StyleSheet.create({
   cardTitle: { ...typography.h3, fontWeight: "700", color: colors.primaryDarker },
   cardText: { fontSize: 14, color: colors.textMuted, lineHeight: 21 },
   commission: { fontSize: 14, fontWeight: "600", color: colors.primary },
+  legalNote: { fontSize: 12, color: colors.textMuted, lineHeight: 18, marginTop: 4 },
+  legalLink: { fontSize: 13, fontWeight: "600", color: colors.primary },
   activeCard: {
     marginTop: ownerLayout.blockGap,
     backgroundColor: "#e8f6ee",
