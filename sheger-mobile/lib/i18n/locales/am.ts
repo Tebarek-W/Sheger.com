@@ -28,6 +28,10 @@ export const am: TranslationTree = {
     amharic: "አማርኛ",
     oromo: "Afaan Oromoo",
     and: "እና",
+    previous: "ቀዳሚ",
+    next: "ቀጣይ",
+    page: "ገጽ {{page}}",
+    currencyEtb: "{{amount}} ብር",
   },
   legal: {
     title: "ህጋዊ",
@@ -85,6 +89,14 @@ export const am: TranslationTree = {
     accountCreated: "መለያ ተፈጥሯል",
     signInToRegister: "ንግድዎን በሸገር ላይ ለመመዝገብ ይግቡ።",
     canSignInNow: "አሁን መግባት ይችላሉ።",
+    invalidEmailMessage: "ትክክለኛ ኢሜይል አድራሻ ያስገቡ።",
+    invalidPhoneMessage:
+      "ትክክለኛ የኢትዮጵያ ሞባይል ቁጥር ያስገቡ ለምሳሌ 09xxxxxxxx፣ 07xxxxxxxx፣ ወይም +2519xxxxxxxx።",
+    signInToBook: {
+      title: "ለመያዝ ይግቡ",
+      message: "ይህን አገልግሎት በሸገር ለመያዝ ነፃ መለያ ይፍጠሩ ወይም ይግቡ።",
+      notNow: "አሁን አይደለም",
+    },
     adminBlocked: {
       title: "የአስተዳዳሪ መለያ",
       subtitleNamed: "{{name}}፣ ይህ መለያ የመድረክ አስተዳዳሪ ፈቃድ አለው እና በሸገር ሞባይል መተግበሪያ ላይ መጠቀም አይችልም።",
@@ -94,6 +106,15 @@ export const am: TranslationTree = {
       cardMobile: "• ሞባይል መተግበሪያ — እንደ ደንበኛ ወይም የንግድ ባለቤት የተመዘገበ ሌላ ኢሜይል ይጠቀሙ።",
       footer:
         "አገልግሎቶችን ለመያዝ፣ አስተዳዳሪዎ የግል ኢሜይልዎን ወደ ደንበኛ ሚና እንዲያስተካክል ይጠይቁ፣ ወይም አዲስ ሞባይል መለያ ይፍጠሩ።",
+    },
+    accountBlocked: {
+      title: "መለያ ታግዷል",
+      subtitleNamed: "{{name}}፣ የሸገር መለያዎ ታግዷል።",
+      subtitleGeneric: "የሸገር መለያዎ ታግዷል።",
+      cardTitle: "ይህ ምን ማለት ነው",
+      cardText:
+        "አስተዳዳሪ እስኪመልስ ድረስ ቀጠሮ መያዝ ወይም ንግድ ማስተዳደር አይችሉም። እንደ እንግዳ ማሰስ ይችላሉ።",
+      footer: "ስህተት ነው ብለው ካመኑ የሸገር ድጋፍን ያግኙ።",
     },
   },
   home: {
@@ -160,7 +181,9 @@ export const am: TranslationTree = {
     result: "{{count}} ውጤት",
     noResults: "ምንም ንግድ አልተገኘም",
     tryAdjust: "ማጣሪያዎችን ወይም ፍለጋውን ይለውጡ።",
+    noMapTitle: "በካርታ ላይ ንግድ የለም",
     noMapLocation: "እነዚህ ውጤቶች ትክክለኛ ቦታ የላቸውም። ወደ ዝርዝር ይቀይሩ።",
+    resetFilters: "ማጣሪያዎችን አስወግድ",
   },
   nearby: {
     title: "በቅርብ",
@@ -170,12 +193,45 @@ export const am: TranslationTree = {
     enableLocationSort: "በርቀት ለመደርደር ቦታ ያንቁ",
     openSettings: "ቅንብሮችን ክፈት",
     radiusAll: "ሁሉ",
+    radiusKm: "{{count}} ኪ.ሜ",
     closest: "በጣም ቅርብ",
     businesses: "ንግዶች",
     otherBusinesses: "ሌሎች ንግዶች",
+    otherLocationHint: "እነዚህ ትክክለኛ ቦታ ገና አላስቀመጡም።",
+    loading: "በቅርብ ያሉ ንግዶችን በመፈለግ ላይ…",
     noNearbyTitle: "በቅርብ ንግድ የለም",
     noNearbyText: "በዚህ አካባቢ የቦታ መረጃ ያላቸው ንግዶች አልተገኙም።",
     missingLocation: "{{count}} ያለ ካርታ ቦታ",
+    emptyCategoryWithin: "በ{{km}} ኪ.ሜ ውስጥ {{category}} የለም",
+    emptyCategory: "በቅርብ {{category}} የለም",
+    emptyWithin: "በ{{km}} ኪ.ሜ ውስጥ ምንም የለም",
+    emptyDefault: "በቅርብ ንግድ የለም",
+    hintWidenOrCategory: "ርቀቱን ያስፉ ወይም ሌላ ምድብ ይምረጡ።",
+    hintOtherCategory: "ሌላ ምድብ ይሞክሩ ወይም በኋላ ይመልከቱ።",
+    hintWiden: "የርቀት ማጣሪያውን ያስፉ።",
+    hintSoon: "የተፈቀዱ ንግዶች በቅርቡ እዚህ ይታያሉ።",
+  },
+  pricing: {
+    fromAmount: "ከ{{amount}}",
+    fromAmountAtVisit: "ከ{{amount}} · ዋጋ በጉብኝት",
+    fromAmountFinalVisit: "ከ{{amount}} · መጨረሻ በጉብኝት",
+    fromOnRequest: "ከ… ጀምሮ በጥያቄ",
+    fromOnFile: "ከተመዘገበው ዋጋ ጀምሮ",
+    onRequest: "ዋጋ በጥያቄ",
+    rangeOnRequest: "የዋጋ ክልል በጥያቄ",
+    range: "{{min}} – {{max}}",
+    atVisit: "ዋጋ በጉብኝት ይወሰናል",
+    priceRange: "የዋጋ ክልል",
+    durationFixed: "{{minutes}} ደቂቃ",
+    durationEstimated: "~{{minutes}} ደቂቃ",
+    durationFlexibleBlock: "{{minutes}} ደቂቃ ብሎክ · ጊዜ ይለያያል",
+    durationVaries: "ጊዜ ይለያያል",
+    payNowMayBeHigher: "አሁን {{amount}} ይክፈሉ። የመጨረሻው ዋጋ በጉብኝት ከፍ ሊል ይችላል።",
+    finalMayVary: "የመጨረሻው ዋጋ እንደ አገልግሎቱ ሊለያይ ይችላል።",
+    payNowMinimum: "አሁን {{amount}} ይክፈሉ (ዝቅተኛ)። የመጨረሻ ዋጋ በጉብኝት ይረጋገጣል።",
+    finalAfterVisit: "የመጨረሻ ዋጋ ከጉብኝት በኋላ ይረጋገጣል።",
+    payNowBalanceAtBusiness: "አሁን {{amount}} ይክፈሉ። የቀረው በንግዱ ይከፈላል።",
+    payAfterVisit: "ከምክክር ወይም ሕክምና በኋላ ይከፍላሉ።",
   },
   payment: {
     title: "ክፍያ",
@@ -187,7 +243,15 @@ export const am: TranslationTree = {
     total: "ጠቅላላ",
     price: "ዋጋ",
     cancellationPolicy: "የመሰረዝ ፖሊሲ",
+    cancellationPolicyText:
+      "ቀጠሮዎ ገና በመጠባበቅ ላይ እያለ፣ ከቀጠሮዎ {{hours}} ሰዓት በፊት መሰረዝ ይችላሉ። ንግዱ ካረጋገጠ በኋላ በመተግበሪያው መሰረዝ አይቻልም።",
+    cancellationPolicyTextOne:
+      "ቀጠሮዎ ገና በመጠባበቅ ላይ እያለ፣ ከቀጠሮዎ {{hours}} ሰዓት በፊት መሰረዝ ይችላሉ። ንግዱ ካረጋገጠ በኋላ በመተግበሪያው መሰረዝ አይቻልም።",
     methodSection: "የክፍያ ዘዴ",
+    methods: {
+      chapa: "ቻፓ",
+      payAtVisit: "በጉብኝት ክፍያ",
+    },
     chapa: "ቻፓ",
     chapaDesc: "ኦንላይን ይክፈሉ — ቴሌብር፣ CBE ብር፣ ካርድ እና ሌሎች",
     chapaPayoutNotConfigured:
@@ -199,9 +263,10 @@ export const am: TranslationTree = {
     depositNotice:
       "አሁን በቻፓ {{amount}} ይከፍላሉ። ይህ የመነሻ ዋጋ ነው — የመጨረሻው ዋጋ በጉብኝትዎ ከፍ ያለ ሊሆን ይችላል። የቀረው በንግዱ ይከፈላል።",
     chapaNote:
-      "ወደ ቻፓ ደህንነቱ የተጠበቀ የክፍያ ገጽ ይመራሉ — ቴሌብር፣ ሲቢኢ ብር፣ ካርድ እና ሌሎችን ይምረጣሉ። ቀጠሮዎ የሚፈጠረው ክፍያዎ ከተረጋገጠ በኋላ ብቻ ነው።",
+      "ወደ ቻፓ ደህንነቱ የተጠበቀ የክፍያ ገጽ ይመራሉ። እያከፈሉ ሳለ የጊዜ ቦታዎ ለ2 ደቂቃ ይያዛል። ቀጠሮዎ የሚፈጠረው ክፍያ ከተረጋገጠ በኋላ ብቻ ነው።",
     chapaDepositNote:
-      "አሁን አነስተኛውን መጠን በቻፓ ይከፍላሉ። ክፍያ ከተረጋገጠ በኋላ ቀጠሮ ይፈጠራል። የመጨረሻ ዋጋ በጉብኝት ከፍ ሊል ይችላል።",
+      "አሁን አነስተኛውን መጠን በቻፓ ይከፍላሉ። እያከፈሉ ሳለ ቦታዎ ለ2 ደቂቃ ይያዛል። የመጨረሻ ዋጋ በጉብኝት ከፍ ሊል ይችላል።",
+    slotHoldNote: "ይህ የጊዜ ቦታ ክፍያ እስክታጠናቅቁ ድረስ ለ2 ደቂቃ ለእርስዎ ተይዟል።",
     checkout: {
       title: "ደህንነቱ የተጠበቀ ክፍያ",
       preparing: "ደህንነቱ የተጠበቀ ክፍያ በመዘጋጀት ላይ…",
@@ -348,6 +413,7 @@ export const am: TranslationTree = {
       bankLabel: "ባንክ",
       bankPlaceholder: "ባንክ ይምረጡ",
       bankSearchPlaceholder: "ባንኮችን ይፈልጉ",
+      bankSearchEmpty: "ከፍለጋዎ ጋር የሚዛመድ ባንክ የለም።",
       banksLoadError: "ባንኮችን ከቻፓ ማምጣት አልተቻለም። እንደገና ይሞክሩ።",
       accountNameLabel: "የመለያ ባለቤት ስም",
       accountNumberLabel: "የመለያ ቁጥር",

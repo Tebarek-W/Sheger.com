@@ -41,14 +41,18 @@ export default function OwnerReportsScreen() {
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>{t("owner.screens.reports.totalRevenue")}</Text>
           <Text style={styles.statValue}>
-            ETB {(stats?.totalRevenue ?? 0).toLocaleString()}
+            {t("common.currencyEtb", {
+              amount: (stats?.totalRevenue ?? 0).toLocaleString(),
+            })}
           </Text>
           <Text style={styles.statHint}>{t("owner.screens.reports.revenueHint")}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>{t("owner.screens.reports.last30Days")}</Text>
           <Text style={styles.statValue}>
-            ETB {(stats?.last30DaysRevenue ?? 0).toLocaleString()}
+            {t("common.currencyEtb", {
+              amount: (stats?.last30DaysRevenue ?? 0).toLocaleString(),
+            })}
           </Text>
           <Text style={styles.statHint}>{t("owner.screens.reports.periodHint")}</Text>
         </View>

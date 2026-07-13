@@ -71,6 +71,39 @@ export async function updateBusinessStatus(
   revalidatePath("/dashboard");
 }
 
+/** Block or unblock a customer / business owner. Admins cannot be blocked. */
+export async function updateUserBlocked(userId: string, isBlocked: boolean) {
+  await requireAdmin();
+  const { profile: admin } = await getSessionProfile();
+  if (!admin) throw new Error("Admin session required");
+
+  const supabase = createAdminClient();
+  const { data: target, error: fetchError } = await supabase
+    .from("profiles")
+    .select("id, role, is_blocked")
+    .eq("id", userId)
+    .single();
+
+  if (fetchError || !target) throw new Error("User not found");
+  if (target.role === "admin") {
+    throw new Error("Admin accounts cannot be blocked from this panel");
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      is_blocked: isBlocked,
+      blocked_at: isBlocked ? new Date().toISOString() : null,
+      blocked_by: isBlocked ? admin.id : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+
+  if (error) throw error;
+  revalidatePath("/dashboard/users");
+  revalidatePath("/dashboard");
+}
+
 export async function getBusinessLicenseSignedUrl(storagePath: string) {
   await requireAdmin();
   const supabase = createAdminClient();

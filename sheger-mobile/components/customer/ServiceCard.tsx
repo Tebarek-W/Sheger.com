@@ -16,8 +16,8 @@ type ServiceCardProps = {
 export function ServiceCard({ service, onPress }: ServiceCardProps) {
   const { t } = useI18n();
   const hasDescription = Boolean(service.description?.trim());
-  const priceLabel = formatServicePrice(service);
-  const durationLabel = formatServiceDuration(service);
+  const priceLabel = formatServicePrice(service, t);
+  const durationLabel = formatServiceDuration(service, t);
 
   return (
     <Pressable

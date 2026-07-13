@@ -79,23 +79,23 @@ export default function OwnerPayoutScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["business-payout", business?.id] });
       Alert.alert(t("owner.payout.savedTitle"), t("owner.payout.savedText"), [
-        { text: "OK", onPress: () => goBackSafely("/(owner)/dashboard") },
+        { text: t("common.ok"), onPress: () => goBackSafely("/(owner)/dashboard") },
       ]);
     },
-    onError: (error) => Alert.alert("Error", getErrorMessage(error)),
+    onError: (error) => Alert.alert(t("common.error"), getErrorMessage(error)),
   });
 
   const onSave = () => {
     if (banks.length === 0) {
-      Alert.alert("Error", t("owner.payout.banksLoadError"));
+      Alert.alert(t("common.error"), t("owner.payout.banksLoadError"));
       return;
     }
     if (!bankCode) {
-      Alert.alert("Error", t("owner.payout.bankRequired"));
+      Alert.alert(t("common.error"), t("owner.payout.bankRequired"));
       return;
     }
     if (!accountNumber.trim() || !accountName.trim()) {
-      Alert.alert("Error", t("owner.payout.detailsRequired"));
+      Alert.alert(t("common.error"), t("owner.payout.detailsRequired"));
       return;
     }
     saveMutation.mutate();

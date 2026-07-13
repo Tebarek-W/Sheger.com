@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import type { ChapaBank } from "@/lib/api/payout";
 
 type BankPickerProps = {
@@ -31,6 +32,7 @@ export function BankPicker({
   searchPlaceholder,
   disabled = false,
 }: BankPickerProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -108,7 +110,7 @@ export function BankPicker({
                 );
               }}
               ListEmptyComponent={
-                <Text style={styles.empty}>No banks match your search.</Text>
+                <Text style={styles.empty}>{t("owner.payout.bankSearchEmpty")}</Text>
               }
             />
           </View>

@@ -145,12 +145,12 @@ export default function BookingsScreen() {
                 </Text>
               </View>
             </View>
-            <Text style={styles.businessName}>{booking.businesses?.name ?? "Business"}</Text>
+            <Text style={styles.businessName}>{booking.businesses?.name ?? t("confirmation.business")}</Text>
             <DualDateTime iso={booking.scheduled_at} compact />
             {booking.businesses?.address || booking.businesses?.city ? (
               <Text style={styles.meta}>📍 {booking.businesses.address ?? booking.businesses.city}</Text>
             ) : null}
-            <Text style={styles.price}>{formatBookingPrice(booking)}</Text>
+            <Text style={styles.price}>{formatBookingPrice(booking, t)}</Text>
 
             {canReview && showingReview && user ? (
               <ReviewForm
@@ -181,7 +181,7 @@ export default function BookingsScreen() {
               bookingId={booking.id}
               scheduledAt={booking.scheduled_at}
               status={booking.status}
-              businessName={booking.businesses?.name ?? "Business"}
+              businessName={booking.businesses?.name ?? t("confirmation.business")}
               cancellationHours={booking.businesses?.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS}
               onCancelled={() => {
                 queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });

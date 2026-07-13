@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { Alert } from "react-native";
 
+import type { TranslateFn } from "@/lib/services/pricing";
 import type { Business, Service } from "@/lib/types/database";
 import { useBookingStore } from "@/stores/bookingStore";
 
@@ -11,16 +12,12 @@ export function setBookingDraft(business: Business, service: Service) {
   setScheduledAt(null);
 }
 
-export function promptLoginToBook(business: Business, service: Service) {
+export function promptLoginToBook(business: Business, service: Service, t: TranslateFn) {
   setBookingDraft(business, service);
-  Alert.alert(
-    "Sign in to book",
-    "Create a free account or sign in to book this service on Sheger.",
-    [
-      { text: "Not now", style: "cancel" },
-      { text: "Sign in", onPress: () => router.push("/(auth)/login") },
-    ],
-  );
+  Alert.alert(t("auth.signInToBook.title"), t("auth.signInToBook.message"), [
+    { text: t("auth.signInToBook.notNow"), style: "cancel" },
+    { text: t("common.signIn"), onPress: () => router.push("/(auth)/login") },
+  ]);
 }
 
 export function getPendingBookingRoute(): "/(app)/book" | null {

@@ -49,15 +49,12 @@ export default function SignupScreen() {
     const normalizedPhone = normalizeEthiopianMobile(phone);
 
     if (!isValidEmail(normalizedEmail)) {
-      Alert.alert(t("auth.signUpFailed"), "Enter a valid email address.");
+      Alert.alert(t("auth.signUpFailed"), t("auth.invalidEmailMessage"));
       return;
     }
 
     if (phone.trim() && !isValidEthiopianMobile(phone)) {
-      Alert.alert(
-        t("auth.signUpFailed"),
-        "Enter a valid Ethiopian mobile number like 09xxxxxxxx, 07xxxxxxxx, or +2519xxxxxxxx.",
-      );
+      Alert.alert(t("auth.signUpFailed"), t("auth.invalidPhoneMessage"));
       return;
     }
 

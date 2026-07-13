@@ -1,4 +1,5 @@
 import type { BookingPaymentStatus } from "@/lib/types/database";
+import type { TranslateFn } from "@/lib/services/pricing";
 
 /** User-facing online payment option — wallet/card choice happens on Chapa checkout. */
 export const PAYMENT_METHOD_CHAPA = "chapa" as const;
@@ -36,9 +37,12 @@ export function bookingPaymentStatusForMethod(method: string): BookingPaymentSta
 }
 
 /** Display label for a stored payment_method id. */
-export function paymentMethodLabel(method: string | null | undefined): string {
+export function paymentMethodLabel(
+  method: string | null | undefined,
+  t: TranslateFn,
+): string {
   if (!method) return "—";
-  if (isPayAtVisitMethod(method)) return "Pay at visit";
-  if (isChapaOnlineMethod(method)) return "Chapa";
+  if (isPayAtVisitMethod(method)) return t("payment.methods.payAtVisit");
+  if (isChapaOnlineMethod(method)) return t("payment.methods.chapa");
   return method.replaceAll("_", " ");
 }

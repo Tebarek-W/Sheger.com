@@ -321,28 +321,62 @@ export async function insertBookingDraftPaymentTransaction(
   supabase: SupabaseClient,
   prepared: PreparedBookingDraftPayment,
   metadata: Record<string, unknown>,
-) {
-  const { error: insertError } = await supabase.from("payment_transactions").insert({
-    purpose: "booking",
-    booking_id: null,
-    tx_ref: prepared.txRef,
-    amount_etb: prepared.amount,
-    currency: "ETB",
-    status: "initialized",
-    chapa_mode: chapaMode(),
-    chapa_subaccount_id: prepared.chapaSubaccountId,
-    commission_rate: prepared.split.commission_rate,
-    commission_amount_etb: prepared.split.commission_amount_etb,
-    owner_net_etb: prepared.split.owner_net_etb,
-    metadata: {
-      customer_id: prepared.customerId,
-      split: prepared.split,
-      booking_draft: prepared.draft,
-      ...metadata,
-    },
-  });
+): Promise<{ paymentTxId: string; holdExpiresAt: string | null }> {
+  const { data: inserted, error: insertError } = await supabase
+    .from("payment_transactions")
+    .insert({
+      purpose: "booking",
+      booking_id: null,
+      tx_ref: prepared.txRef,
+      amount_etb: prepared.amount,
+      currency: "ETB",
+      status: "initialized",
+      chapa_mode: chapaMode(),
+      chapa_subaccount_id: prepared.chapaSubaccountId,
+      commission_rate: prepared.split.commission_rate,
+      commission_amount_etb: prepared.split.commission_amount_etb,
+      owner_net_etb: prepared.split.owner_net_etb,
+      metadata: {
+        customer_id: prepared.customerId,
+        split: prepared.split,
+        booking_draft: prepared.draft,
+        ...metadata,
+      },
+    })
+    .select("id")
+    .single();
 
   if (insertError) throw insertError;
+  if (!inserted?.id) throw new Error("Payment transaction insert returned no id");
+
+  const { data: hold, error: holdError } = await supabase.rpc("create_booking_slot_hold", {
+    p_payment_tx_id: inserted.id,
+  });
+
+  if (holdError) {
+    // Roll back the draft txn so we don't leave a checkout without a lock.
+    await supabase
+      .from("payment_transactions")
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .eq("id", inserted.id);
+    try {
+      await chapaCancel(prepared.txRef);
+    } catch (cancelError) {
+      console.warn("create_booking_slot_hold rollback chapa:", prepared.txRef, cancelError);
+    }
+    throw new BookingPaymentError(
+      holdError.message ?? "This time slot is no longer available",
+      409,
+      "slot_unavailable",
+    );
+  }
+
+  const holdRecord = hold as { expires_at?: string } | null;
+
+  return {
+    paymentTxId: inserted.id,
+    holdExpiresAt: holdRecord?.expires_at ?? null,
+  };
 }
 
 /**

@@ -355,7 +355,7 @@ export default function OwnerServicesScreen() {
             <View style={styles.itemInfo}>
               <Text style={styles.itemName}>{service.name}</Text>
               <Text style={styles.itemMeta}>
-                {formatServicePrice(service)} · {formatServiceDuration(service)}
+                {formatServicePrice(service, t)} · {formatServiceDuration(service, t)}
               </Text>
               {!service.is_active ? (
                 <Text style={styles.inactive}>{t("owner.screens.services.inactive")}</Text>

@@ -10,6 +10,8 @@ type ChapaInitializeResponse = {
   tx_ref: string;
   return_url?: string;
   reused?: boolean;
+  hold_expires_at?: string | null;
+  hold_ttl_seconds?: number;
   error?: string;
 };
 
@@ -110,9 +112,9 @@ export type ChapaBookingDraft = {
 };
 
 /**
- * Starts a Chapa checkout for a booking that has NOT been created yet. The
- * booking is only inserted after the payment is verified, so the slot is never
- * held for an incomplete payment.
+ * Starts a Chapa checkout for a booking that has NOT been created yet.
+ * Server creates a 2-minute soft slot hold so others cannot take the seat
+ * while this customer pays. The booking row is inserted only after verify.
  */
 export async function initializeChapaBookingPayment(draft: ChapaBookingDraft) {
   const { data, error } = await supabase.functions.invoke<ChapaInitializeResponse>(

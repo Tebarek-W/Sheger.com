@@ -10,6 +10,8 @@ const styles: Record<string, string> = {
   awaiting_payment: "bg-white text-[var(--primary-dark)] border-[var(--border)]",
   failed: "bg-white text-[var(--muted)] border-[var(--border)]",
   refunded: "bg-white text-[var(--muted)] border-[var(--border)]",
+  active: "bg-[var(--primary-light)] text-[var(--primary-dark)] border-[var(--border)]",
+  blocked: "bg-white text-red-700 border-red-200",
 };
 
 export function StatusBadge({ status }: { status: string }) {

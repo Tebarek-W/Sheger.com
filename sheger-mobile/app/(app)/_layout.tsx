@@ -3,7 +3,12 @@ import { ActivityIndicator, View } from "react-native";
 
 import { colors } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
-import { ADMIN_BLOCKED_ROUTE, isPlatformAdmin } from "@/lib/routing";
+import {
+  ACCOUNT_BLOCKED_ROUTE,
+  ADMIN_BLOCKED_ROUTE,
+  isAccountBlocked,
+  isPlatformAdmin,
+} from "@/lib/routing";
 
 export default function AppLayout() {
   const { session, profile, loading } = useAuth();
@@ -14,6 +19,10 @@ export default function AppLayout() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (session && isAccountBlocked(profile)) {
+    return <Redirect href={ACCOUNT_BLOCKED_ROUTE} />;
   }
 
   if (session && isPlatformAdmin(profile?.role)) {

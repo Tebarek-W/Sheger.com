@@ -50,8 +50,17 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
+    const { data: holdsExpired, error: holdsError } = await supabase.rpc(
+      "expire_booking_slot_holds",
+    );
+    if (holdsError) {
+      console.warn("expire-unpaid-bookings holds:", holdsError);
+    }
+
     // Deferred bookings never created a row, so they don't appear above. Their
     // abandoned checkout transactions still hold live Chapa links — expire them.
+    // Slot holds already expire after 2 minutes; draft payment rows linger longer
+    // so a slow Chapa page can still finalize (may become paid_unfulfilled).
     const draftCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     let draftsCancelled = 0;
 
@@ -83,6 +92,7 @@ Deno.serve(async (req) => {
     return jsonResponse({
       ok: true,
       expired: data ?? 0,
+      holds_expired: holdsExpired ?? 0,
       chapa_cancel_attempts: chapaCancelled,
       drafts_cancelled: draftsCancelled,
     });

@@ -231,7 +231,9 @@ export default function OwnerBillingScreen() {
             >
               <Text style={styles.intervalTitle}>{t("owner.screens.billing.monthly")}</Text>
               <Text style={styles.intervalPrice}>
-                {Number(selectedPlan.monthly_fee_etb).toLocaleString()} ETB
+                {t("common.currencyEtb", {
+                  amount: Number(selectedPlan.monthly_fee_etb).toLocaleString(),
+                })}
               </Text>
             </Pressable>
             <Pressable
@@ -240,7 +242,9 @@ export default function OwnerBillingScreen() {
             >
               <Text style={styles.intervalTitle}>{t("owner.screens.billing.yearly")}</Text>
               <Text style={styles.intervalPrice}>
-                {Number(selectedPlan.yearly_fee_etb).toLocaleString()} ETB
+                {t("common.currencyEtb", {
+                  amount: Number(selectedPlan.yearly_fee_etb).toLocaleString(),
+                })}
               </Text>
             </Pressable>
           </View>
@@ -257,7 +261,9 @@ export default function OwnerBillingScreen() {
         <View style={styles.payRow}>
           <Text style={styles.totalLabel}>{t("owner.screens.billing.total")}</Text>
           <Text style={styles.totalValue}>
-            {selectedAmount > 0 ? `${selectedAmount.toLocaleString()} ETB` : t("common.free")}
+            {selectedAmount > 0
+              ? t("common.currencyEtb", { amount: selectedAmount.toLocaleString() })
+              : t("common.free")}
           </Text>
         </View>
       </View>
@@ -280,7 +286,10 @@ export default function OwnerBillingScreen() {
             <View key={payment.id} style={styles.historyRow}>
               <View style={styles.historyMain}>
                 <Text style={styles.historyTitle}>
-                  {Number(payment.amount_etb).toLocaleString()} ETB · {payment.billing_interval}
+                  {t("common.currencyEtb", {
+                    amount: Number(payment.amount_etb).toLocaleString(),
+                  })}{" "}
+                  · {payment.billing_interval}
                 </Text>
                 <Text style={styles.historySub}>
                   {payment.payment_method} · {payment.reference_code}

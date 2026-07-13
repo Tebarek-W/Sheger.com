@@ -5,12 +5,12 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { addisDayBounds } from "@/lib/calendar/timezone";
 import { supabase } from "@/lib/supabase";
 
-type BookingRow = {
+type OccupancyRow = {
   scheduled_at?: string;
   business_id?: string;
 };
 
-/** Invalidate slot queries when bookings change for this business/day. */
+/** Invalidate slot queries when bookings or checkout holds change for this business/day. */
 export function useSlotRealtimeRefresh(
   businessId: string | undefined,
   date: Date,
@@ -29,6 +29,15 @@ export function useSlotRealtimeRefresh(
     const channelName = `slots-${businessId}-${dateKey}-${employeeId ?? "any"}`;
     let cancelled = false;
 
+    const invalidateIfInRange = (row: OccupancyRow | null) => {
+      if (!row?.scheduled_at) return;
+      const instant = new Date(row.scheduled_at).getTime();
+      if (instant < rangeStart || instant >= rangeEnd) return;
+      queryClient.invalidateQueries({
+        queryKey: ["available-slots", businessId, dateKey, employeeId ?? null],
+      });
+    };
+
     const subscribe = async () => {
       // Supabase reuses channel instances by topic; tear down before re-binding.
       await supabase.removeChannel(supabase.channel(channelName));
@@ -45,15 +54,19 @@ export function useSlotRealtimeRefresh(
             filter: `business_id=eq.${businessId}`,
           },
           (payload) => {
-            const row = (payload.new ?? payload.old) as BookingRow | null;
-            if (!row?.scheduled_at) return;
-
-            const instant = new Date(row.scheduled_at).getTime();
-            if (instant < rangeStart || instant >= rangeEnd) return;
-
-            queryClient.invalidateQueries({
-              queryKey: ["available-slots", businessId, dateKey, employeeId ?? null],
-            });
+            invalidateIfInRange((payload.new ?? payload.old) as OccupancyRow | null);
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "booking_slot_holds",
+            filter: `business_id=eq.${businessId}`,
+          },
+          (payload) => {
+            invalidateIfInRange((payload.new ?? payload.old) as OccupancyRow | null);
           },
         )
         .subscribe();

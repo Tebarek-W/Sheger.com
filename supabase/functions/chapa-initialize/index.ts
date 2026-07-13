@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
     });
 
     if (isDraft) {
-      await insertBookingDraftPaymentTransaction(
+      const draftResult = await insertBookingDraftPaymentTransaction(
         supabase,
         prepared as PreparedBookingDraftPayment,
         {
@@ -140,16 +140,24 @@ Deno.serve(async (req) => {
           payment_flow: "hosted_checkout",
         },
       );
-    } else {
-      await insertBookingPaymentTransaction(
-        supabase,
-        prepared as PreparedBookingPayment,
-        {
-          checkout_url: initResult.checkout_url,
-          payment_flow: "hosted_checkout",
-        },
-      );
+
+      return jsonResponse({
+        checkout_url: initResult.checkout_url,
+        tx_ref: prepared.txRef,
+        return_url: prepared.returnUrl,
+        hold_expires_at: draftResult.holdExpiresAt,
+        hold_ttl_seconds: 120,
+      });
     }
+
+    await insertBookingPaymentTransaction(
+      supabase,
+      prepared as PreparedBookingPayment,
+      {
+        checkout_url: initResult.checkout_url,
+        payment_flow: "hosted_checkout",
+      },
+    );
 
     return jsonResponse({
       checkout_url: initResult.checkout_url,

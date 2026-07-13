@@ -77,7 +77,7 @@ export default function BusinessProfileScreen() {
     const service = services?.find((s) => s.id === serviceId);
     if (!business || !service) return;
     if (!session) {
-      promptLoginToBook(business, service);
+      promptLoginToBook(business, service, t);
       return;
     }
     setBookingDraft(business, service);

@@ -76,7 +76,7 @@ Dashboard deploy: use `--no-verify-jwt` for functions marked false above.
 | `send-booking-reminders` | `*/15 * * * *` | 24h and 1h booking reminders |
 | `check-subscription-expiry` | `0 */6 * * *` | Mark expired subscriptions `past_due` |
 | `send-push-queue` | `* * * * *` | Flush queued Expo push deliveries |
-| `expire-unpaid-bookings` | `*/5 * * * *` | Cancel bookings with unpaid Chapa checkout (15 min hold) |
+| `expire-unpaid-bookings` | `*/5 * * * *` | Cancel unpaid Chapa checkouts; expire 2-minute slot holds |
 
 ### HTTP invoke URL (for external cron)
 
@@ -120,6 +120,10 @@ Webhook secret in the Chapa dashboard must match `CHAPA_WEBHOOK_SECRET`.
 | 3 | Verify / webhook | `finalize_chapa_payment` records `booking_financials` (commission + owner net) |
 
 Online Chapa checkout is blocked (`payout_not_configured`) until the business has an active payout account.
+
+### Slot holds (2 minutes)
+
+When `chapa-initialize` creates a deferred booking checkout, it also inserts a row in `booking_slot_holds` (`expires_at = now() + 2 minutes`). Active holds count toward slot capacity in `get_slot_booking_counts` and `assert_booking_slot_available`. Holds are released when the payment transaction becomes `success`, `cancelled`, `failed`, or `paid_unfulfilled`, or via `expire_booking_slot_holds` in the unpaid-expiry cron.
 
 ### Accept Payment (hosted checkout — customer mobile)
 

@@ -24,7 +24,7 @@ export default function Index() {
   }
 
   if (session) {
-    return <Redirect href={getHomeRouteForRole(profile?.role)} />;
+    return <Redirect href={getHomeRouteForRole(profile?.role, profile)} />;
   }
 
   return (

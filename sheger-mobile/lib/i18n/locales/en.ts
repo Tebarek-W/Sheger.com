@@ -26,6 +26,10 @@ export const en = {
     amharic: "Amharic",
     oromo: "Oromo",
     and: "and",
+    previous: "Previous",
+    next: "Next",
+    page: "Page {{page}}",
+    currencyEtb: "{{amount}} ETB",
   },
   legal: {
     title: "Legal",
@@ -83,6 +87,14 @@ export const en = {
     accountCreated: "Account created",
     signInToRegister: "Sign in to register your business on Sheger.",
     canSignInNow: "You can now sign in.",
+    invalidEmailMessage: "Enter a valid email address.",
+    invalidPhoneMessage:
+      "Enter a valid Ethiopian mobile number like 09xxxxxxxx, 07xxxxxxxx, or +2519xxxxxxxx.",
+    signInToBook: {
+      title: "Sign in to book",
+      message: "Create a free account or sign in to book this service on Sheger.",
+      notNow: "Not now",
+    },
     adminBlocked: {
       title: "Admin account",
       subtitleNamed: "{{name}}, this account has platform admin access and cannot be used in the Sheger mobile app.",
@@ -92,6 +104,15 @@ export const en = {
       cardMobile: "• Mobile app — use a different email registered as customer or business owner.",
       footer:
         "If you need to book services, ask your administrator to set your personal email to customer role, or create a new mobile account.",
+    },
+    accountBlocked: {
+      title: "Account suspended",
+      subtitleNamed: "{{name}}, your Sheger account has been suspended.",
+      subtitleGeneric: "Your Sheger account has been suspended.",
+      cardTitle: "What this means",
+      cardText:
+        "You cannot book appointments or manage a business with this account until an administrator restores access. You can still browse as a guest.",
+      footer: "If you believe this is a mistake, contact Sheger support.",
     },
   },
   home: {
@@ -158,7 +179,9 @@ export const en = {
     result: "{{count}} result",
     noResults: "No businesses match your search",
     tryAdjust: "Try adjusting filters or search terms.",
+    noMapTitle: "No mapped businesses",
     noMapLocation: "These results haven't set a precise location yet. Switch to list view.",
+    resetFilters: "Reset filters",
   },
   nearby: {
     title: "Nearby",
@@ -168,12 +191,45 @@ export const en = {
     enableLocationSort: "Enable location to sort by distance",
     openSettings: "Open settings",
     radiusAll: "All",
+    radiusKm: "{{count}} km",
     closest: "Closest to you",
     businesses: "Businesses",
     otherBusinesses: "Other businesses",
+    otherLocationHint: "These haven't set a precise location yet.",
+    loading: "Finding nearby businesses…",
     noNearbyTitle: "No nearby businesses",
     noNearbyText: "No approved businesses with a location in this area yet.",
     missingLocation: "{{count}} without map location",
+    emptyCategoryWithin: "No {{category}} within {{km}} km",
+    emptyCategory: "No nearby {{category}}",
+    emptyWithin: "Nothing within {{km}} km",
+    emptyDefault: "No businesses nearby",
+    hintWidenOrCategory: "Try widening the distance filter or choose another category.",
+    hintOtherCategory: "Try another category or check back later.",
+    hintWiden: "Try widening the distance filter.",
+    hintSoon: "Approved businesses will appear here soon.",
+  },
+  pricing: {
+    fromAmount: "From {{amount}}",
+    fromAmountAtVisit: "From {{amount}} · price at visit",
+    fromAmountFinalVisit: "From {{amount}} · final at visit",
+    fromOnRequest: "From price on request",
+    fromOnFile: "From price on file",
+    onRequest: "Price on request",
+    rangeOnRequest: "Price range on request",
+    range: "{{min}} – {{max}}",
+    atVisit: "Price determined at visit",
+    priceRange: "Price range",
+    durationFixed: "{{minutes}} min",
+    durationEstimated: "~{{minutes}} min",
+    durationFlexibleBlock: "{{minutes}} min block · time varies",
+    durationVaries: "Time varies",
+    payNowMayBeHigher: "Pay {{amount}} now. Final cost may be higher at your visit.",
+    finalMayVary: "Final cost may vary based on the service provided.",
+    payNowMinimum: "Pay {{amount}} now (minimum). Final price confirmed at your visit.",
+    finalAfterVisit: "Final price will be confirmed after your visit.",
+    payNowBalanceAtBusiness: "Pay {{amount}} now. Any remaining balance is paid at the business.",
+    payAfterVisit: "You will pay after your consultation or treatment.",
   },
   payment: {
     title: "Payment",
@@ -185,7 +241,15 @@ export const en = {
     total: "Total",
     price: "Price",
     cancellationPolicy: "Cancellation policy",
+    cancellationPolicyText:
+      "While your booking is still pending, you may cancel up to {{hours}} hours before your appointment. Once the business confirms it, cancellation through the app is no longer available.",
+    cancellationPolicyTextOne:
+      "While your booking is still pending, you may cancel up to {{hours}} hour before your appointment. Once the business confirms it, cancellation through the app is no longer available.",
     methodSection: "Payment method",
+    methods: {
+      chapa: "Chapa",
+      payAtVisit: "Pay at visit",
+    },
     chapa: "Chapa",
     chapaDesc: "Pay online — Telebirr, CBE Birr, cards & more",
     chapaPayoutNotConfigured:
@@ -197,9 +261,10 @@ export const en = {
     depositNotice:
       "You will pay {{amount}} now via Chapa. This is the starting price — the final cost may be higher at your visit. Any remaining balance is paid at the business.",
     chapaNote:
-      "You will be redirected to Chapa's secure checkout to choose Telebirr, CBE Birr, cards, and more. Your booking is created only after your payment is confirmed.",
+      "You will be redirected to Chapa's secure checkout. Your time slot is reserved for 2 minutes while you pay. The booking is created only after payment is confirmed.",
     chapaDepositNote:
-      "You will pay the minimum amount on Chapa now. Your booking is created after payment is confirmed. Final price may be higher at your visit.",
+      "You will pay the minimum amount on Chapa now. Your slot is reserved for 2 minutes while you pay. Final price may be higher at your visit.",
+    slotHoldNote: "This time slot is reserved for you for 2 minutes while you complete payment.",
     checkout: {
       title: "Secure checkout",
       preparing: "Preparing secure checkout…",
@@ -351,6 +416,7 @@ export const en = {
       bankLabel: "Bank",
       bankPlaceholder: "Select your bank",
       bankSearchPlaceholder: "Search banks",
+      bankSearchEmpty: "No banks match your search.",
       banksLoadError: "Could not load banks from Chapa. Try again.",
       accountNameLabel: "Account holder name",
       accountNumberLabel: "Account number",

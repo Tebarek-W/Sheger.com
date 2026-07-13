@@ -197,7 +197,7 @@ export default function OwnerBookingsScreen() {
               </View>
               <Text style={styles.service}>
                 {booking.services?.name ?? t("owner.screens.bookings.defaultService")} ·{" "}
-                {formatBookingPrice(booking)}
+                {formatBookingPrice(booking, t)}
               </Text>
               <DualDateTime iso={booking.scheduled_at} compact />
 

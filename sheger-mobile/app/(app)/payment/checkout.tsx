@@ -212,6 +212,7 @@ function PaymentCheckoutContent() {
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>{t("payment.checkout.hostedTitle")}</Text>
           <Text style={styles.infoText}>{t("payment.checkout.hostedText")}</Text>
+          <Text style={styles.holdNote}>{t("payment.slotHoldNote")}</Text>
           <Text style={styles.infoNote}>{t("payment.checkout.testModeNote")}</Text>
         </View>
 
@@ -274,6 +275,7 @@ const styles = StyleSheet.create({
   },
   infoTitle: { fontSize: 15, fontWeight: "700", color: colors.primaryDarker },
   infoText: { fontSize: 14, color: colors.textMuted, lineHeight: 21 },
+  holdNote: { fontSize: 13, fontWeight: "600", color: colors.primaryDark, lineHeight: 19 },
   infoNote: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
   center: {
     flex: 1,

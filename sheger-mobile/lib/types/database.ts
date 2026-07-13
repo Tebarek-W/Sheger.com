@@ -881,9 +881,12 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          blocked_at: string | null
+          blocked_by: string | null
           created_at: string
           full_name: string | null
           id: string
+          is_blocked: boolean
           phone: string | null
           preferences: Json
           referral_code: string | null
@@ -892,9 +895,12 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          is_blocked?: boolean
           phone?: string | null
           preferences?: Json
           referral_code?: string | null
@@ -903,9 +909,12 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          is_blocked?: boolean
           phone?: string | null
           preferences?: Json
           referral_code?: string | null

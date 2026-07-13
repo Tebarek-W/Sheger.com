@@ -50,7 +50,7 @@ function PaymentScreenContent() {
   const [loading, setLoading] = useState(false);
   const submittingRef = useRef(false);
 
-  const checkoutPrice = service ? getCheckoutPriceLabel(service) : null;
+  const checkoutPrice = service ? getCheckoutPriceLabel(service, t) : null;
   const chargeableAmount = service ? getOnlineChargeableAmount(service) : null;
   const requiresOnlinePay = chargeableAmount != null && chargeableAmount > 0;
   const isDeposit = checkoutPrice?.isDeposit ?? false;
@@ -99,7 +99,13 @@ function PaymentScreenContent() {
         submittingRef.current = false;
         router.push({
           pathname: "/(app)/payment/checkout",
-          params: { txRef: result.tx_ref, checkoutUrl: result.checkout_url },
+          params: {
+            txRef: result.tx_ref,
+            checkoutUrl: result.checkout_url,
+            ...(result.hold_expires_at
+              ? { holdExpiresAt: result.hold_expires_at }
+              : {}),
+          },
         });
         return;
       }
@@ -146,7 +152,9 @@ function PaymentScreenContent() {
 
   const price = checkoutPrice?.primary ?? "—";
   const dueNowLabel =
-    chargeableAmount != null ? `${Math.round(chargeableAmount)} ETB` : null;
+    chargeableAmount != null
+      ? t("common.currencyEtb", { amount: Math.round(chargeableAmount) })
+      : null;
 
   return (
     <Screen scroll padded={false}>
@@ -164,7 +172,7 @@ function PaymentScreenContent() {
           </View>
           <View style={styles.payRow}>
             <Text style={styles.payLabel}>{t("payment.duration")}</Text>
-            <Text style={styles.payValue}>{formatServiceDuration(service)}</Text>
+            <Text style={styles.payValue}>{formatServiceDuration(service, t)}</Text>
           </View>
           <View style={styles.dateBlock}>
             <Text style={styles.payLabel}>{t("payment.dateTime")}</Text>
@@ -202,6 +210,7 @@ function PaymentScreenContent() {
           <Text style={styles.policyText}>
             {getCancellationPolicyText(
               business.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS,
+              t,
             )}
           </Text>
         </View>

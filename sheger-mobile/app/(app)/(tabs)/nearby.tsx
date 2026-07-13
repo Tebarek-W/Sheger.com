@@ -1,16 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { BusinessCard } from "@/components/customer/BusinessCard";
 import { CustomerTabTitleHeader } from "@/components/navigation/CustomerTabHeader";
+import { ListPagination } from "@/components/ui/ListPagination";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
-import { fetchMarketplaceBusinessesPage } from "@/lib/api/businesses";
+import {
+  fetchMarketplaceBusinessesPage,
+  type MarketplaceCursor,
+} from "@/lib/api/businesses";
 import { fetchCategories } from "@/lib/api/categories";
 import { distanceKm, formatDistance, useUserLocation } from "@/lib/location";
 import { compareFeaturedFirst } from "@/lib/business/discovery";
@@ -18,6 +22,7 @@ import { useDiscoveryStore } from "@/stores/discoveryStore";
 
 type Business = Awaited<ReturnType<typeof fetchMarketplaceBusinessesPage>>["rows"][number];
 
+const PAGE_SIZE = 20;
 const RADIUS_OPTION_VALUES = [null, 5, 10, 25] as const;
 
 export default function NearbyScreen() {
@@ -27,18 +32,35 @@ export default function NearbyScreen() {
   const categoryId = useDiscoveryStore((s) => s.categoryId);
   const setCategoryId = useDiscoveryStore((s) => s.setCategoryId);
 
-  const { data: businesses, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["nearby-businesses", categoryId, coords?.latitude, coords?.longitude, radiusKm],
-    queryFn: async () =>
-      (
-        await fetchMarketplaceBusinessesPage({
-          limit: 40,
-          categoryId,
-          latitude: coords?.latitude ?? null,
-          longitude: coords?.longitude ?? null,
-          radiusKm,
-        })
-      ).rows,
+  const [page, setPage] = useState(1);
+  const [pageCursors, setPageCursors] = useState<(MarketplaceCursor | null)[]>([null]);
+
+  useEffect(() => {
+    setPage(1);
+    setPageCursors([null]);
+  }, [categoryId, radiusKm, coords?.latitude, coords?.longitude]);
+
+  const currentCursor = pageCursors[page - 1] ?? null;
+
+  const { data, isLoading, isFetching, refetch, isRefetching } = useQuery({
+    queryKey: [
+      "nearby-businesses",
+      categoryId,
+      coords?.latitude,
+      coords?.longitude,
+      radiusKm,
+      page,
+      currentCursor?.id ?? null,
+    ],
+    queryFn: () =>
+      fetchMarketplaceBusinessesPage({
+        limit: PAGE_SIZE,
+        categoryId,
+        latitude: coords?.latitude ?? null,
+        longitude: coords?.longitude ?? null,
+        radiusKm,
+        cursor: currentCursor,
+      }),
   });
 
   const { data: categories } = useQuery({
@@ -47,8 +69,8 @@ export default function NearbyScreen() {
   });
 
   const selectedCategory = categories?.find((c) => c.id === categoryId);
-
-  const categoryBusinesses = useMemo(() => businesses ?? [], [businesses]);
+  const categoryBusinesses = useMemo(() => data?.rows ?? [], [data?.rows]);
+  const hasNext = Boolean(data?.next_cursor);
 
   const { located, missingLocation } = useMemo(() => {
     const withCoords = categoryBusinesses.filter((b) => b.latitude != null && b.longitude != null);
@@ -82,18 +104,61 @@ export default function NearbyScreen() {
     return { located: ranked, missingLocation: sortedMissing };
   }, [categoryBusinesses, coords, radiusKm]);
 
-  const loading = isLoading || locationLoading;
+  const loading = (isLoading || locationLoading) && page === 1;
   const categoryLabel = selectedCategory?.name;
 
   const radiusOptions = RADIUS_OPTION_VALUES.map((value) => ({
     value,
-    label: value == null ? t("nearby.radiusAll") : `${value} km`,
+    label: value == null ? t("nearby.radiusAll") : t("nearby.radiusKm", { count: value }),
   }));
 
-  const onRefresh = useCallback(() => { refetch(); }, [refetch]);
+  const resetAndRefetch = useCallback(() => {
+    setPage(1);
+    setPageCursors([null]);
+    void refetch();
+  }, [refetch]);
+
+  const onRefresh = useCallback(() => {
+    if (page !== 1) {
+      setPage(1);
+      setPageCursors([null]);
+      return;
+    }
+    void refetch();
+  }, [page, refetch]);
+
+  const onPrevious = () => {
+    if (page <= 1) return;
+    setPage((current) => current - 1);
+  };
+
+  const onNext = () => {
+    if (!data?.next_cursor) return;
+    const nextCursor = data.next_cursor;
+    setPageCursors((prev) => {
+      const next = [...prev];
+      next[page] = nextCursor;
+      return next;
+    });
+    setPage((current) => current + 1);
+  };
+
+  const onChangeRadius = (value: number | null) => {
+    setRadiusKm(value);
+  };
+
+  const onClearCategory = () => {
+    setCategoryId(null);
+  };
 
   return (
-    <Screen scroll padded={false} backgroundColor={colors.screenBg} onRefresh={onRefresh} refreshing={isRefetching}>
+    <Screen
+      scroll
+      padded={false}
+      backgroundColor={colors.screenBg}
+      onRefresh={onRefresh}
+      refreshing={isRefetching && page === 1}
+    >
       <CustomerTabTitleHeader
         title={t("nearby.title")}
         subtitle={
@@ -113,7 +178,7 @@ export default function NearbyScreen() {
             <View style={styles.categoryChip}>
               <Text style={styles.categoryChipText}>{categoryLabel}</Text>
             </View>
-            <Pressable onPress={() => setCategoryId(null)} hitSlop={8}>
+            <Pressable onPress={onClearCategory} hitSlop={8}>
               <Text style={styles.clearCategory}>{t("search.reset")}</Text>
             </Pressable>
           </View>
@@ -135,7 +200,7 @@ export default function NearbyScreen() {
               return (
                 <Pressable
                   key={option.label}
-                  onPress={() => setRadiusKm(option.value)}
+                  onPress={() => onChangeRadius(option.value)}
                   style={[styles.radiusChip, active && styles.radiusChipActive]}
                 >
                   <Text style={[styles.radiusText, active && styles.radiusTextActive]}>
@@ -150,53 +215,73 @@ export default function NearbyScreen() {
         <SectionHeader
           title={coords ? t("nearby.closest") : categoryLabel ? categoryLabel : t("nearby.businesses")}
           actionLabel={isRefetching ? t("common.updating") : t("common.refresh")}
-          onAction={() => refetch()}
+          onAction={resetAndRefetch}
         />
 
         {loading ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Finding nearby businesses…</Text>
+            <Text style={styles.loadingText}>{t("nearby.loading")}</Text>
           </View>
         ) : located.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>
               {categoryLabel
                 ? radiusKm
-                  ? `No ${categoryLabel.toLowerCase()} within ${radiusKm} km`
-                  : `No nearby ${categoryLabel.toLowerCase()}`
+                  ? t("nearby.emptyCategoryWithin", {
+                      category: categoryLabel.toLowerCase(),
+                      km: radiusKm,
+                    })
+                  : t("nearby.emptyCategory", { category: categoryLabel.toLowerCase() })
                 : radiusKm
-                  ? `Nothing within ${radiusKm} km`
-                  : "No businesses nearby"}
+                  ? t("nearby.emptyWithin", { km: radiusKm })
+                  : t("nearby.emptyDefault")}
             </Text>
             <Text style={styles.emptyText}>
               {categoryLabel
                 ? radiusKm
-                  ? "Try widening the distance filter or choose another category."
-                  : "Try another category or check back later."
+                  ? t("nearby.hintWidenOrCategory")
+                  : t("nearby.hintOtherCategory")
                 : radiusKm
-                  ? "Try widening the distance filter."
-                  : "Approved businesses will appear here soon."}
+                  ? t("nearby.hintWiden")
+                  : t("nearby.hintSoon")}
             </Text>
           </View>
         ) : (
-          located.map(({ business, km }, index) => (
-            <BusinessCard
-              key={business.id}
-              business={business}
-              themeIndex={index}
-              rating={{ average: business.rating_average, count: business.rating_count }}
-              fromPrice={business.from_price}
-              distanceLabel={km != null ? formatDistance(km) : undefined}
-              onPress={() => router.push(`/(app)/business/${business.id}`)}
+          <>
+            {isFetching && !loading ? (
+              <View style={styles.pageLoading}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : null}
+            {located.map(({ business, km }, index) => (
+              <BusinessCard
+                key={business.id}
+                business={business}
+                themeIndex={index}
+                rating={{ average: business.rating_average, count: business.rating_count }}
+                fromPrice={business.from_price}
+                distanceLabel={km != null ? formatDistance(km) : undefined}
+                onPress={() => router.push(`/(app)/business/${business.id}`)}
+              />
+            ))}
+            <ListPagination
+              page={page}
+              hasNext={hasNext}
+              loading={isFetching}
+              previousLabel={t("common.previous")}
+              nextLabel={t("common.next")}
+              pageLabel={t("common.page", { page })}
+              onPrevious={onPrevious}
+              onNext={onNext}
             />
-          ))
+          </>
         )}
 
-        {missingLocation.length > 0 && !radiusKm ? (
+        {missingLocation.length > 0 && !radiusKm && page === 1 ? (
           <View style={styles.otherSection}>
             <SectionHeader title={t("nearby.otherBusinesses")} />
-            <Text style={styles.otherHint}>These haven&apos;t set a precise location yet.</Text>
+            <Text style={styles.otherHint}>{t("nearby.otherLocationHint")}</Text>
             {missingLocation.map((business: Business, index: number) => (
               <BusinessCard
                 key={business.id}
@@ -266,6 +351,7 @@ const styles = StyleSheet.create({
   radiusText: { fontSize: 13, fontWeight: "500", color: colors.text },
   radiusTextActive: { color: colors.white },
   center: { alignItems: "center", paddingVertical: 48, gap: 12 },
+  pageLoading: { alignItems: "center", paddingBottom: 8 },
   loadingText: { color: colors.textMuted, fontSize: 14 },
   empty: { alignItems: "center", paddingVertical: 56, gap: 10 },
   emptyTitle: { ...typography.h3, color: colors.text },

@@ -29,7 +29,7 @@ export default function LoginScreen() {
 
     const normalizedEmail = normalizeEmail(email);
     if (!isValidEmail(normalizedEmail)) {
-      Alert.alert(t("auth.loginFailed"), "Enter a valid email address.");
+      Alert.alert(t("auth.loginFailed"), t("auth.invalidEmailMessage"));
       return;
     }
 
@@ -45,10 +45,15 @@ export default function LoginScreen() {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, is_blocked, full_name")
       .eq("id", data.user.id)
       .maybeSingle();
     const role = profile?.role as UserRole | undefined;
+    if (profile?.is_blocked) {
+      await supabase.auth.signOut();
+      router.replace("/(auth)/account-blocked");
+      return;
+    }
     if (role === "admin") {
       await supabase.auth.signOut();
       router.replace("/(auth)/admin-blocked");
@@ -58,7 +63,7 @@ export default function LoginScreen() {
     if (pendingBook && role === "customer") {
       router.replace(pendingBook);
     } else {
-      router.replace(getHomeRouteForRole(role));
+      router.replace(getHomeRouteForRole(role, profile));
     }
   };
 
