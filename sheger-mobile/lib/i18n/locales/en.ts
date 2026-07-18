@@ -38,12 +38,13 @@ export const en = {
     businessTitle: "Business Terms",
     cancellationTitle: "Cancellation & refunds",
     notFound: "This document could not be found.",
-    placeholderNotice:
-      "This is placeholder legal text for the product. Replace it with counsel-approved Terms before production or store submission.",
     lastUpdated: "Last updated: July 2026",
     agreePrefix: "I agree to the",
     mustAgree: "Please agree to the Terms of Service and Privacy Policy to continue.",
     sectionTitle: "Legal",
+    supportTitle: "Contact support",
+    supportSubject: "Sheger support",
+    viewOnWebsite: "View on website",
   },
   tabs: {
     home: "Home",
@@ -147,6 +148,25 @@ export const en = {
     terms: "Terms of Service",
     privacy: "Privacy Policy",
     cancellation: "Cancellation & refunds",
+    contactSupport: "Contact support",
+    supportSubject: "Sheger support request",
+    deleteAccount: {
+      title: "Delete account",
+      warning:
+        "This permanently deletes your Sheger account and personal data. Upcoming bookings will be cancelled. This cannot be undone.",
+      ownerWarning:
+        "This permanently deletes your account and removes your business listing from Sheger. Upcoming bookings will be cancelled. This cannot be undone.",
+      continue: "Continue",
+      confirmTitle: "Delete account permanently?",
+      confirmMessage: "Type confirmation by tapping Delete. Your account cannot be recovered.",
+      confirmOwnerMessage:
+        "Your business listing and account will be permanently removed. Tap Delete to confirm.",
+      confirmAction: "Delete",
+      deleting: "Deleting account…",
+      doneTitle: "Account deleted",
+      doneMessage: "Your Sheger account has been deleted.",
+      failedTitle: "Could not delete account",
+    },
   },
   bookings: {
     title: "My bookings",
@@ -831,6 +851,22 @@ export const en = {
       afterVisitHint: "Reviews are available after a completed appointment at this business.",
       emptyTitle: "No reviews yet",
       emptyText: "Be the first to share your experience.",
+      report: {
+        action: "Report",
+        title: "Report this review",
+        message: "Why are you reporting this review?",
+        thanksTitle: "Report submitted",
+        thanksMessage: "Thanks. Our team will review this shortly.",
+        alreadyTitle: "Already reported",
+        alreadyMessage: "You have already reported this review.",
+        failedTitle: "Could not submit report",
+        reasons: {
+          spam: "Spam",
+          offensive: "Offensive or abusive",
+          misleading: "Misleading",
+          other: "Other",
+        },
+      },
     },
     reviewForm: {
       title: "Rate your visit",

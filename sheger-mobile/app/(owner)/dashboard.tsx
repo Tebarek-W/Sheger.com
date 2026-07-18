@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { MenuCard } from "@/components/owner/MenuCard";
 import { StatusBadge } from "@/components/owner/StatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -20,11 +21,21 @@ import { getMissingDocumentTypes } from "@/lib/documents/license-status";
 import { fetchOwnerStats } from "@/lib/api/owner";
 import { fetchBusinessPayoutAccount } from "@/lib/api/payout";
 import { fetchSubscriptionSummary } from "@/lib/api/subscription";
+import { getSupportEmail, openSupportEmail } from "@/lib/support";
 
 export default function OwnerDashboardScreen() {
   const { profile, signOut, session } = useAuth();
   const { t } = useI18n();
   const { business, isLoading } = useOwnerBusiness();
+  const supportEmail = getSupportEmail();
+
+  const onSupport = async () => {
+    try {
+      await openSupportEmail(t("profile.supportSubject"));
+    } catch {
+      Alert.alert(t("profile.contactSupport"), supportEmail);
+    }
+  };
 
   const { data: stats } = useQuery({
     queryKey: ["owner-stats", business?.id],
@@ -99,6 +110,14 @@ export default function OwnerDashboardScreen() {
           <Text style={styles.emptyTitle}>{t("owner.registerTitle")}</Text>
           <Text style={styles.emptyText}>{t("owner.registerText")}</Text>
           <Button title={t("owner.registerButton")} onPress={() => router.push("/(owner)/register")} />
+          <Button
+            title={t("profile.contactSupport")}
+            variant="outline"
+            onPress={() => {
+              void onSupport();
+            }}
+          />
+          <DeleteAccountButton ownerWarning />
         </View>
       </Screen>
     );
@@ -255,7 +274,16 @@ export default function OwnerDashboardScreen() {
           subtitle={t("owner.menu.legalSub")}
           onPress={() => router.push("/legal/business")}
         />
+        <MenuCard
+          icon="✉️"
+          title={t("profile.contactSupport")}
+          subtitle={supportEmail}
+          onPress={() => {
+            void onSupport();
+          }}
+        />
         <LanguageSwitcher />
+        <DeleteAccountButton ownerWarning />
       </View>
     </Screen>
   );

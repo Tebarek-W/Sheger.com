@@ -104,6 +104,40 @@ export async function updateUserBlocked(userId: string, isBlocked: boolean) {
   revalidatePath("/dashboard");
 }
 
+/** Hide a reported review or dismiss the report without hiding. */
+export async function resolveReviewReport(
+  reportId: string,
+  reviewId: string,
+  action: "hide" | "dismiss",
+) {
+  await requireAdmin();
+  const { profile: admin } = await getSessionProfile();
+  if (!admin) throw new Error("Admin session required");
+
+  const supabase = createAdminClient();
+  const now = new Date().toISOString();
+
+  if (action === "hide") {
+    const { error: hideError } = await supabase
+      .from("reviews")
+      .update({ is_hidden: true })
+      .eq("id", reviewId);
+    if (hideError) throw hideError;
+  }
+
+  const { error } = await supabase
+    .from("review_reports")
+    .update({
+      status: action === "hide" ? "actioned" : "dismissed",
+      resolved_at: now,
+      resolved_by: admin.id,
+    })
+    .eq("id", reportId);
+
+  if (error) throw error;
+  revalidatePath("/dashboard/moderation");
+}
+
 export async function getBusinessLicenseSignedUrl(storagePath: string) {
   await requireAdmin();
   const supabase = createAdminClient();

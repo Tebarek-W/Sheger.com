@@ -40,12 +40,13 @@ export const am: TranslationTree = {
     businessTitle: "የንግድ ውሎች",
     cancellationTitle: "መሰረዝ እና ተመላሽ",
     notFound: "ይህ ሰነድ አልተገኘም።",
-    placeholderNotice:
-      "ይህ ለምርቱ የጊዜያዊ ህጋዊ ጽሑፍ ነው። ከማምረት ወይም ከመደብር ማስገባት በፊት በህግ አማካሪ የጸደቀ ጽሑፍ ይተኩ።",
     lastUpdated: "መጨረሻ የተሻሻለው፡ ሐምሌ 2026",
     agreePrefix: "እስማማለሁ በ",
     mustAgree: "ለመቀጠል የአገልግሎት ውሎችን እና የግላዊነት ፖሊሲን ይቀበሉ።",
     sectionTitle: "ህጋዊ",
+    supportTitle: "ድጋፍ ያግኙ",
+    supportSubject: "የሸገር ድጋፍ",
+    viewOnWebsite: "በድረ-ገጽ ይመልከቱ",
   },
   tabs: {
     home: "መነሻ",
@@ -149,6 +150,24 @@ export const am: TranslationTree = {
     terms: "የአገልግሎት ውሎች",
     privacy: "የግላዊነት ፖሊሲ",
     cancellation: "መሰረዝ እና ተመላሽ",
+    contactSupport: "ድጋፍ ያግኙ",
+    supportSubject: "የሸገር ድጋፍ ጥያቄ",
+    deleteAccount: {
+      title: "መለያ ሰርዝ",
+      warning:
+        "ይህ የሸገር መለያዎን እና የግል መረጃዎን እስከመጨረሻ ያስወግዳል። የሚመጡ ቀጠሮዎች ይሰረዛሉ። መመለስ አይቻልም።",
+      ownerWarning:
+        "ይህ መለያዎን ያስወግዳል እና የንግድ ዝርዝርዎን ከሸገር ያስወግዳል። የሚመጡ ቀጠሮዎች ይሰረዛሉ። መመለስ አይቻልም።",
+      continue: "ቀጥል",
+      confirmTitle: "መለያውን እስከመጨረሻ ልሰርዝ?",
+      confirmMessage: "መለያዎን መመለስ አይቻልም። ለማረጋገጥ ሰርዝን ይጫኑ።",
+      confirmOwnerMessage: "የንግድ ዝርዝርዎ እና መለያዎ እስከመጨረሻ ይወገዳሉ። ለማረጋገጥ ሰርዝን ይጫኑ።",
+      confirmAction: "ሰርዝ",
+      deleting: "መለያ በመሰረዝ ላይ…",
+      doneTitle: "መለያ ተሰርዟል",
+      doneMessage: "የሸገር መለያዎ ተሰርዟል።",
+      failedTitle: "መለያ መሰረዝ አልተሳካም",
+    },
   },
   bookings: {
     title: "የእኔ ቀጠሮዎች",
@@ -822,6 +841,22 @@ export const am: TranslationTree = {
       afterVisitHint: "ግምገማዎች ከተጠናቀቀ ቀጠሮ በኋላ ይገኛሉ።",
       emptyTitle: "ገና ግምገማ የለም",
       emptyText: "መጀመሪያ የእርስዎን تجربة ያጋሩ።",
+      report: {
+        action: "ሪፖርት",
+        title: "ይህን ግምገማ ሪፖርት አድርግ",
+        message: "ለምን ይህን ግምገማ ሪፖርት እያደረጉ ነው?",
+        thanksTitle: "ሪፖርት ተልኳል",
+        thanksMessage: "አመሰግናለን። ቡድናችን በቅርቡ ይመረምረዋል።",
+        alreadyTitle: "ቀድሞ ተሪፖርት ተደርጓል",
+        alreadyMessage: "ይህን ግምገማ አስቀድመው ሪፖርት አድርገዋል።",
+        failedTitle: "ሪፖርት ማስገባት አልተሳካም",
+        reasons: {
+          spam: "ስፓም",
+          offensive: "አጸያፊ ወይም አላግባብ",
+          misleading: "አሳሳች",
+          other: "ሌላ",
+        },
+      },
     },
     reviewForm: {
       title: "ጉብኝትዎን ይገምግሙ",

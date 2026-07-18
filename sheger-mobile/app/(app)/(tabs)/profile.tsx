@@ -1,16 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { DeleteAccountButton } from "@/components/account/DeleteAccountButton";
 import { HEADER_GRADIENT_COLORS } from "@/components/navigation/CustomerTabHeader";
 import { Button } from "@/components/ui/Button";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { Screen } from "@/components/ui/Screen";
 import { SignOutButton } from "@/components/ui/SignOutButton";
-import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
+import { getSupportEmail, openSupportEmail } from "@/lib/support";
 
 type MenuItemConfig = {
   label: string;
@@ -21,6 +23,15 @@ type MenuItemConfig = {
 export default function ProfileScreen() {
   const { session, profile, user, signOut } = useAuth();
   const { t } = useI18n();
+  const supportEmail = getSupportEmail();
+
+  const onSupport = async () => {
+    try {
+      await openSupportEmail(t("profile.supportSubject"));
+    } catch {
+      Alert.alert(t("profile.contactSupport"), supportEmail);
+    }
+  };
 
   const initials = profile?.full_name
     ? profile.full_name
@@ -59,6 +70,10 @@ export default function ProfileScreen() {
           <Pressable onPress={() => router.push("/legal/privacy")}>
             <Text style={styles.legalLink}>{t("profile.privacy")}</Text>
           </Pressable>
+          <Pressable onPress={onSupport}>
+            <Text style={styles.legalLink}>{t("profile.contactSupport")}</Text>
+          </Pressable>
+          <Text style={styles.supportEmail}>{supportEmail}</Text>
         </View>
       </Screen>
     );
@@ -74,6 +89,13 @@ export default function ProfileScreen() {
       label: t("profile.cancellation"),
       icon: "close-circle-outline",
       onPress: () => router.push("/legal/cancellation"),
+    },
+    {
+      label: t("profile.contactSupport"),
+      icon: "mail-outline",
+      onPress: () => {
+        void onSupport();
+      },
     },
   ];
 
@@ -129,6 +151,7 @@ export default function ProfileScreen() {
         ))}
 
         <LanguageSwitcher />
+        <DeleteAccountButton />
       </View>
     </Screen>
   );
@@ -250,5 +273,10 @@ const styles = StyleSheet.create({
     ...typography.bodyMedium,
     color: colors.primary,
     paddingVertical: 4,
+  },
+  supportEmail: {
+    ...typography.small,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
 });

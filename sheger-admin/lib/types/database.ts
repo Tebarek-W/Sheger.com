@@ -1026,6 +1026,7 @@ export type Database = {
           created_at: string
           customer_id: string
           id: string
+          is_hidden: boolean
           rating: number
         }
         Insert: {
@@ -1035,6 +1036,7 @@ export type Database = {
           created_at?: string
           customer_id: string
           id?: string
+          is_hidden?: boolean
           rating: number
         }
         Update: {
@@ -1044,6 +1046,7 @@ export type Database = {
           created_at?: string
           customer_id?: string
           id?: string
+          is_hidden?: boolean
           rating?: number
         }
         Relationships: [
@@ -1064,6 +1067,61 @@ export type Database = {
           {
             foreignKeyName: "reviews_customer_id_fkey"
             columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_reports: {
+        Row: {
+          id: string
+          review_id: string
+          reporter_id: string
+          reason: string
+          status: string
+          created_at: string
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        Insert: {
+          id?: string
+          review_id: string
+          reporter_id: string
+          reason: string
+          status?: string
+          created_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Update: {
+          id?: string
+          review_id?: string
+          reporter_id?: string
+          reason?: string
+          status?: string
+          created_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_reports_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_reports_resolved_by_fkey"
+            columns: ["resolved_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

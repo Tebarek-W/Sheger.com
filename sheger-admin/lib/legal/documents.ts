@@ -2,18 +2,21 @@ export type LegalDocId = "terms" | "privacy" | "business" | "cancellation";
 
 export type LegalDocMeta = {
   id: LegalDocId;
-  titleKey: string;
+  title: string;
+  description: string;
   sections: { heading: string; body: string }[];
 };
 
 /**
- * In-app legal copy for Sheger. Have counsel review before store submission;
- * contact details use the public support email published in the app.
+ * Public legal copy hosted on the admin web app for store listings.
+ * Replace with counsel-approved text before production submission.
+ * Keep in sync with sheger-mobile/lib/legal/documents.ts.
  */
 export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
   terms: {
     id: "terms",
-    titleKey: "legal.termsTitle",
+    title: "Terms of Service",
+    description: "Terms governing use of the Sheger mobile app and marketplace.",
     sections: [
       {
         heading: "1. About Sheger",
@@ -55,7 +58,9 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
   },
   privacy: {
     id: "privacy",
-    titleKey: "legal.privacyTitle",
+    title: "Privacy Policy",
+    description:
+      "How Sheger collects, uses, and shares personal information in the mobile app and related services.",
     sections: [
       {
         heading: "1. Information we collect",
@@ -89,7 +94,8 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
   },
   business: {
     id: "business",
-    titleKey: "legal.businessTitle",
+    title: "Business Terms",
+    description: "Terms for businesses listing and accepting bookings on Sheger.",
     sections: [
       {
         heading: "1. Business accounts",
@@ -123,7 +129,8 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
   },
   cancellation: {
     id: "cancellation",
-    titleKey: "legal.cancellationTitle",
+    title: "Cancellation & refunds",
+    description: "How cancellations and refunds work for Sheger bookings.",
     sections: [
       {
         heading: "1. Business cancellation windows",
@@ -149,6 +156,12 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
   },
 };
 
+export const LEGAL_DOC_IDS = Object.keys(LEGAL_DOCS) as LegalDocId[];
+
 export function isLegalDocId(value: string): value is LegalDocId {
   return value in LEGAL_DOCS;
 }
+
+export const LEGAL_LAST_UPDATED = "July 2026";
+export const SUPPORT_EMAIL =
+  process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "support@sheger.com";

@@ -83,5 +83,7 @@ module.exports = {
   extra: {
     supabaseUrl,
     supabaseAnonKey,
+    supportEmail: process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? "support@sheger.com",
+    legalBaseUrl: process.env.EXPO_PUBLIC_LEGAL_BASE_URL ?? "",
   },
 };

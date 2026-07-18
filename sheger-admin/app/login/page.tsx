@@ -179,6 +179,20 @@ export default function LoginPage() {
               your platform administrator if you need access.
             </p>
           </div>
+
+          <p className="mt-6 text-center text-xs text-[var(--muted)]">
+            <a href="/privacy" className="hover:text-[var(--primary)]">
+              Privacy
+            </a>
+            {" · "}
+            <a href="/terms" className="hover:text-[var(--primary)]">
+              Terms
+            </a>
+            {" · "}
+            <a href="/legal" className="hover:text-[var(--primary)]">
+              Legal
+            </a>
+          </p>
         </div>
       </section>
     </div>

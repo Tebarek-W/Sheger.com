@@ -39,12 +39,13 @@ export const om = {
     businessTitle: "Haala Daldalaa",
     cancellationTitle: "Haqi fi deebisuu",
     notFound: "Sanadiin kun hin argamne.",
-    placeholderNotice:
-      "Kun barreeffama seeraa yeroof ti. Oomisha dura barreeffama abbaa seeraatiin mirkanaa'e fayyadami.",
     lastUpdated: "Haaromfame: Adoolessa 2026",
     agreePrefix: "Waliigaleera",
     mustAgree: "Itti fufuuf Haala Tajaajilaa fi Imaammata Dhuunfaa fudhadhu.",
     sectionTitle: "Seera",
+    supportTitle: "Deeggarsa qunnami",
+    supportSubject: "Deeggarsa Sheger",
+    viewOnWebsite: "Marsariitii irratti ilaali",
   },
   tabs: {
     home: "Mana",
@@ -137,6 +138,25 @@ export const om = {
     terms: "Haala Tajaajilaa",
     privacy: "Imaammata Dhuunfaa",
     cancellation: "Haqi fi deebisuu",
+    contactSupport: "Deeggarsa qunnami",
+    supportSubject: "Gaaffii deeggarsa Sheger",
+    deleteAccount: {
+      title: "Akkaawuntii haqi",
+      warning:
+        "Kun akkaawuntii Sheger kee fi daataa dhuunfaa kee dhaabbataatti haqa. Beellamoonni dhufan haqamu. Deebisuu hin danda'amu.",
+      ownerWarning:
+        "Kun akkaawuntii kee haqa fi tarree daldalaa kee Sheger irraa haqa. Beellamoonni dhufan haqamu. Deebisuu hin danda'amu.",
+      continue: "Itti fufi",
+      confirmTitle: "Akkaawuntii dhaabbataatti haquu?",
+      confirmMessage: "Akkaawuntii kee deebisuu hin dandeessu. Mirkanessuuf Haqi tuqi.",
+      confirmOwnerMessage:
+        "Tarreen daldalaa fi akkaawuntii kee dhaabbataatti haqama. Mirkanessuuf Haqi tuqi.",
+      confirmAction: "Haqi",
+      deleting: "Akkaawuntii haqaa jira…",
+      doneTitle: "Akkaawuntii haqameera",
+      doneMessage: "Akkaawuntii Sheger kee haqameera.",
+      failedTitle: "Akkaawuntii haquun hin danda'amne",
+    },
   },
   bookings: {
     title: "Beellamoota koo",
@@ -363,6 +383,28 @@ export const om = {
     serviceCard: {
       book: "Beellama",
       accessibilityLabel: "{{name}} beellama qabadhu",
+    },
+    reviews: {
+      signInHint: "Daawwannaa booda yaada kennuuf seeni.",
+      afterVisitHint: "Yaadni beellama xumurameen booda argama.",
+      emptyTitle: "Ammaaf yaadni hin jiru",
+      emptyText: "Muuxannoo kee jalqabaa qoodi.",
+      report: {
+        action: "Gabaasi",
+        title: "Yaada kana gabaasi",
+        message: "Maaliif yaada kana gabaasaa jirta?",
+        thanksTitle: "Gabaasni ergameera",
+        thanksMessage: "Galatoomi. Gareen keenya yeroo dhiyootti ilaala.",
+        alreadyTitle: "Duraan gabaafameera",
+        alreadyMessage: "Yaada kana duraan gabaasiteetta.",
+        failedTitle: "Gabaasa galchuu hin dandeenye",
+        reasons: {
+          spam: "Spam",
+          offensive: "Balaaleffataa",
+          misleading: "Dogoggoraa",
+          other: "Kan biroo",
+        },
+      },
     },
     cancellation: {
       cancelledTitle: "Beellamni haqameera",

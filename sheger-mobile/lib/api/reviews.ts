@@ -14,6 +14,7 @@ export async function fetchBusinessReviews(businessId: string) {
     .from("reviews")
     .select("*")
     .eq("business_id", businessId)
+    .eq("is_hidden", false)
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -40,7 +41,8 @@ export async function fetchBusinessReviewSummary(businessId: string) {
   const { data, error } = await supabase
     .from("reviews")
     .select("rating")
-    .eq("business_id", businessId);
+    .eq("business_id", businessId)
+    .eq("is_hidden", false);
 
   if (error) throw error;
   const ratings = data ?? [];
@@ -112,4 +114,48 @@ export async function createReview(input: CreateReviewInput) {
 
   if (error) throw error;
   return data as Review;
+}
+
+export const REVIEW_REPORT_REASONS = [
+  "spam",
+  "offensive",
+  "misleading",
+  "other",
+] as const;
+
+export type ReviewReportReason = (typeof REVIEW_REPORT_REASONS)[number];
+
+export async function reportReview(input: {
+  reviewId: string;
+  reason: ReviewReportReason;
+  details?: string;
+}) {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!user) throw new Error("Sign in required");
+
+  const reasonLabel = input.details?.trim()
+    ? `${input.reason}: ${input.details.trim()}`
+    : input.reason;
+
+  const { data, error } = await supabase
+    .from("review_reports")
+    .insert({
+      review_id: input.reviewId,
+      reporter_id: user.id,
+      reason: reasonLabel.slice(0, 500),
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("ALREADY_REPORTED");
+    }
+    throw error;
+  }
+  return data;
 }

@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
+import { ReportReviewButton } from "@/components/customer/ReportReviewButton";
 import { ReviewForm } from "@/components/customer/ReviewForm";
 import { StarRating } from "@/components/customer/StarRating";
 import { Button } from "@/components/ui/Button";
@@ -100,6 +101,11 @@ export function BusinessReviewsTab({ businessId }: BusinessReviewsTabProps) {
             {review.comment ? (
               <Text style={styles.comment}>{review.comment}</Text>
             ) : null}
+            <ReportReviewButton
+              reviewId={review.id}
+              signedIn={Boolean(session)}
+              isOwnReview={Boolean(user?.id && review.customer_id === user.id)}
+            />
           </View>
         ))
       )}

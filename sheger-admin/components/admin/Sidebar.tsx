@@ -14,6 +14,7 @@ const links = [
   { href: "/dashboard/payments", label: "Payments" },
   { href: "/dashboard/plans", label: "Subscription plans" },
   { href: "/dashboard/reports", label: "Reports" },
+  { href: "/dashboard/moderation", label: "Moderation" },
 ];
 
 export function Sidebar() {
