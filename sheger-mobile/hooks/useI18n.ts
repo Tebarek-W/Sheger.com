@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 
-import { translate, type AppLocale } from "@/lib/i18n";
+import { translate } from "@/lib/i18n";
 import { useLocaleStore } from "@/stores/localeStore";
 
 export function useI18n() {
@@ -14,8 +14,4 @@ export function useI18n() {
   );
 
   return { t, locale, setLocale, hydrated };
-}
-
-export function useLocale(): AppLocale {
-  return useLocaleStore((s) => s.locale);
 }

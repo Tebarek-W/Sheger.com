@@ -153,15 +153,6 @@ export async function fetchMarketplaceBusinessesPage(
   };
 }
 
-export async function fetchBusinessesByCategory(categoryId: string) {
-  const page = await fetchMarketplaceBusinessesPage({
-    limit: 40,
-    categoryId,
-  });
-
-  return page.rows as (Business & { categories: Pick<Category, "name" | "slug"> | null })[];
-}
-
 export async function fetchBusinessById(id: string) {
   const { data, error } = await supabase
     .from("businesses")
@@ -198,13 +189,3 @@ export async function fetchBusinessEmployees(businessId: string) {
   return data as Employee[];
 }
 
-export async function fetchCategoryBySlug(slug: string) {
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data as Category | null;
-}

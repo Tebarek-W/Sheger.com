@@ -19,11 +19,6 @@ export type LicenseFileSelection = {
   sizeBytes: number;
 };
 
-export const DOCUMENT_TYPE_LABELS: Record<BusinessDocumentType, string> = {
-  trade_license: "Business/Trade License",
-  health_facility_license: "Health Facility Operating License",
-};
-
 export function isHealthFacilityCategory(categorySlug: string | null | undefined): boolean {
   if (!categorySlug) return false;
   return (HEALTH_FACILITY_CATEGORY_SLUGS as readonly string[]).includes(categorySlug);

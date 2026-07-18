@@ -90,7 +90,6 @@ export default async function BusinessDetailPage({
 
       <BusinessDocumentReview
         businessId={business.id}
-        categorySlug={categorySlug}
         documents={(documents ?? []) as BusinessDocument[]}
         requiredTypes={requiredTypes}
       />
@@ -113,7 +112,6 @@ export default async function BusinessDetailPage({
                   ? "Approve each license document first"
                   : "Required license documents are missing"
             }
-            reviewHref={`/dashboard/businesses/${business.id}`}
           />
         </div>
       </div>

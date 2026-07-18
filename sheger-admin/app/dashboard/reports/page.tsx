@@ -55,7 +55,7 @@ export default async function ReportsPage() {
         booking financials.
       </p>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
           <p className="text-sm font-semibold text-[var(--muted)]">Total bookings</p>
           <p className="mt-2 text-4xl font-extrabold text-[var(--primary-dark)]">
@@ -73,6 +73,12 @@ export default async function ReportsPage() {
           <p className="text-sm font-semibold text-[var(--muted)]">Paid bookings</p>
           <p className="mt-2 text-4xl font-extrabold text-[var(--primary-dark)]">
             {report.paidBookings}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-[var(--border)] bg-white p-6">
+          <p className="text-sm font-semibold text-[var(--muted)]">Paid gross revenue</p>
+          <p className="mt-2 text-4xl font-extrabold text-[var(--primary-dark)]">
+            ETB {report.paidGrossRevenue.toLocaleString()}
           </p>
         </div>
         <div className="rounded-2xl border border-[var(--border)] bg-white p-6">

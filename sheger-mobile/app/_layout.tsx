@@ -7,6 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-gesture-handler";
 
 import { LocaleHydrator } from "@/components/i18n/LocaleHydrator";
+import { AuthDeepLinkHandler } from "@/components/auth/AuthDeepLinkHandler";
 import { colors } from "@/constants/theme";
 import { AuthProvider } from "@/hooks/useAuth";
 
@@ -29,6 +30,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <AuthDeepLinkHandler />
           <LocaleHydrator />
           <Stack
             screenOptions={{

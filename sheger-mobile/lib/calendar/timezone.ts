@@ -1,5 +1,4 @@
 /** Business operations use Ethiopia time (UTC+3, no DST). */
-export const BUSINESS_TIMEZONE = "Africa/Addis_Ababa";
 
 export function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -78,18 +77,6 @@ export function normalizeTime24(hhmm: string): string | null {
   const parsed = parseTime24(hhmm);
   if (!parsed) return null;
   return `${pad2(parsed.hours)}:${pad2(parsed.minutes)}`;
-}
-
-/** Minutes since midnight from a TIME string or HH:MM. */
-export function timeToMinutes(time: string): number {
-  const [h, m] = time.slice(0, 5).split(":").map(Number);
-  return h * 60 + m;
-}
-
-export function minutesToTime24(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${pad2(h)}:${pad2(m)}`;
 }
 
 /** Reference Monday for displaying arbitrary wall-clock times in dual format. */

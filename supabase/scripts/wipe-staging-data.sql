@@ -3,7 +3,7 @@
 -- REMOVES: all auth users, businesses, bookings, payments, files, notifications, etc.
 --
 -- Run (staging only — verify project ref before executing):
---   supabase link --project-ref bukowczszrzgveilqnrr
+--   supabase link --project-ref YOUR_STAGING_REF
 --   npm run db:wipe-staging
 --   npm run db:seed
 --
@@ -23,14 +23,13 @@ TRUNCATE TABLE
   public.push_tokens,
   public.booking_financials,
   public.payment_transactions,
-  public.transactions,
+  public.review_reports,
   public.reviews,
+  public.booking_slot_holds,
   public.bookings,
   public.appointment_slots,
   public.business_chapa_subaccounts,
   public.business_documents,
-  public.business_promotions,
-  public.promoted_listings,
   public.business_subscriptions,
   public.subscription_payments,
   public.working_hours,

@@ -93,6 +93,9 @@ export default function LoginScreen() {
             onChangeText={setPassword}
             placeholder="••••••••"
           />
+          <Pressable onPress={() => router.push("/(auth)/forgot-password")} style={styles.forgotWrap}>
+            <Text style={styles.forgot}>{t("auth.forgotPassword")}</Text>
+          </Pressable>
           <Button title={t("common.signIn")} onPress={onLogin} loading={loading} />
           <Pressable onPress={() => router.push("/(auth)/signup")}>
             <Text style={styles.link}>{t("auth.noAccount")}</Text>
@@ -127,5 +130,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   form: { gap: 16, marginTop: 8 },
+  forgotWrap: { alignSelf: "flex-end", marginTop: -8 },
+  forgot: { color: colors.primary, fontWeight: "500", fontSize: 13 },
   link: { textAlign: "center", color: colors.primary, fontWeight: "500", marginTop: 8 },
 });

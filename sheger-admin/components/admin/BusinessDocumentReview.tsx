@@ -11,7 +11,6 @@ import type { BusinessDocument, BusinessDocumentType } from "@/lib/types/databas
 
 type BusinessDocumentReviewProps = {
   businessId: string;
-  categorySlug: string | null;
   documents: BusinessDocument[];
   requiredTypes: BusinessDocumentType[];
 };

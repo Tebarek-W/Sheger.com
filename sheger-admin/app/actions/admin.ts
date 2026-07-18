@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { getSessionProfile } from "@/lib/auth";
 import { slugifyCategoryName } from "@/lib/categories";
 import { summarizeDocumentApproval } from "@/lib/documents/approval";
-import { getRequiredDocumentTypes } from "@/lib/documents/license";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   BusinessDocument,
@@ -183,10 +182,6 @@ export async function reviewBusinessDocument(
 
   revalidatePath("/dashboard/businesses");
   revalidatePath(`/dashboard/businesses/${doc.business_id}`);
-}
-
-export async function getBusinessDocumentRequirements(categorySlug: string | null) {
-  return getRequiredDocumentTypes(categorySlug);
 }
 
 export type CategoryInput = {

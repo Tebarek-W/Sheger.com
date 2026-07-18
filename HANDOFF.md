@@ -131,8 +131,7 @@ supabase functions deploy chapa-webhook --no-verify-jwt
 supabase functions deploy chapa-return --no-verify-jwt
 supabase functions deploy chapa-banks
 supabase functions deploy chapa-subaccount
-supabase functions deploy chapa-charge
-supabase functions deploy chapa-authorize
+supabase functions deploy delete-account
 ```
 
 **Notifications & background jobs:**
@@ -144,6 +143,8 @@ supabase functions deploy send-push-queue --no-verify-jwt
 supabase functions deploy check-subscription-expiry --no-verify-jwt
 supabase functions deploy expire-unpaid-bookings --no-verify-jwt
 ```
+
+Legacy Direct Charge (`chapa-charge`, `chapa-authorize`) is unused by the apps — skip unless you revive that path.
 
 Full reference: `supabase/ops/EDGE_FUNCTIONS.md`
 

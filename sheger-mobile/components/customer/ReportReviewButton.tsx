@@ -1,7 +1,7 @@
 import { Alert, Pressable, StyleSheet, Text } from "react-native";
 
 import { useI18n } from "@/hooks/useI18n";
-import { reportReview, type ReviewReportReason } from "@/lib/api/reviews";
+import { reportReview, REVIEW_REPORT_REASONS, type ReviewReportReason } from "@/lib/api/reviews";
 import { getErrorMessage } from "@/lib/errors";
 import { colors } from "@/constants/theme";
 
@@ -11,8 +11,6 @@ type ReportReviewButtonProps = {
   isOwnReview?: boolean;
   signedIn: boolean;
 };
-
-const REASONS: ReviewReportReason[] = ["spam", "offensive", "misleading", "other"];
 
 export function ReportReviewButton({
   reviewId,
@@ -43,7 +41,7 @@ export function ReportReviewButton({
   const onPress = () => {
     Alert.alert(t("customer.reviews.report.title"), t("customer.reviews.report.message"), [
       { text: t("common.cancel"), style: "cancel" },
-      ...REASONS.map((reason) => ({
+      ...REVIEW_REPORT_REASONS.map((reason) => ({
         text: t(`customer.reviews.report.reasons.${reason}`),
         onPress: () => {
           void submit(reason);

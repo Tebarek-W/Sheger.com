@@ -134,15 +134,6 @@ Required files:
 
 Or run them in the Supabase SQL Editor.
 
-If you previously applied the older split migrations (`20250626000001`–`20250628000001`), mark them as reverted locally so `db push` stays in sync:
-
-```bash
-supabase migration repair 20250626000001 --status reverted
-supabase migration repair 20250627000001 --status reverted
-supabase migration repair 20250627000002 --status reverted
-supabase migration repair 20250628000001 --status reverted
-```
-
 ### 2. Deploy edge functions
 
 ```bash

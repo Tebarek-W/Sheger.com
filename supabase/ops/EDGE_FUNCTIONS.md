@@ -14,6 +14,7 @@ supabase functions deploy send-booking-reminders
 supabase functions deploy check-subscription-expiry
 supabase functions deploy send-push-queue
 supabase functions deploy expire-unpaid-bookings
+supabase functions deploy delete-account
 supabase functions deploy chapa-initialize
 supabase functions deploy chapa-subscription-initialize
 supabase functions deploy chapa-verify
@@ -23,9 +24,9 @@ supabase functions deploy chapa-webhook
 supabase functions deploy chapa-return
 supabase functions deploy chapa-banks
 supabase functions deploy chapa-subaccount
-supabase functions deploy chapa-charge
-supabase functions deploy chapa-authorize
 ```
+
+Legacy Direct Charge helpers (`chapa-charge`, `chapa-authorize`) are not part of the current hosted-checkout flow — deploy only if you intentionally revive that path.
 
 Or deploy individually as needed.
 
@@ -43,7 +44,8 @@ supabase secrets set CHAPA_MODE=test
 |----------|--------------|-----|
 | `chapa-initialize`, `chapa-subscription-initialize`, `chapa-verify`, `chapa-cancel` | default (true) | User JWT required |
 | `chapa-banks`, `chapa-subaccount` | default (true) | Owner JWT for payout setup |
-| `chapa-charge`, `chapa-authorize` | default (true) | Customer JWT for direct charge checkout |
+| `delete-account` | default (true) | Authenticated user deletes their own account |
+| `chapa-charge`, `chapa-authorize` | default (true) | Legacy Direct Charge (optional; not used by apps) |
 | `booking-notifications` | false | Database webhook |
 | `send-booking-reminders` | false | Cron |
 | `check-subscription-expiry` | false | Cron |
@@ -140,7 +142,7 @@ Per [Accept Payment](https://developer.chapa.co/integrations/accept-payments):
 
 The payment method UI is **hosted by Chapa**, not recreated in Sheger. In **test mode**, Chapa's hosted page may show a simplified **Pay with Test Mode** button; the full method list appears in **live mode**.
 
-`chapa-charge` / `chapa-authorize` (Direct Charge) remain deployed for optional future use but are not the default customer path.
+`chapa-charge` / `chapa-authorize` (Direct Charge) are legacy helpers and are **not** used by the current hosted-checkout apps. Do not deploy them unless you intentionally revive that path.
 
 ### Subscription payment (hosted checkout — owner mobile)
 
