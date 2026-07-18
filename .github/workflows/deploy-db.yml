@@ -1,12 +1,14 @@
+# Deploy database migrations for staging and production.
+# Add GitHub secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_STAGING_PROJECT_REF, SUPABASE_PRODUCTION_PROJECT_REF
+
 name: Deploy Database
 
 on:
   push:
-    branches: [main, staging]
+    branches: [staging, main]
     paths:
       - "supabase/migrations/**"
-      - "supabase/seed.sql"
-      - ".github/workflows/deploy-db.yml"
+  workflow_dispatch:
 
 jobs:
   migrate:

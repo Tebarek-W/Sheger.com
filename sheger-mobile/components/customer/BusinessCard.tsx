@@ -1,205 +1,146 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useRef } from "react";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Button } from "@/components/ui/Button";
-import { colors, radius } from "@/constants/theme";
+import { BusinessThumbnail } from "@/components/business/BusinessThumbnail";
+import { formatRating } from "@/components/customer/StarRating";
+import { getCategoryTheme } from "@/constants/categories";
+import { colors, radius, shadows } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import type { BusinessWithDetails } from "@/lib/api/businesses";
-import type { Service } from "@/lib/types/database";
-
-const CATEGORY_ICONS: Record<string, string> = {
-  barbershops: "✂️",
-  "hair-salons": "💇",
-  "nail-services": "💅",
-  dentists: "🦷",
-  clinics: "🏥",
-  "massage-spa": "🧖",
-  photographers: "📷",
-  "gyms-trainers": "💪",
-};
+import type { RatingSummary } from "@/lib/api/reviews";
 
 type BusinessCardProps = {
   business: BusinessWithDetails;
-  onBook: (service: Service) => void;
-  onViewDetails: () => void;
+  themeIndex?: number;
+  distanceLabel?: string;
+  rating?: RatingSummary;
+  fromPrice?: number | null;
+  onPress: () => void;
 };
 
-export function BusinessCard({ business, onBook, onViewDetails }: BusinessCardProps) {
+export function BusinessCard({
+  business,
+  themeIndex = 0,
+  distanceLabel,
+  rating,
+  fromPrice,
+  onPress,
+}: BusinessCardProps) {
+  const { t } = useI18n();
   const slug = business.categories?.slug ?? "";
-  const icon = CATEGORY_ICONS[slug] ?? "📍";
-  const startingPrice = business.services.length
-    ? Math.min(...business.services.map((s) => Number(s.price)))
-    : null;
+  const theme = getCategoryTheme(themeIndex);
+  const location = business.address ?? business.city ?? t("customer.businessCard.defaultCity");
+  const ratingLabel = formatRating(rating?.average ?? null, rating?.count ?? 0, t);
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = useCallback(() => {
+    Animated.spring(scale, { toValue: 0.98, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+  }, [scale]);
+  const onPressOut = useCallback(() => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+  }, [scale]);
 
   return (
-    <View style={styles.card}>
-      <View style={styles.accent} />
-
-      <View style={styles.body}>
-        <View style={styles.topRow}>
-          <View style={styles.iconWrap}>
-            <Text style={styles.icon}>{icon}</Text>
-          </View>
-          <View style={styles.titleBlock}>
-            <Text style={styles.name}>{business.name}</Text>
-            {business.categories?.name ? (
-              <Text style={styles.category}>{business.categories.name}</Text>
+    <Animated.View style={[styles.cardWrap, { transform: [{ scale }] }]}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        style={styles.card}
+      >
+        <View style={[styles.accentBar, { backgroundColor: theme.badgeBg }]} />
+        <BusinessThumbnail
+          name={business.name}
+          coverImageUrl={business.cover_image_url}
+          categorySlug={slug}
+          themeIndex={themeIndex}
+          size={84}
+        />
+        <View style={styles.info}>
+          <View style={styles.nameRow}>
+            <Text style={styles.name} numberOfLines={1}>
+              {business.name}
+            </Text>
+            {fromPrice != null ? (
+              <Text style={styles.price}>
+                {t("customer.businessCard.fromPrice", { price: fromPrice.toFixed(0) })}
+              </Text>
             ) : null}
           </View>
-          {startingPrice !== null ? (
-            <View style={styles.priceBadge}>
-              <Text style={styles.priceFrom}>from</Text>
-              <Text style={styles.priceValue}>{startingPrice.toFixed(0)}</Text>
-              <Text style={styles.priceCurrency}>ETB</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {business.description ? (
-          <Text style={styles.description} numberOfLines={2}>
-            {business.description}
-          </Text>
-        ) : null}
-
-        <View style={styles.meta}>
-          {business.address || business.city ? (
-            <Text style={styles.metaItem}>
-              📍 {business.address ?? business.city}
-            </Text>
-          ) : null}
-          {business.phone ? (
-            <Text style={styles.metaItem}>📞 {business.phone}</Text>
-          ) : null}
-        </View>
-
-        {business.services.length > 0 ? (
-          <View style={styles.services}>
-            <Text style={styles.servicesTitle}>Popular services</Text>
-            {business.services.slice(0, 3).map((service) => (
-              <View key={service.id} style={styles.serviceRow}>
-                <View style={styles.serviceInfo}>
-                  <Text style={styles.serviceName}>{service.name}</Text>
-                  <Text style={styles.serviceMeta}>
-                    {service.duration_minutes} min · {Number(service.price).toFixed(0)} ETB
-                  </Text>
-                </View>
-                <Pressable onPress={() => onBook(service)} style={styles.bookChip}>
-                  <Text style={styles.bookChipText}>Book</Text>
-                </Pressable>
+          <View style={styles.meta}>
+            {business.featured_in_search ? (
+              <View style={styles.featuredBadge}>
+                <Text style={styles.featuredBadgeText}>{t("customer.businessCard.featured")}</Text>
               </View>
-            ))}
+            ) : null}
+            {business.categories?.name ? (
+              <View style={[styles.badge, { backgroundColor: theme.badgeBg }]}>
+                <Text style={[styles.badgeText, { color: theme.badgeText }]}>
+                  {business.categories.name}
+                </Text>
+              </View>
+            ) : null}
+            <View style={styles.stars}>
+              <Text style={styles.starIcon}>★</Text>
+              <Text style={styles.starText}>{ratingLabel}</Text>
+            </View>
           </View>
-        ) : (
-          <Text style={styles.noServices}>Services coming soon</Text>
-        )}
-
-        <Button title="View full profile" variant="outline" onPress={onViewDetails} />
-      </View>
-    </View>
+          <Text style={styles.location} numberOfLines={1}>
+            📍 {location}
+            {distanceLabel ? ` · ${distanceLabel}` : ""}
+          </Text>
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  cardWrap: {
+    marginBottom: 12,
+    borderRadius: radius.lg,
+    ...shadows.sm,
+  },
   card: {
     flexDirection: "row",
     backgroundColor: colors.white,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     overflow: "hidden",
-    marginBottom: 16,
-    shadowColor: colors.primaryDarker,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
   },
-  accent: {
-    width: 5,
-    backgroundColor: colors.primary,
+  accentBar: {
+    width: 4,
   },
-  body: {
+  info: {
     flex: 1,
-    padding: 18,
-    gap: 12,
+    paddingVertical: 12,
+    paddingRight: 14,
+    gap: 4,
   },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  icon: { fontSize: 22 },
-  titleBlock: { flex: 1, gap: 2 },
-  name: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: colors.primaryDarker,
-    letterSpacing: -0.3,
-  },
-  category: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.primary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  priceBadge: {
-    alignItems: "flex-end",
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  priceFrom: { fontSize: 10, color: colors.textMuted, fontWeight: "600" },
-  priceValue: { fontSize: 18, fontWeight: "800", color: colors.primaryDarker },
-  priceCurrency: { fontSize: 10, color: colors.textMuted, fontWeight: "600" },
-  description: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: colors.textMuted,
-  },
-  meta: { gap: 4 },
-  metaItem: { fontSize: 13, color: colors.primaryDarker, fontWeight: "500" },
-  services: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: 12,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  servicesTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.primaryDarker,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-  serviceRow: {
+  nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  name: { flex: 1, fontSize: 15, fontWeight: "600", color: colors.text },
+  price: { fontSize: 12, fontWeight: "600", color: colors.primary },
+  meta: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
+    gap: 6,
+    flexWrap: "wrap",
+    marginBottom: 2,
   },
-  serviceInfo: { flex: 1, gap: 2 },
-  serviceName: { fontSize: 14, fontWeight: "700", color: colors.primaryDarker },
-  serviceMeta: { fontSize: 12, color: colors.primary, fontWeight: "600" },
-  bookChip: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
-  bookChipText: { color: colors.white, fontWeight: "700", fontSize: 13 },
-  noServices: { fontSize: 13, color: colors.textMuted, fontStyle: "italic" },
+  badgeText: { fontSize: 10, fontWeight: "500" },
+  featuredBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: "#faeeda",
+  },
+  featuredBadgeText: { fontSize: 10, fontWeight: "700", color: "#854f0b" },
+  stars: { flexDirection: "row", alignItems: "center", gap: 3 },
+  starIcon: { fontSize: 12, color: colors.star },
+  starText: { fontSize: 11, color: colors.textSecondary },
+  location: { fontSize: 11, color: colors.textTertiary },
 });

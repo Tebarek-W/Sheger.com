@@ -3,6 +3,12 @@ import { ActivityIndicator, View } from "react-native";
 
 import { colors } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  ACCOUNT_BLOCKED_ROUTE,
+  ADMIN_BLOCKED_ROUTE,
+  isAccountBlocked,
+  isPlatformAdmin,
+} from "@/lib/routing";
 
 export default function AppLayout() {
   const { session, profile, loading } = useAuth();
@@ -15,6 +21,14 @@ export default function AppLayout() {
     );
   }
 
+  if (session && isAccountBlocked(profile)) {
+    return <Redirect href={ACCOUNT_BLOCKED_ROUTE} />;
+  }
+
+  if (session && isPlatformAdmin(profile?.role)) {
+    return <Redirect href={ADMIN_BLOCKED_ROUTE} />;
+  }
+
   if (session && profile?.role === "business_owner") {
     return <Redirect href="/(owner)/dashboard" />;
   }
@@ -23,8 +37,16 @@ export default function AppLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
+        contentStyle: { backgroundColor: colors.screenBg },
       }}
-    />
+    >
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="business/[id]" />
+      <Stack.Screen name="book" />
+      <Stack.Screen name="payment" />
+      <Stack.Screen name="confirmation" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="edit-profile" />
+    </Stack>
   );
 }

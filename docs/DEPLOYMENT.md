@@ -26,6 +26,8 @@ Create GitHub **environments** named `staging` and `production` (optional; used 
 | `main` | Production Supabase project |
 
 - Migrations: `supabase/migrations/`
+- Backend conventions: [supabase/BACKEND.md](../supabase/BACKEND.md)
+- Edge function ops: [supabase/ops/EDGE_FUNCTIONS.md](../supabase/ops/EDGE_FUNCTIONS.md)
 - Auto-deploy: `.github/workflows/deploy-db.yml` on push when migrations change
 - Manual: see [supabase/STAGING.md](../supabase/STAGING.md)
 
@@ -75,8 +77,109 @@ eas build --profile production --platform android
 
 Profiles are defined in [sheger-mobile/eas.json](../sheger-mobile/eas.json).
 
+### Push notifications (FCM / APNs)
+
+Push uses **Expo Notifications** with tokens stored in `push_tokens`. In-app messages live in `notifications`.
+
+1. Run `eas init` in `sheger-mobile/` if you have not already (creates the Expo project ID used for push tokens).
+2. In [expo.dev](https://expo.dev) → Project → **Credentials**:
+   - **Android:** upload or generate an FCM v1 service account key.
+   - **iOS:** configure APNs (key or certificate) for bundle ID `com.sheger.app`.
+3. Build a **development client** or store build — Expo Go has limited push support on Android:
+
+```bash
+cd sheger-mobile
+eas build --profile development --platform android
+# or preview / production profiles
+```
+
+4. Apply migration `supabase/migrations/20250623000001_notifications.sql` on your Supabase project.
+
+5. Deploy Edge Functions:
+
+```bash
+supabase functions deploy booking-notifications --no-verify-jwt
+supabase functions deploy send-booking-reminders --no-verify-jwt
+```
+
+`--no-verify-jwt` is required for Database Webhooks and scheduled invocations (they do not send a user JWT).
+
+6. **Database Webhook** (Supabase Dashboard → Database → Webhooks):
+   - Table: `bookings`
+   - Events: `INSERT`, `UPDATE`
+   - Type: Supabase Edge Function
+   - Function: `booking-notifications`
+
+7. **Reminder cron** (Supabase Dashboard → Edge Functions → `send-booking-reminders` → Schedules, or Cron extension):
+   - Schedule: `*/15 * * * *` (every 15 minutes)
+   - Sends 24h and 1h reminders for `confirmed` bookings (Africa/Addis_Ababa formatting on the server).
+
+8. Test on a **physical device** with notification permission granted. Denied permission still allows the in-app inbox.
+
+## Provider subscriptions (Chapa payment)
+
+Providers choose a **subscription plan** (Free, Basic, Premium, etc.) to stay visible on the marketplace. Admins create plans and set limits; businesses pick a plan and inherit those limits automatically.
+
+### 1. Apply migrations
+
+```bash
+supabase db push
+```
+
+Required files:
+
+- `supabase/migrations/20250625000001_business_subscriptions.sql` (plans, marketplace gating, featured search)
+- `supabase/migrations/20250703140001_subscription_chapa_payment.sql` (Chapa checkout for paid plans)
+- `supabase/migrations/20250703150001_grace_employee_slots_realtime.sql` (grace period, employee slots, realtime)
+
+Or run them in the Supabase SQL Editor.
+
+### 2. Deploy edge functions
+
+```bash
+supabase functions deploy chapa-subscription-initialize
+supabase functions deploy chapa-verify
+supabase functions deploy check-subscription-expiry --no-verify-jwt
+```
+
+### 3. Admin configuration
+
+In the admin panel, open **Subscription plans** (`/dashboard/plans`):
+
+- Create/edit plans (name, monthly/yearly fee, max services, max bookings per week)
+- Hide or delete unused plans (cannot delete plans in use)
+
+Default seeded plans: **Free** (0 ETB), **Basic** (500/5000 ETB), **Premium** (1500/15000 ETB).
+
+### 4. Owner app
+
+Owners use **Subscription & billing** on the dashboard:
+
+1. Pick a plan (Free, Basic, Premium, …)
+2. For paid plans: choose monthly/yearly, then complete payment on Chapa's secure checkout
+3. For free plans: tap **Activate plan** (no payment)
+
+Limits update immediately from the selected plan. During a grace period (`past_due` with `grace_ends_at` in the future), the business remains visible on the marketplace.
+
+### 5. Expiry cron (optional)
+
+Deploy and schedule the expiry checker:
+
+```bash
+supabase functions deploy check-subscription-expiry --no-verify-jwt
+```
+
+Schedule: `0 */6 * * *` (every 6 hours). Marks expired `active` subscriptions as `past_due` and sets `grace_ends_at`.
+
+### 6. Marketplace gating
+
+- Customers only see businesses with an active paid period (`business_is_marketplace_live`)
+- Booking inserts are rejected when subscription expired or weekly booking cap reached
+- Service activation is blocked when max active services reached
+
 ## Pre-push checklist
 
 - [ ] `git status` shows no `.env` files
 - [ ] `npm run ci` passes locally
+- [ ] After schema changes: `npm run db:push` then `npm run db:types` (requires `supabase link`)
 - [ ] Migrations tested on staging before merging to `main`

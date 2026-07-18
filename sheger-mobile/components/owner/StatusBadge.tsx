@@ -1,22 +1,24 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import type { BusinessStatus } from "@/lib/types/database";
 
-const labels: Record<BusinessStatus, string> = {
-  pending: "Pending approval",
-  approved: "Live",
-  rejected: "Rejected",
-  suspended: "Suspended",
+const STATUS_KEYS: Record<BusinessStatus, string> = {
+  pending: "owner.status.pending",
+  approved: "owner.status.approved",
+  rejected: "owner.status.rejected",
+  suspended: "owner.status.suspended",
 };
 
 export function StatusBadge({ status }: { status: BusinessStatus }) {
+  const { t } = useI18n();
   const isLive = status === "approved";
 
   return (
     <View style={[styles.badge, isLive ? styles.live : styles.default]}>
       <Text style={[styles.text, isLive ? styles.liveText : styles.defaultText]}>
-        {labels[status]}
+        {t(STATUS_KEYS[status])}
       </Text>
     </View>
   );

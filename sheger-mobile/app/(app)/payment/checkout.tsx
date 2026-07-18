@@ -1,0 +1,299 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { router, useLocalSearchParams } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+
+import { Button } from "@/components/ui/Button";
+import { BookingHeader } from "@/components/ui/BookingHeader";
+import { Screen } from "@/components/ui/Screen";
+import { colors, radius } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
+import { RequireAuth } from "@/hooks/useRequireAuth";
+import {
+  cancelChapaPayment,
+  parseTxRefFromUrl,
+  verifyChapaPayment,
+} from "@/lib/api/chapa";
+import { getChapaHttpsReturnUrlPrefix } from "@/lib/chapa/return-url";
+import { buildChapaReceiptUrl, parseChapaReferenceFromUrl } from "@/lib/chapa/receipt";
+import { getErrorMessage } from "@/lib/errors";
+import { useBookingStore } from "@/stores/bookingStore";
+
+type CheckoutStatus = "preparing" | "browser" | "confirm" | "verifying" | "error";
+
+export default function PaymentCheckoutScreen() {
+  return (
+    <RequireAuth>
+      <PaymentCheckoutContent />
+    </RequireAuth>
+  );
+}
+
+function resolveParam(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value?.trim() || null;
+}
+
+function isSlotUnavailableError(error: unknown): boolean {
+  return getErrorMessage(error) === "SLOT_UNAVAILABLE";
+}
+
+function PaymentCheckoutContent() {
+  const params = useLocalSearchParams<{
+    txRef?: string | string[];
+    checkoutUrl?: string | string[];
+  }>();
+  const txRef = resolveParam(params.txRef);
+  const checkoutUrl = resolveParam(params.checkoutUrl);
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const business = useBookingStore((s) => s.business);
+  const setBookingId = useBookingStore((s) => s.setBookingId);
+  const setChapaReceiptUrl = useBookingStore((s) => s.setChapaReceiptUrl);
+
+  const [status, setStatus] = useState<CheckoutStatus>("preparing");
+  const [message, setMessage] = useState(() => t("payment.checkout.preparing"));
+  const startedRef = useRef(false);
+
+  // Verifies the payment and, on success, the booking now exists server-side
+  // (it is created inside finalize_chapa_payment only after payment succeeds).
+  const finishPaidBooking = useCallback(
+    async (paymentTxRef: string, returnUrl?: string | null) => {
+      setStatus("verifying");
+      setMessage(t("payment.checkout.verifying"));
+      try {
+        const verified = await verifyChapaPayment(paymentTxRef);
+        if (verified.booking_id) {
+          setBookingId(verified.booking_id);
+        }
+        const chapaRef =
+          verified.chapa_reference ??
+          (returnUrl ? parseChapaReferenceFromUrl(returnUrl) : null);
+        if (chapaRef) {
+          setChapaReceiptUrl(buildChapaReceiptUrl(chapaRef));
+        }
+        if (business?.id) {
+          queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
+        }
+        queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
+        router.replace("/(app)/confirmation");
+      } catch (error) {
+        if (isSlotUnavailableError(error)) {
+          if (business?.id) {
+            queryClient.invalidateQueries({ queryKey: ["available-slots", business.id] });
+          }
+          Alert.alert(t("payment.bookingFailed"), t("payment.slotUnavailablePaid"), [
+            { text: t("common.ok"), onPress: () => router.replace("/(app)/book") },
+          ]);
+          setStatus("error");
+          setMessage(t("payment.slotUnavailablePaid"));
+          return;
+        }
+        throw error;
+      }
+    },
+    [business?.id, queryClient, setBookingId, setChapaReceiptUrl, t],
+  );
+
+  const confirmPayment = useCallback(async () => {
+    if (!txRef) return;
+    try {
+      await finishPaidBooking(txRef);
+    } catch (error) {
+      setStatus("confirm");
+      setMessage(
+        isSlotUnavailableError(error)
+          ? t("payment.slotUnavailablePaid")
+          : getErrorMessage(error),
+      );
+    }
+  }, [finishPaidBooking, txRef]);
+
+  const openChapaCheckout = useCallback(
+    async (url: string, paymentTxRef: string) => {
+      const chapaReturnPrefix = getChapaHttpsReturnUrlPrefix();
+      setStatus("browser");
+      setMessage(t("payment.checkout.browserMessage"));
+
+      const session = await WebBrowser.openAuthSessionAsync(url, chapaReturnPrefix);
+
+      const sessionUrl =
+        session.type === "success" && session.url && !session.url.trimStart().startsWith("<!")
+          ? session.url
+          : null;
+
+      if (session.type === "success" || sessionUrl) {
+        const resolvedTxRef = parseTxRefFromUrl(sessionUrl ?? "") ?? paymentTxRef;
+        try {
+          await finishPaidBooking(resolvedTxRef, sessionUrl);
+          return;
+        } catch {
+          // Payment may still be processing on Chapa's side.
+        }
+      } else {
+        // Browser closed without redirect — payment may still have succeeded via webhook.
+        try {
+          setStatus("verifying");
+          setMessage(t("payment.checkout.verifying"));
+          await finishPaidBooking(paymentTxRef);
+          return;
+        } catch {
+          // Fall through to manual confirm UI.
+        }
+      }
+
+      setStatus("confirm");
+      setMessage(t("payment.checkout.confirmHint"));
+    },
+    [finishPaidBooking, t],
+  );
+
+  useEffect(() => {
+    WebBrowser.maybeCompleteAuthSession();
+  }, []);
+
+  useEffect(() => {
+    if (!txRef || !checkoutUrl || startedRef.current) return;
+    startedRef.current = true;
+    void openChapaCheckout(checkoutUrl, txRef);
+  }, [txRef, checkoutUrl, openChapaCheckout]);
+
+  const onCancel = () => {
+    Alert.alert(
+      t("payment.checkout.cancelTitle"),
+      t("payment.checkout.cancelMessage"),
+      [
+        { text: t("payment.checkout.cancelKeep"), style: "cancel" },
+        {
+          text: t("payment.checkout.cancelConfirm"),
+          style: "destructive",
+          onPress: async () => {
+            WebBrowser.dismissBrowser();
+            try {
+              const result = await cancelChapaPayment({ txRef: txRef ?? undefined });
+              if (result?.paid && txRef) {
+                await finishPaidBooking(txRef);
+                return;
+              }
+            } catch {
+              // Ignore cleanup errors on manual cancel — no booking exists yet.
+            }
+            router.back();
+          },
+        },
+      ],
+    );
+  };
+
+  if (!txRef || !checkoutUrl) {
+    return (
+      <Screen padded={false} style={styles.screen}>
+        <View style={styles.pad}>
+          <BookingHeader title={t("payment.checkout.title")} />
+          <Text style={styles.errorText}>{t("payment.checkout.bookingNotFound")}</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen padded={false} style={styles.screen}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <BookingHeader title={t("payment.checkout.title")} />
+          {status !== "error" ? (
+            <Pressable onPress={onCancel} hitSlop={8}>
+              <Text style={styles.cancelLink}>{t("payment.checkout.cancelLink")}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>{t("payment.checkout.hostedTitle")}</Text>
+          <Text style={styles.infoText}>{t("payment.checkout.hostedText")}</Text>
+          <Text style={styles.holdNote}>{t("payment.slotHoldNote")}</Text>
+          <Text style={styles.infoNote}>{t("payment.checkout.testModeNote")}</Text>
+        </View>
+
+        <View style={styles.center}>
+          {status === "preparing" || status === "browser" || status === "verifying" ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : null}
+          <Text style={status === "error" ? styles.errorText : styles.statusText}>{message}</Text>
+
+          {status === "confirm" ? (
+            <>
+              <Button
+                title={t("payment.checkout.openChapa")}
+                onPress={() => openChapaCheckout(checkoutUrl, txRef)}
+              />
+              <Button
+                title={t("payment.checkout.confirmPayment")}
+                variant="outline"
+                onPress={confirmPayment}
+              />
+            </>
+          ) : null}
+
+          {status === "error" ? (
+            <Pressable onPress={() => router.back()}>
+              <Text style={styles.cancelLink}>{t("payment.checkout.goBack")}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  container: { flex: 1 },
+  pad: { paddingHorizontal: 16, paddingTop: 8 },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  cancelLink: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  infoCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    gap: 8,
+  },
+  infoTitle: { fontSize: 15, fontWeight: "700", color: colors.primaryDarker },
+  infoText: { fontSize: 14, color: colors.textMuted, lineHeight: 21 },
+  holdNote: { fontSize: 13, fontWeight: "600", color: colors.primaryDark, lineHeight: 19 },
+  infoNote: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    paddingHorizontal: 24,
+  },
+  statusText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  errorText: {
+    color: colors.text,
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+});

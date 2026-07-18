@@ -45,6 +45,9 @@ async function axiosFetch(
     method: (init?.method ?? "GET").toUpperCase(),
     headers: headersToRecord(init?.headers),
     data: init?.body,
+    // Honour caller-provided AbortSignal (timeouts/cancellation) instead of
+    // silently dropping it as the previous shim did.
+    signal: init?.signal ?? undefined,
     validateStatus: () => true,
     responseType: "text",
     transformResponse: [(data) => data],

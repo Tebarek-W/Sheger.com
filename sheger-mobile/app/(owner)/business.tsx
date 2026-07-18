@@ -1,21 +1,32 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-
-import { goBackSafely } from "@/lib/routing";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { BusinessProfilePhoto } from "@/components/owner/BusinessProfilePhoto";
+import { LocationPicker } from "@/components/owner/LocationPicker";
 import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
-import { colors, radius } from "@/constants/theme";
+import { ownerLayout } from "@/constants/owner-layout";
+import { colors, radius, shadows, typography } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { fetchCategories } from "@/lib/api/categories";
 import { updateBusiness } from "@/lib/api/owner";
 import { getErrorMessage } from "@/lib/errors";
+import { isWithinEthiopia, type Coordinates } from "@/lib/location";
+import { goBackSafely } from "@/lib/routing";
+import {
+  isValidEmail,
+  isValidEthiopianMobile,
+  normalizeEmail,
+  normalizeEthiopianMobile,
+} from "@/lib/validation/contact";
 
 export default function EditBusinessScreen() {
+  const { t } = useI18n();
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -25,6 +36,13 @@ export default function EditBusinessScreen() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [coords, setCoords] = useState<Coordinates | null>(null);
+
+  const onChangePhone = (value: string) => {
+    const sanitized = value.replace(/[^\d+]/g, "");
+    const clamped = sanitized.startsWith("+") ? sanitized.slice(0, 13) : sanitized.slice(0, 10);
+    setPhone(clamped);
+  };
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -40,45 +58,95 @@ export default function EditBusinessScreen() {
     setPhone(business.phone ?? "");
     setEmail(business.email ?? "");
     setCategoryId(business.category_id);
+    if (business.latitude != null && business.longitude != null) {
+      setCoords({ latitude: business.latitude, longitude: business.longitude });
+    }
   }, [business]);
 
   const mutation = useMutation({
     mutationFn: () =>
       updateBusiness(business!.id, {
         categoryId: categoryId!,
-        name,
-        description,
-        address,
-        city,
-        phone,
-        email,
+        name: name.trim(),
+        description: description.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        phone: normalizeEthiopianMobile(phone) || undefined,
+        email: normalizeEmail(email) || undefined,
+        latitude: coords?.latitude ?? null,
+        longitude: coords?.longitude ?? null,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-businesses"] });
-      Alert.alert("Saved", "Business profile updated.", [
-        { text: "OK", onPress: () => goBackSafely("/(owner)/dashboard") },
+      Alert.alert(t("owner.screens.business.savedTitle"), t("owner.screens.business.savedMessage"), [
+        { text: t("common.ok"), onPress: () => goBackSafely("/(owner)/dashboard") },
       ]);
     },
-    onError: (error) => Alert.alert("Error", getErrorMessage(error)),
+    onError: (error) => Alert.alert(t("common.error"), getErrorMessage(error)),
   });
+
+  const onSave = () => {
+    if (!isWithinEthiopia(coords)) {
+      Alert.alert(
+        t("owner.screens.business.locationRequiredTitle"),
+        t("owner.screens.business.locationRequiredMessage"),
+      );
+      return;
+    }
+
+    if (phone.trim() && !isValidEthiopianMobile(phone)) {
+      Alert.alert(
+        t("owner.screens.business.invalidPhoneTitle"),
+        t("owner.screens.business.invalidPhoneMessage"),
+      );
+      return;
+    }
+
+    if (email.trim() && !isValidEmail(email)) {
+      Alert.alert(
+        t("owner.screens.business.invalidEmailTitle"),
+        t("owner.screens.business.invalidEmailMessage"),
+      );
+      return;
+    }
+
+    mutation.mutate();
+  };
 
   if (!business) {
     return (
       <Screen>
-        <Header title="Business profile" showBack />
-        <Text style={styles.muted}>Register a business first.</Text>
-        <Button title="Register" onPress={() => router.push("/(owner)/register")} />
+        <Header title={t("owner.screens.business.title")} showBack />
+        <Text style={styles.muted}>{t("owner.screens.business.registerFirst")}</Text>
+        <Button
+          title={t("owner.screens.business.registerButton")}
+          onPress={() => router.push("/(owner)/register")}
+        />
       </Screen>
     );
   }
 
   return (
     <Screen scroll>
-      <Header title="Business profile" subtitle="Update your public listing" showBack />
+      <Header
+        title={t("owner.screens.business.title")}
+        subtitle={t("owner.screens.business.subtitle")}
+        showBack
+      />
       <View style={styles.form}>
-        <Input label="Business name" value={name} onChangeText={setName} />
-        <Input label="Description" value={description} onChangeText={setDescription} multiline />
-        <Text style={styles.label}>Category</Text>
+        <BusinessProfilePhoto business={business} />
+        <Input
+          label={t("owner.screens.business.businessName")}
+          value={name}
+          onChangeText={setName}
+        />
+        <Input
+          label={t("owner.screens.business.description")}
+          value={description}
+          onChangeText={setDescription}
+          multiline
+        />
+        <Text style={styles.label}>{t("owner.screens.business.category")}</Text>
         <View style={styles.chips}>
           {categories?.map((cat) => {
             const active = categoryId === cat.id;
@@ -93,23 +161,56 @@ export default function EditBusinessScreen() {
             );
           })}
         </View>
-        <Input label="Address" value={address} onChangeText={setAddress} />
-        <Input label="City" value={city} onChangeText={setCity} />
-        <Input label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-        <Input label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" />
-        <Button title="Save changes" onPress={() => mutation.mutate()} loading={mutation.isPending} />
+
+        <View style={styles.locationSection}>
+          <Text style={styles.label}>{t("owner.screens.business.businessLocation")}</Text>
+          <Text style={styles.sectionHint}>{t("owner.screens.business.locationHint")}</Text>
+          <LocationPicker
+            value={coords}
+            onChange={setCoords}
+            onResolveAddress={(resolved) => {
+              if (!address.trim()) setAddress(resolved);
+            }}
+          />
+        </View>
+
+        <Input
+          label={t("owner.screens.business.address")}
+          value={address}
+          onChangeText={setAddress}
+        />
+        <Input label={t("owner.screens.business.city")} value={city} onChangeText={setCity} />
+        <Input
+          label={t("owner.screens.business.phone")}
+          value={phone}
+          onChangeText={onChangePhone}
+          keyboardType="phone-pad"
+          maxLength={13}
+        />
+        <Input
+          label={t("owner.screens.business.email")}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+        />
+        <Button
+          title={t("owner.screens.business.saveChanges")}
+          onPress={onSave}
+          loading={mutation.isPending}
+        />
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  form: { gap: 16 },
+  form: { gap: ownerLayout.sectionGap },
   label: { fontSize: 14, fontWeight: "600", color: colors.primaryDarker },
+  sectionHint: { fontSize: 12, color: colors.textSecondary, lineHeight: 16, marginTop: -8 },
+  locationSection: { gap: 8 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadows.sm,
     backgroundColor: colors.white,
     borderRadius: radius.full,
     paddingHorizontal: 14,

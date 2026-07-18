@@ -23,7 +23,7 @@ if (!supabaseAnonKey || supabaseAnonKey.includes("your-")) {
 
 /** @type {import('expo/config').ExpoConfig} */
 module.exports = {
-  name: "sheger-mobile",
+  name: "Sheger",
   slug: "sheger-mobile",
   scheme: "sheger",
   version: "1.0.0",
@@ -32,10 +32,17 @@ module.exports = {
   userInterfaceStyle: "light",
   ios: {
     supportsTablet: true,
+    bundleIdentifier: "com.sheger.app",
+    infoPlist: {
+      NSLocationWhenInUseUsageDescription:
+        "Sheger uses your location to show nearby businesses.",
+    },
   },
   android: {
+    package: "com.sheger.app",
+    softwareKeyboardLayoutMode: "resize",
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      backgroundColor: "#0d4d0d",
       foregroundImage: "./assets/android-icon-foreground.png",
       backgroundImage: "./assets/android-icon-background.png",
       monochromeImage: "./assets/android-icon-monochrome.png",
@@ -45,9 +52,38 @@ module.exports = {
   web: {
     favicon: "./assets/favicon.png",
   },
-  plugins: ["expo-router", "expo-secure-store"],
+  plugins: [
+    "expo-router",
+    "expo-web-browser",
+    "expo-localization",
+    "expo-secure-store",
+    [
+      "expo-location",
+      {
+        locationWhenInUsePermission:
+          "Sheger uses your location to show nearby businesses.",
+      },
+    ],
+    [
+      "expo-image-picker",
+      {
+        photosPermission:
+          "Sheger needs access to your photos so you can add a business profile picture.",
+      },
+    ],
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/icon.png",
+        color: "#0d4d0d",
+        defaultChannel: "bookings",
+      },
+    ],
+  ],
   extra: {
     supabaseUrl,
     supabaseAnonKey,
+    supportEmail: process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? "support@sheger.com",
+    legalBaseUrl: process.env.EXPO_PUBLIC_LEGAL_BASE_URL ?? "",
   },
 };

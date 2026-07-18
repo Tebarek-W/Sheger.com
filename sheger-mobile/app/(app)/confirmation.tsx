@@ -1,11 +1,17 @@
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
+import { DualDateTime } from "@/components/ui/DualDateTime";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { RequireAuth } from "@/hooks/useRequireAuth";
-import { formatSlotDate, formatSlotLabel } from "@/lib/booking/slots";
+import { useI18n } from "@/hooks/useI18n";
+import { CUSTOMER_HOME } from "@/lib/routing";
+import { DEFAULT_CANCELLATION_HOURS, getCancellationPolicyText } from "@/lib/booking/cancellation";
+import { isChapaOnlineMethod, paymentMethodLabel } from "@/lib/payment/methods";
+import { formatServiceDuration, getCheckoutPriceLabel } from "@/lib/services/pricing";
 import { useBookingStore } from "@/stores/bookingStore";
 
 export default function ConfirmationScreen() {
@@ -17,46 +23,87 @@ export default function ConfirmationScreen() {
 }
 
 function ConfirmationScreenContent() {
+  const { t } = useI18n();
   const business = useBookingStore((s) => s.business);
   const service = useBookingStore((s) => s.service);
   const scheduledAt = useBookingStore((s) => s.scheduledAt);
   const paymentMethod = useBookingStore((s) => s.paymentMethod);
   const bookingId = useBookingStore((s) => s.bookingId);
+  const chapaReceiptUrl = useBookingStore((s) => s.chapaReceiptUrl);
   const reset = useBookingStore((s) => s.reset);
+
+  const checkoutPrice = service ? getCheckoutPriceLabel(service, t) : null;
+  const paymentLabel = paymentMethodLabel(paymentMethod, t);
+  const paidOnline = paymentMethod ? isChapaOnlineMethod(paymentMethod) : false;
+  const isDeposit = checkoutPrice?.isDeposit ?? false;
+  const dueNowAmount = checkoutPrice?.dueNowAmount;
 
   const done = () => {
     reset();
-    router.replace("/(app)/home");
+    router.replace(CUSTOMER_HOME);
   };
 
   return (
-    <Screen>
+    <Screen backgroundColor={colors.brandDark}>
       <View style={styles.center}>
         <View style={styles.check}>
           <Text style={styles.checkMark}>✓</Text>
         </View>
-        <Text style={styles.title}>Booking confirmed!</Text>
+        <Text style={styles.title}>{t("confirmation.title")}</Text>
         <Text style={styles.subtitle}>
-          Your appointment is pending confirmation from the business.
+          {t("confirmation.subtitle")}
+          {paidOnline
+            ? isDeposit
+              ? t("confirmation.depositPaidNote")
+              : t("confirmation.paidNote")
+            : ""}
+        </Text>
+        <Text style={styles.policy}>
+          {getCancellationPolicyText(
+            business?.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS,
+            t,
+          )}{" "}
+          {t("confirmation.policySuffix")}
         </Text>
 
         <View style={styles.card}>
-          <Row label="Service" value={service?.name ?? "—"} />
-          <Row label="Business" value={business?.name ?? "—"} />
-          <Row
-            label="When"
-            value={
-              scheduledAt
-                ? `${formatSlotDate(scheduledAt)} · ${formatSlotLabel(scheduledAt)}`
-                : "—"
-            }
-          />
-          <Row label="Payment" value={paymentMethod ?? "—"} />
-          <Row label="Status" value="Pending" />
-          {bookingId ? <Row label="Reference" value={bookingId.slice(0, 8).toUpperCase()} /> : null}
+          <Row label={t("confirmation.service")} value={service?.name ?? "—"} />
+          <Row label={t("confirmation.business")} value={business?.name ?? "—"} />
+          {service ? (
+            <Row label={t("confirmation.duration")} value={formatServiceDuration(service, t)} />
+          ) : null}
+          {checkoutPrice ? (
+            <Row label={t("confirmation.price")} value={checkoutPrice.primary} />
+          ) : null}
+          {paidOnline && isDeposit && dueNowAmount != null ? (
+            <Row
+              label={t("confirmation.dueNow")}
+              value={t("common.currencyEtb", { amount: Math.round(dueNowAmount) })}
+            />
+          ) : null}
+          {scheduledAt ? (
+            <View style={styles.whenBlock}>
+              <Text style={styles.rowLabel}>{t("confirmation.when")}</Text>
+              <DualDateTime iso={scheduledAt} variant="dark" compact />
+            </View>
+          ) : (
+            <Row label={t("confirmation.when")} value="—" />
+          )}
+          <Row label={t("confirmation.payment")} value={paymentLabel} />
+          <Row label={t("confirmation.status")} value={t("confirmation.statusPending")} />
+          {bookingId ? (
+            <Row label={t("confirmation.reference")} value={bookingId.slice(0, 8).toUpperCase()} />
+          ) : null}
         </View>
 
-        <Button title="Back to Home" onPress={done} />
+        <Button title={t("confirmation.backHome")} variant="accent" onPress={done} />
+        {paidOnline && chapaReceiptUrl ? (
+          <Button
+            title={t("confirmation.viewReceipt")}
+            variant="outline"
+            onPress={() => WebBrowser.openBrowserAsync(chapaReceiptUrl)}
+          />
+        ) : null}
       </View>
     </Screen>
   );
@@ -72,34 +119,66 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", gap: 16 },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    gap: 16,
+  },
   check: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.primary,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(110,232,110,0.2)",
+    borderWidth: 2,
+    borderColor: colors.accentLime,
     alignItems: "center",
     justifyContent: "center",
-    alignSelf: "center",
   },
-  checkMark: { color: colors.white, fontSize: 36, fontWeight: "700" },
+  checkMark: { color: colors.accentLime, fontSize: 36, fontWeight: "500" },
   title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: colors.primaryDarker,
+    fontSize: 22,
+    fontWeight: "500",
+    color: colors.white,
     textAlign: "center",
   },
-  subtitle: { textAlign: "center", color: colors.textMuted, lineHeight: 22, marginBottom: 8 },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 12,
-    width: "100%",
+  subtitle: {
+    textAlign: "center",
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13,
+    lineHeight: 20,
+    paddingHorizontal: 8,
   },
-  row: { gap: 2 },
-  rowLabel: { fontSize: 12, color: colors.textMuted, fontWeight: "600" },
-  rowValue: { fontSize: 16, color: colors.primaryDarker, fontWeight: "600" },
+  policy: {
+    textAlign: "center",
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 12,
+    lineHeight: 18,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  card: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: radius.lg,
+    padding: 16,
+    width: "100%",
+    gap: 4,
+    marginBottom: 8,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    gap: 12,
+  },
+  whenBlock: { paddingVertical: 6, gap: 6 },
+  rowLabel: { fontSize: 12, color: "rgba(255,255,255,0.5)", flex: 1 },
+  rowValue: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "500",
+    textAlign: "right",
+    flex: 1,
+  },
 });

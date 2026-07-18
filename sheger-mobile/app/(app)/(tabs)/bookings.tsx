@@ -1,0 +1,254 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { ReviewForm } from "@/components/customer/ReviewForm";
+import { BookingCancelAction } from "@/components/customer/BookingCancelAction";
+import { CustomerTabTitleHeader } from "@/components/navigation/CustomerTabHeader";
+import { Button } from "@/components/ui/Button";
+import { DualDateTime } from "@/components/ui/DualDateTime";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Screen } from "@/components/ui/Screen";
+import { colors, radius, shadows, typography } from "@/constants/theme";
+import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
+import { fetchCustomerBookings } from "@/lib/api/bookings";
+import { DEFAULT_CANCELLATION_HOURS } from "@/lib/booking/cancellation";
+import { fetchReviewedBookingIds } from "@/lib/api/reviews";
+import { formatBookingPrice } from "@/lib/services/pricing";
+import type { BookingStatus } from "@/lib/types/database";
+
+const STATUS_STYLES: Record<BookingStatus, { bg: string; text: string; accent: string }> = {
+  pending: { bg: "#faeeda", text: "#854f0b", accent: colors.gold },
+  confirmed: { bg: colors.primaryLight, text: colors.primaryDark, accent: colors.primary },
+  cancelled: { bg: colors.errorBg, text: colors.error, accent: colors.error },
+  completed: { bg: "#e6f1fb", text: "#185fa5", accent: "#185fa5" },
+};
+
+const PASSED_STATUS_STYLE = { bg: "#f3f4f6", text: "#6b7280", accent: "#9ca3af" };
+
+function isPassedPendingBooking(booking: { status: BookingStatus; scheduled_at: string }) {
+  return booking.status === "pending" && new Date(booking.scheduled_at).getTime() < Date.now();
+}
+
+export default function BookingsScreen() {
+  const { session, user } = useAuth();
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
+
+  const { data: bookings, isLoading, error, refetch, isRefetching } = useQuery({
+    queryKey: ["customer-bookings", user?.id],
+    queryFn: () => fetchCustomerBookings(user!.id),
+    enabled: Boolean(user?.id),
+  });
+
+  const { data: reviewedIds } = useQuery({
+    queryKey: ["reviewed-booking-ids", user?.id],
+    queryFn: () => fetchReviewedBookingIds(user!.id),
+    enabled: Boolean(user?.id),
+  });
+
+  const onRefresh = useCallback(() => { refetch(); }, [refetch]);
+
+  if (!session) {
+    return (
+      <Screen backgroundColor={colors.screenBg}>
+        <View style={styles.guest}>
+          <Text style={styles.guestEmoji}>📅</Text>
+          <Text style={styles.guestTitle}>{t("bookings.guestTitle")}</Text>
+          <Text style={styles.guestText}>{t("bookings.guestText")}</Text>
+          <Button title={t("common.signIn")} onPress={() => router.push("/(auth)/login")} />
+          <Button
+            title={t("common.createAccount")}
+            variant="outline"
+            onPress={() => router.push("/(auth)/signup")}
+          />
+        </View>
+      </Screen>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.listScreen} edges={["top"]}>
+      <FlatList
+        data={bookings ?? []}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      ListHeaderComponent={
+        <>
+          <CustomerTabTitleHeader title={t("bookings.title")} subtitle={t("bookings.subtitle")} />
+          <View style={styles.body}>
+            <SectionHeader
+              title={t("bookings.allAppointments")}
+              actionLabel={isRefetching ? t("common.updating") : t("common.refresh")}
+              onAction={() => refetch()}
+            />
+            {isLoading ? (
+              <View style={styles.center}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : null}
+          </View>
+        </>
+      }
+      ListEmptyComponent={
+        !isLoading ? (
+          error ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>{t("home.loadErrorTitle")}</Text>
+              <Text style={styles.emptyText}>{t("home.loadErrorText")}</Text>
+              <Button title={t("common.tryAgain")} onPress={() => refetch()} />
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Text style={styles.emptyEmoji}>📋</Text>
+              <Text style={styles.emptyTitle}>{t("bookings.emptyTitle")}</Text>
+              <Text style={styles.emptyText}>{t("bookings.emptyText")}</Text>
+              <Button title={t("bookings.exploreServices")} onPress={() => router.push("/(app)/(tabs)")} />
+            </View>
+          )
+        ) : null
+      }
+      renderItem={({ item: booking }) => {
+        const isPassed = isPassedPendingBooking(booking);
+        const statusStyle = isPassed ? PASSED_STATUS_STYLE : STATUS_STYLES[booking.status];
+        const canReview = booking.status === "completed" && !reviewedIds?.has(booking.id);
+        const showingReview = reviewBookingId === booking.id;
+
+        return (
+          <View style={styles.card}>
+            <View style={[styles.accentBar, { backgroundColor: statusStyle.accent }]} />
+            <View style={styles.cardContent}>
+            <View style={styles.cardTop}>
+              <Text style={styles.serviceName}>{booking.services?.name ?? "Service"}</Text>
+              <View style={[styles.badge, { backgroundColor: statusStyle.bg }]}>
+                <Text style={[styles.badgeText, { color: statusStyle.text }]}>
+                  {isPassed ? t("bookings.status.passed") : t(`bookings.status.${booking.status}`)}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.businessName}>{booking.businesses?.name ?? t("confirmation.business")}</Text>
+            <DualDateTime iso={booking.scheduled_at} compact />
+            {booking.businesses?.address || booking.businesses?.city ? (
+              <Text style={styles.meta}>📍 {booking.businesses.address ?? booking.businesses.city}</Text>
+            ) : null}
+            <Text style={styles.price}>{formatBookingPrice(booking, t)}</Text>
+
+            {canReview && showingReview && user ? (
+              <ReviewForm
+                businessId={booking.business_id}
+                customerId={user.id}
+                bookingId={booking.id}
+                serviceLabel={booking.services?.name ?? undefined}
+                onSuccess={() => {
+                  setReviewBookingId(null);
+                  queryClient.invalidateQueries({ queryKey: ["reviewed-booking-ids"] });
+                  queryClient.invalidateQueries({ queryKey: ["business-reviews"] });
+                  queryClient.invalidateQueries({ queryKey: ["business-review-summary"] });
+                  refetch();
+                }}
+              />
+            ) : null}
+
+            {canReview && !showingReview ? (
+              <Button
+                title={t("bookings.leaveReview")}
+                variant="outline"
+                onPress={() => setReviewBookingId(booking.id)}
+                style={styles.reviewBtn}
+              />
+            ) : null}
+
+            <BookingCancelAction
+              bookingId={booking.id}
+              scheduledAt={booking.scheduled_at}
+              status={booking.status}
+              businessName={booking.businesses?.name ?? t("confirmation.business")}
+              cancellationHours={booking.businesses?.cancellation_hours ?? DEFAULT_CANCELLATION_HOURS}
+              onCancelled={() => {
+                queryClient.invalidateQueries({ queryKey: ["customer-bookings"] });
+                queryClient.invalidateQueries({ queryKey: ["available-slots"] });
+                refetch();
+              }}
+            />
+            </View>
+          </View>
+        );
+      }}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  body: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 24 },
+  listScreen: { flex: 1, backgroundColor: colors.screenBg },
+  listContent: { paddingBottom: 24, flexGrow: 1 },
+  guest: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    gap: 14,
+  },
+  guestEmoji: { fontSize: 52, marginBottom: 8 },
+  guestTitle: { ...typography.h2, color: colors.text },
+  guestText: { ...typography.body, color: colors.textSecondary, textAlign: "center", lineHeight: 21 },
+  center: { alignItems: "center", paddingVertical: 48 },
+  empty: { alignItems: "center", paddingVertical: 56, gap: 12, paddingHorizontal: 16 },
+  emptyEmoji: { fontSize: 44 },
+  emptyTitle: { ...typography.h3, color: colors.text },
+  emptyText: { ...typography.body, color: colors.textSecondary, textAlign: "center", lineHeight: 21 },
+  card: {
+    flexDirection: "row",
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    marginBottom: 12,
+    marginHorizontal: 16,
+    overflow: "hidden",
+    ...shadows.sm,
+  },
+  accentBar: {
+    width: 4,
+  },
+  cardContent: {
+    flex: 1,
+    padding: 16,
+    gap: 5,
+  },
+  cardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  serviceName: { fontSize: 15, fontWeight: "600", color: colors.text, flex: 1 },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+  },
+  badgeText: { fontSize: 10, fontWeight: "700", textTransform: "capitalize" },
+  businessName: { fontSize: 13, color: colors.primary, fontWeight: "500" },
+  meta: { ...typography.small, color: colors.textSecondary },
+  price: { ...typography.bodyMedium, color: colors.text, marginTop: 4 },
+  reviewBtn: { marginTop: 10 },
+});

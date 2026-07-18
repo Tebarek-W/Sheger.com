@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
-import { colors, radius } from "@/constants/theme";
+import { ownerLayout } from "@/constants/owner-layout";
+import { colors, radius, shadows, typography } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
 import { createEmployee, fetchMyEmployees, updateEmployee } from "@/lib/api/owner";
 import { getErrorMessage } from "@/lib/errors";
 
 export default function OwnerEmployeesScreen() {
+  const { t } = useI18n();
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
   const [fullName, setFullName] = useState("");
@@ -35,7 +38,7 @@ export default function OwnerEmployeesScreen() {
       setFullName("");
       setRole("");
     },
-    onError: (e) => Alert.alert("Error", getErrorMessage(e)),
+    onError: (e) => Alert.alert(t("common.error"), getErrorMessage(e)),
   });
 
   const toggleMutation = useMutation({
@@ -47,17 +50,34 @@ export default function OwnerEmployeesScreen() {
 
   return (
     <Screen scroll>
-      <Header title="Employees" subtitle="Staff who can take bookings" showBack />
+      <Header
+        title={t("owner.screens.employees.title")}
+        subtitle={t("owner.screens.employees.subtitle")}
+        showBack
+      />
 
       <View style={styles.addCard}>
-        <Text style={styles.addTitle}>Add employee</Text>
-        <Input label="Full name" value={fullName} onChangeText={setFullName} placeholder="Abebe Kebede" />
-        <Input label="Role (optional)" value={role} onChangeText={setRole} placeholder="Barber, Stylist..." />
+        <Text style={styles.addTitle}>{t("owner.screens.employees.addTitle")}</Text>
+        <Input
+          label={t("owner.screens.employees.fullName")}
+          value={fullName}
+          onChangeText={setFullName}
+          placeholder={t("owner.screens.employees.fullNamePlaceholder")}
+        />
+        <Input
+          label={t("owner.screens.employees.roleOptional")}
+          value={role}
+          onChangeText={setRole}
+          placeholder={t("owner.screens.employees.rolePlaceholder")}
+        />
         <Button
-          title="Add employee"
+          title={t("owner.screens.employees.addButton")}
           onPress={() => {
             if (!fullName) {
-              Alert.alert("Missing name", "Enter the employee's name.");
+              Alert.alert(
+                t("owner.screens.employees.missingNameTitle"),
+                t("owner.screens.employees.missingNameMessage"),
+              );
               return;
             }
             addMutation.mutate();
@@ -66,24 +86,30 @@ export default function OwnerEmployeesScreen() {
         />
       </View>
 
-      <Text style={styles.sectionTitle}>Your team</Text>
+      <Text style={styles.sectionTitle}>{t("owner.screens.employees.yourTeam")}</Text>
       <View style={styles.list}>
         {employees?.map((emp) => (
           <View key={emp.id} style={styles.item}>
             <View style={styles.itemInfo}>
               <Text style={styles.itemName}>{emp.full_name}</Text>
               {emp.role ? <Text style={styles.itemMeta}>{emp.role}</Text> : null}
-              {!emp.is_active ? <Text style={styles.inactive}>Inactive</Text> : null}
+              {!emp.is_active ? (
+                <Text style={styles.inactive}>{t("owner.screens.employees.inactive")}</Text>
+              ) : null}
             </View>
             <Pressable
               onPress={() => toggleMutation.mutate({ id: emp.id, is_active: !emp.is_active })}
             >
-              <Text style={styles.toggle}>{emp.is_active ? "Deactivate" : "Activate"}</Text>
+              <Text style={styles.toggle}>
+                {emp.is_active
+                  ? t("owner.screens.employees.deactivate")
+                  : t("owner.screens.employees.activate")}
+              </Text>
             </Pressable>
           </View>
         ))}
         {!employees?.length ? (
-          <Text style={styles.muted}>No employees yet.</Text>
+          <Text style={styles.muted}>{t("owner.screens.employees.empty")}</Text>
         ) : null}
       </View>
     </Screen>
@@ -94,24 +120,26 @@ const styles = StyleSheet.create({
   addCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    gap: 12,
-    marginBottom: 24,
+    padding: ownerLayout.cardPadding,
+    gap: ownerLayout.cardGap,
+    marginBottom: ownerLayout.sectionGap,
+    ...shadows.sm,
   },
-  addTitle: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.primaryDarker, marginBottom: 12 },
-  list: { gap: 10, paddingBottom: 24 },
+  addTitle: { ...typography.h3, color: colors.primaryDarker },
+  sectionTitle: {
+    ...typography.h2,
+    color: colors.primaryDarker,
+    marginBottom: ownerLayout.sectionTitleBottom,
+  },
+  list: { gap: ownerLayout.listGap, paddingBottom: ownerLayout.bottomPadding },
   item: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: colors.white,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
+    padding: ownerLayout.cardPadding,
+    ...shadows.sm,
   },
   itemInfo: { flex: 1, gap: 4 },
   itemName: { fontSize: 16, fontWeight: "700", color: colors.primaryDarker },

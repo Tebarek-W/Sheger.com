@@ -1,0 +1,12 @@
+-- Optional: use a dedicated admin email on the web dashboard only.
+-- Demote a personal email so it can be used on the mobile app as customer.
+--
+-- Example (replace with your admin's personal email):
+-- UPDATE public.profiles
+-- SET role = 'customer'
+-- WHERE id = (SELECT id FROM auth.users WHERE email = 'tazahd54@gmail.com');
+--
+-- Then create or promote a separate admin account, e.g. admin@sheger.com:
+-- UPDATE public.profiles
+-- SET role = 'admin'
+-- WHERE id = (SELECT id FROM auth.users WHERE email = 'admin@sheger.com');

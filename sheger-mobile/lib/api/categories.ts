@@ -5,16 +5,34 @@ import type { Category } from "@/lib/types/database";
 
 type CategoryRow = Pick<Category, "id" | "name" | "slug">;
 
+function isMissingActiveColumn(error: { code?: string; message?: string }) {
+  return (
+    error.code === "PGRST204" ||
+    (error.message?.includes("is_active") ?? false)
+  );
+}
+
 async function fetchCategoriesViaClient(): Promise<CategoryRow[]> {
+  const activeQuery = await supabase
+    .from("categories")
+    .select("id, name, slug")
+    .eq("is_active", true)
+    .order("sort_order");
+
+  if (!activeQuery.error) {
+    return activeQuery.data ?? [];
+  }
+
+  if (!isMissingActiveColumn(activeQuery.error)) {
+    throw activeQuery.error;
+  }
+
   const { data, error } = await supabase
     .from("categories")
     .select("id, name, slug")
     .order("sort_order");
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data ?? [];
 }
 
@@ -31,7 +49,7 @@ async function fetchCategoriesViaRest(): Promise<CategoryRow[]> {
 
   try {
     const response = await appFetch(
-      `${url}/rest/v1/categories?select=id,name,slug&order=sort_order.asc`,
+      `${url}/rest/v1/categories?select=id,name,slug&is_active=eq.true&order=sort_order.asc`,
       {
         signal: controller.signal,
         headers: {
@@ -42,12 +60,30 @@ async function fetchCategoriesViaRest(): Promise<CategoryRow[]> {
       },
     );
 
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`Supabase HTTP ${response.status}: ${body}`);
+    if (response.ok) {
+      return (await response.json()) as CategoryRow[];
     }
 
-    return (await response.json()) as CategoryRow[];
+    const body = await response.text();
+    if (response.status === 400 && body.includes("is_active")) {
+      const fallback = await appFetch(
+        `${url}/rest/v1/categories?select=id,name,slug&order=sort_order.asc`,
+        {
+          signal: controller.signal,
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            Accept: "application/json",
+          },
+        },
+      );
+      if (!fallback.ok) {
+        throw new Error(`Supabase HTTP ${fallback.status}: ${await fallback.text()}`);
+      }
+      return (await fallback.json()) as CategoryRow[];
+    }
+
+    throw new Error(`Supabase HTTP ${response.status}: ${body}`);
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error("Supabase request timed out after 15 seconds");

@@ -1,13 +1,20 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Session, User } from "@supabase/supabase-js";
 import {
   createContext,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
+import {
+  isPushNotificationsSupported,
+} from "@/lib/notifications/push-support";
+import { removePushTokenForUser } from "@/lib/notifications/register";
+import { clearNotificationQueries } from "@/lib/notifications/query-keys";
 import { supabase } from "@/lib/supabase";
 import type { Profile } from "@/lib/types/database";
 
@@ -23,9 +30,12 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const notificationCleanupRef = useRef<(() => void) | null>(null);
+  const prevUserIdRef = useRef<string | undefined>(undefined);
 
   const loadProfile = async (userId: string) => {
     const { data } = await supabase
@@ -34,6 +44,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("id", userId)
       .maybeSingle();
     setProfile(data);
+    return data;
+  };
+
+  const setupPush = async (userId: string, role: Profile["role"] | undefined) => {
+    notificationCleanupRef.current?.();
+    notificationCleanupRef.current = null;
+
+    if (!isPushNotificationsSupported()) {
+      return;
+    }
+
+    const [{ setupNotificationHandlers }, { registerForPushNotifications, watchPushTokenRefresh }] =
+      await Promise.all([
+        import("@/lib/notifications/handler"),
+        import("@/lib/notifications/register"),
+      ]);
+
+    const handlerCleanup = await setupNotificationHandlers(role);
+    const tokenCleanup = await watchPushTokenRefresh(userId);
+    notificationCleanupRef.current = () => {
+      handlerCleanup();
+      tokenCleanup();
+    };
+    await registerForPushNotifications(userId);
   };
 
   const refreshProfile = async () => {
@@ -43,26 +77,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
       if (data.session?.user.id) {
-        loadProfile(data.session.user.id).finally(() => setLoading(false));
+        const loaded = await loadProfile(data.session.user.id);
+        await setupPush(data.session.user.id, loaded?.role);
+        setLoading(false);
       } else {
         setLoading(false);
       }
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, next) => {
+      const nextUserId = next?.user.id;
+      if (
+        prevUserIdRef.current &&
+        nextUserId &&
+        prevUserIdRef.current !== nextUserId
+      ) {
+        clearNotificationQueries(queryClient);
+      }
+      prevUserIdRef.current = nextUserId;
+
       setSession(next);
       if (next?.user.id) {
-        loadProfile(next.user.id);
+        const loaded = await loadProfile(next.user.id);
+        await setupPush(next.user.id, loaded?.role);
       } else {
+        notificationCleanupRef.current?.();
+        notificationCleanupRef.current = null;
+        clearNotificationQueries(queryClient);
         setProfile(null);
       }
       setLoading(false);
     });
 
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      listener.subscription.unsubscribe();
+      notificationCleanupRef.current?.();
+    };
   }, []);
 
   const value = useMemo(
@@ -72,11 +125,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       loading,
       signOut: async () => {
+        clearNotificationQueries(queryClient);
+        if (session?.user.id) {
+          await removePushTokenForUser(session.user.id);
+        }
         await supabase.auth.signOut();
       },
       refreshProfile,
     }),
-    [session, profile, loading],
+    [session, profile, loading, queryClient],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

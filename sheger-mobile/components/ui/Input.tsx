@@ -23,7 +23,7 @@ export function Input({ label, error, style, ...props }: InputProps) {
 
 const styles = StyleSheet.create({
   wrap: { gap: 6 },
-  label: { fontSize: 14, fontWeight: "600", color: colors.primaryDarker },
+  label: { fontSize: 13, fontWeight: "500", color: colors.textSecondary },
   input: {
     borderWidth: 1.5,
     borderColor: colors.border,

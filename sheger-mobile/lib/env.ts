@@ -58,35 +58,3 @@ export function isSupabaseConfigured(): boolean {
   const key = getSupabasePublishableKey();
   return Boolean(url && key && !isPlaceholder(url) && !isPlaceholder(key));
 }
-
-export function getSupabaseDiagnostics(): {
-  urlHost: string;
-  keyPrefix: string;
-  source: string;
-} {
-  const url = getSupabaseUrl();
-  const key = getSupabasePublishableKey();
-
-  let urlHost = "missing";
-  if (url) {
-    try {
-      urlHost = new URL(url).host;
-    } catch {
-      urlHost = "invalid-url";
-    }
-  }
-
-  const inlinedUrl = trimEnv(process.env.EXPO_PUBLIC_SUPABASE_URL);
-  const source =
-    inlinedUrl && !isPlaceholder(inlinedUrl)
-      ? "process.env"
-      : extra?.supabaseUrl && !isPlaceholder(extra.supabaseUrl)
-        ? "app.config.js"
-        : "placeholder/missing";
-
-  return {
-    urlHost,
-    keyPrefix: key ? `${key.slice(0, 12)}...` : "missing",
-    source,
-  };
-}

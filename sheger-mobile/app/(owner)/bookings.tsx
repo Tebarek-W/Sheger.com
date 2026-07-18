@@ -1,12 +1,36 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
+import { DualDateTime } from "@/components/ui/DualDateTime";
+import { Button } from "@/components/ui/Button";
 import { Header } from "@/components/ui/Header";
+import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
-import { colors, radius } from "@/constants/theme";
+import { ownerLayout } from "@/constants/owner-layout";
+import { colors, radius, shadows, typography } from "@/constants/theme";
+import { useI18n } from "@/hooks/useI18n";
 import { useOwnerBusiness } from "@/hooks/useOwnerBusiness";
-import { fetchMyBookings, updateOwnerBookingStatus } from "@/lib/api/owner";
+import {
+  completeOwnerBooking,
+  fetchMyBookings,
+  updateOwnerBookingStatus,
+  type OwnerBooking,
+} from "@/lib/api/owner";
 import { getErrorMessage } from "@/lib/errors";
+import {
+  formatBookingPrice,
+  requiresBookingFinalization,
+} from "@/lib/services/pricing";
+import { parseOptionalNumber } from "@/lib/services/validation";
 import type { BookingStatus } from "@/lib/types/database";
 
 const STATUS_COLORS: Record<BookingStatus, string> = {
@@ -16,9 +40,34 @@ const STATUS_COLORS: Record<BookingStatus, string> = {
   completed: colors.primaryDark,
 };
 
+function isPassedPendingBooking(booking: { status: BookingStatus; scheduled_at: string }) {
+  return booking.status === "pending" && new Date(booking.scheduled_at).getTime() < Date.now();
+}
+
+function customerDisplayName(booking: OwnerBooking, defaultCustomer: string) {
+  const name = booking.profiles?.full_name?.trim();
+  if (name) return name;
+  const phone = booking.profiles?.phone?.trim();
+  if (phone) return phone;
+  return defaultCustomer;
+}
+
+function bookingStatusLabel(
+  status: BookingStatus,
+  isPassed: boolean,
+  t: (key: string) => string,
+) {
+  if (isPassed) return t("owner.screens.bookings.passed");
+  return t(`bookings.status.${status}`);
+}
+
 export default function OwnerBookingsScreen() {
+  const { t } = useI18n();
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
+  const [completingBooking, setCompletingBooking] = useState<OwnerBooking | null>(null);
+  const [finalPrice, setFinalPrice] = useState("");
+  const [actualDuration, setActualDuration] = useState("");
 
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ["owner-bookings", business?.id],
@@ -34,114 +83,242 @@ export default function OwnerBookingsScreen() {
       queryClient.invalidateQueries({ queryKey: ["owner-bookings", business?.id] });
       queryClient.invalidateQueries({ queryKey: ["owner-stats", business?.id] });
     },
-    onError: (e) => Alert.alert("Error", getErrorMessage(e)),
+    onError: (e) => Alert.alert(t("common.error"), getErrorMessage(e)),
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: ({
+      id,
+      finalPrice: price,
+      actualDurationMinutes,
+    }: {
+      id: string;
+      finalPrice?: number | null;
+      actualDurationMinutes?: number | null;
+    }) =>
+      completeOwnerBooking(id, {
+        finalPrice: price,
+        actualDurationMinutes,
+      }),
+    onSuccess: () => {
+      setCompletingBooking(null);
+      setFinalPrice("");
+      setActualDuration("");
+      queryClient.invalidateQueries({ queryKey: ["owner-bookings", business?.id] });
+      queryClient.invalidateQueries({ queryKey: ["owner-stats", business?.id] });
+    },
+    onError: (e) => Alert.alert(t("common.error"), getErrorMessage(e)),
   });
 
   const act = (id: string, status: BookingStatus) => {
     mutation.mutate({ id, status });
   };
 
+  const openComplete = (booking: OwnerBooking) => {
+    if (requiresBookingFinalization(booking)) {
+      setCompletingBooking(booking);
+      setFinalPrice("");
+      setActualDuration(
+        booking.duration_model === "flexible" || booking.duration_model === "estimated"
+          ? String(booking.duration_minutes)
+          : "",
+      );
+      return;
+    }
+    act(booking.id, "completed");
+  };
+
+  const submitComplete = () => {
+    if (!completingBooking) return;
+    const parsedPrice = parseOptionalNumber(finalPrice);
+    if (
+      (completingBooking.pricing_model === "variable" ||
+        completingBooking.pricing_model === "range") &&
+      (parsedPrice == null || parsedPrice < 0)
+    ) {
+      Alert.alert(
+        t("owner.screens.bookings.finalPriceRequiredTitle"),
+        t("owner.screens.bookings.finalPriceRequiredMessage"),
+      );
+      return;
+    }
+
+    completeMutation.mutate({
+      id: completingBooking.id,
+      finalPrice: parsedPrice,
+      actualDurationMinutes: parseOptionalNumber(actualDuration),
+    });
+  };
+
+  const defaultCustomer = t("owner.screens.bookings.defaultCustomer");
+
   return (
-    <Screen scroll>
-      <Header
-        title="Bookings"
-        subtitle="Manage incoming appointments"
-        showBack
-      />
+    <>
+      <Screen style={styles.screen}>
+        <FlatList
+          data={bookings ?? []}
+          keyExtractor={(item) => item.id}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <>
+            <Header
+              title={t("owner.screens.bookings.title")}
+              subtitle={t("owner.screens.bookings.subtitle")}
+              showBack
+            />
+            <Pressable onPress={() => refetch()} style={styles.refresh}>
+              <Text style={styles.refreshText}>{t("owner.screens.bookings.refresh")}</Text>
+            </Pressable>
+            {isLoading ? (
+              <Text style={styles.muted}>{t("owner.screens.bookings.loading")}</Text>
+            ) : null}
+          </>
+        }
+        ListEmptyComponent={
+          !isLoading ? <Text style={styles.muted}>{t("owner.screens.bookings.empty")}</Text> : null
+        }
+        renderItem={({ item: booking }) => {
+          const isPassed = isPassedPendingBooking(booking);
+          const statusLabel = bookingStatusLabel(booking.status, isPassed, t);
+          const statusColor = isPassed ? colors.textMuted : STATUS_COLORS[booking.status];
 
-      <Pressable onPress={() => refetch()} style={styles.refresh}>
-        <Text style={styles.refreshText}>↻ Refresh availability</Text>
-      </Pressable>
-
-      {isLoading ? <Text style={styles.muted}>Loading bookings...</Text> : null}
-
-      <View style={styles.list}>
-        {bookings?.map((booking) => (
-          <View key={booking.id} style={styles.card}>
-            <View style={styles.cardTop}>
-              <Text style={styles.customer}>
-                {booking.profiles?.full_name ?? "Customer"}
+          return (
+            <View style={styles.card}>
+              <View style={[styles.accentBar, { backgroundColor: statusColor }]} />
+              <View style={styles.cardTop}>
+                <View style={styles.customerBlock}>
+                  <Text style={styles.customer}>{customerDisplayName(booking, defaultCustomer)}</Text>
+                  {booking.profiles?.phone?.trim() && booking.profiles?.full_name?.trim() ? (
+                    <Text style={styles.customerPhone}>{booking.profiles.phone}</Text>
+                  ) : null}
+                </View>
+                <Text style={[styles.status, { color: statusColor }]}>{statusLabel}</Text>
+              </View>
+              <Text style={styles.service}>
+                {booking.services?.name ?? t("owner.screens.bookings.defaultService")} ·{" "}
+                {formatBookingPrice(booking, t)}
               </Text>
-              <Text style={[styles.status, { color: STATUS_COLORS[booking.status] }]}>
-                {booking.status}
-              </Text>
+              <DualDateTime iso={booking.scheduled_at} compact />
+
+              <View style={styles.actions}>
+                {booking.status === "pending" ? (
+                  <>
+                    <Pressable
+                      style={styles.actionBtn}
+                      onPress={() => act(booking.id, "confirmed")}
+                    >
+                      <Text style={styles.actionPrimary}>{t("owner.screens.bookings.confirm")}</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.actionBtnOutline}
+                      onPress={() => act(booking.id, "cancelled")}
+                    >
+                      <Text style={styles.actionOutline}>{t("owner.screens.bookings.cancel")}</Text>
+                    </Pressable>
+                  </>
+                ) : null}
+                {booking.status === "confirmed" ? (
+                  <>
+                    <Pressable
+                      style={styles.actionBtn}
+                      onPress={() => openComplete(booking)}
+                    >
+                      <Text style={styles.actionPrimary}>{t("owner.screens.bookings.complete")}</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.actionBtnOutline}
+                      onPress={() => act(booking.id, "cancelled")}
+                    >
+                      <Text style={styles.actionOutline}>{t("owner.screens.bookings.cancel")}</Text>
+                    </Pressable>
+                  </>
+                ) : null}
+              </View>
             </View>
-            <Text style={styles.service}>
-              {booking.services?.name ?? "Service"} ·{" "}
-              {Number(booking.services?.price ?? 0).toFixed(0)} ETB
-            </Text>
-            <Text style={styles.when}>
-              {new Date(booking.scheduled_at).toLocaleString()}
-            </Text>
+          );
+        }}
+        />
+      </Screen>
 
-            <View style={styles.actions}>
-              {booking.status === "pending" ? (
-                <>
-                  <Pressable
-                    style={styles.actionBtn}
-                    onPress={() => act(booking.id, "confirmed")}
-                  >
-                    <Text style={styles.actionPrimary}>Confirm</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.actionBtnOutline}
-                    onPress={() => act(booking.id, "cancelled")}
-                  >
-                    <Text style={styles.actionOutline}>Cancel</Text>
-                  </Pressable>
-                </>
-              ) : null}
-              {booking.status === "confirmed" ? (
-                <>
-                  <Pressable
-                    style={styles.actionBtn}
-                    onPress={() => act(booking.id, "completed")}
-                  >
-                    <Text style={styles.actionPrimary}>Complete</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.actionBtnOutline}
-                    onPress={() => act(booking.id, "cancelled")}
-                  >
-                    <Text style={styles.actionOutline}>Cancel</Text>
-                  </Pressable>
-                </>
-              ) : null}
+      <Modal
+        visible={Boolean(completingBooking)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCompletingBooking(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{t("owner.screens.bookings.completeVisitTitle")}</Text>
+            <Text style={styles.modalText}>{t("owner.screens.bookings.completeVisitText")}</Text>
+            <Input
+              label={t("owner.screens.bookings.finalPrice")}
+              value={finalPrice}
+              onChangeText={setFinalPrice}
+              keyboardType="numeric"
+            />
+            <Input
+              label={t("owner.screens.bookings.actualDuration")}
+              value={actualDuration}
+              onChangeText={setActualDuration}
+              keyboardType="numeric"
+            />
+            <View style={styles.modalActions}>
+              <Button
+                title={t("common.cancel")}
+                variant="outline"
+                onPress={() => setCompletingBooking(null)}
+              />
+              <Button
+                title={t("owner.screens.bookings.complete")}
+                onPress={submitComplete}
+                loading={completeMutation.isPending}
+              />
             </View>
           </View>
-        ))}
-        {!bookings?.length && !isLoading ? (
-          <Text style={styles.muted}>No bookings yet.</Text>
-        ) : null}
-      </View>
-    </Screen>
+        </View>
+      </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  refresh: { marginBottom: 16 },
+  screen: { flex: 1 },
+  refresh: { marginBottom: ownerLayout.blockGap },
   refreshText: { color: colors.primary, fontWeight: "600", fontSize: 14 },
-  list: { gap: 12, paddingBottom: 24 },
+  list: { flex: 1 },
+  listContent: { gap: ownerLayout.listGap, paddingBottom: ownerLayout.bottomPadding },
   card: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    gap: 8,
+    padding: ownerLayout.cardPadding,
+    gap: ownerLayout.blockGap / 2,
+    overflow: "hidden",
+    ...shadows.sm,
   },
-  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  customer: { fontSize: 17, fontWeight: "700", color: colors.primaryDarker },
+  accentBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: radius.lg,
+    borderBottomLeftRadius: radius.lg,
+  },
+  cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
+  customerBlock: { flex: 1, gap: 2 },
+  customer: { ...typography.h3, color: colors.primaryDarker },
+  customerPhone: { fontSize: 12, color: colors.textSecondary },
   status: { fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
   service: { fontSize: 14, color: colors.primary, fontWeight: "600" },
-  when: { fontSize: 13, color: colors.textMuted },
-  actions: { flexDirection: "row", gap: 10, marginTop: 8 },
+  actions: { flexDirection: "row", gap: ownerLayout.listGap, marginTop: ownerLayout.blockGap / 2 },
   actionBtn: {
     flex: 1,
     backgroundColor: colors.primary,
     borderRadius: radius.md,
     paddingVertical: 10,
     alignItems: "center",
+    ...shadows.sm,
   },
   actionPrimary: { color: colors.white, fontWeight: "700", fontSize: 14 },
   actionBtnOutline: {
@@ -154,4 +331,20 @@ const styles = StyleSheet.create({
   },
   actionOutline: { color: colors.primary, fontWeight: "700", fontSize: 14 },
   muted: { color: colors.textMuted },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    padding: ownerLayout.sectionGap,
+  },
+  modalCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: ownerLayout.screenPadding,
+    gap: ownerLayout.cardGap,
+    ...shadows.lg,
+  },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: colors.primaryDarker },
+  modalText: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
+  modalActions: { flexDirection: "row", gap: ownerLayout.listGap, marginTop: 4 },
 });

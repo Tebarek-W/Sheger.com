@@ -1,5 +1,5 @@
-import { BookingActions } from "@/components/admin/BookingActions";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { formatBookingPrice } from "@/lib/services/pricing";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function BookingsPage() {
@@ -16,7 +16,7 @@ export default async function BookingsPage() {
     <div>
       <h1 className="text-3xl font-bold text-[var(--primary-dark)]">Bookings</h1>
       <p className="mt-2 text-[var(--muted)]">
-        View and update booking statuses across the platform.
+        View booking statuses across the platform.
       </p>
 
       <div className="mt-8 overflow-hidden rounded-2xl border border-[var(--border)]">
@@ -28,7 +28,7 @@ export default async function BookingsPage() {
               <th className="px-4 py-3 font-semibold">Service</th>
               <th className="px-4 py-3 font-semibold">When</th>
               <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Update</th>
+              <th className="px-4 py-3 font-semibold">Payment</th>
             </tr>
           </thead>
           <tbody>
@@ -46,8 +46,7 @@ export default async function BookingsPage() {
                     {(booking.services as { name: string } | null)?.name ?? "—"}
                   </p>
                   <p className="text-xs text-[var(--muted)]">
-                    ETB{" "}
-                    {(booking.services as { price: number } | null)?.price ?? 0}
+                    {formatBookingPrice(booking)}
                   </p>
                 </td>
                 <td className="px-4 py-3 text-[var(--muted)]">
@@ -57,7 +56,7 @@ export default async function BookingsPage() {
                   <StatusBadge status={booking.status} />
                 </td>
                 <td className="px-4 py-3">
-                  <BookingActions bookingId={booking.id} status={booking.status} />
+                  <StatusBadge status={booking.payment_status ?? "unknown"} />
                 </td>
               </tr>
             ))}
