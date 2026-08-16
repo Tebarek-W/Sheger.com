@@ -2,9 +2,10 @@ import { Redirect, router } from "expo-router";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ShegerLogoMark } from "@/components/welcome/ShegerLogoMark";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { WelcomeBackground } from "@/components/welcome/WelcomeBackground";
 import { WelcomeDivider } from "@/components/welcome/WelcomeDivider";
+import { APP_NAME } from "@/constants/brand";
 import { colors } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
@@ -33,8 +34,8 @@ export default function Index() {
 
       <SafeAreaView style={styles.safe}>
         <View style={styles.hero}>
-          <ShegerLogoMark />
-          <Text style={styles.wordmark}>sheger</Text>
+          <BrandLogo size={120} framed />
+          <Text style={styles.wordmark}>{APP_NAME}</Text>
           <View style={styles.taglineRow}>
             <Text style={styles.serviceBooking}>{t("welcome.serviceBooking").toUpperCase()}</Text>
             <Text style={styles.sparkle}> ✦</Text>
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     fontSize: 42,
-    fontWeight: "600",
+    fontWeight: "700",
     color: colors.white,
     letterSpacing: -1,
     marginBottom: 6,

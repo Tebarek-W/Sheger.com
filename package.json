@@ -11,6 +11,8 @@
     "db:wipe-staging": "npm run db:wipe-staging:storage && npm run db:wipe-staging:data",
     "db:types": "supabase gen types typescript --linked > supabase/types/database.ts && node scripts/sync-database-types.mjs",
     "db:types:sync": "node scripts/sync-database-types.mjs",
+    "functions:deploy:chapa": "supabase functions deploy chapa-initialize && supabase functions deploy chapa-charge",
+    "functions:deploy:chapa:all": "supabase functions deploy chapa-initialize && supabase functions deploy chapa-charge && supabase functions deploy chapa-verify && supabase functions deploy chapa-return --no-verify-jwt && supabase functions deploy chapa-callback --no-verify-jwt && supabase functions deploy chapa-webhook --no-verify-jwt && supabase functions deploy chapa-cancel",
     "ci:mobile": "cd sheger-mobile && npm ci && npx tsc --noEmit",
     "ci:admin": "cd sheger-admin && npm ci && npm run build",
     "ci": "npm run ci:mobile && npm run ci:admin"

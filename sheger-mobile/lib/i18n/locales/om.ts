@@ -44,7 +44,7 @@ export const om = {
     mustAgree: "Itti fufuuf Haala Tajaajilaa fi Imaammata Dhuunfaa fudhadhu.",
     sectionTitle: "Seera",
     supportTitle: "Deeggarsa qunnami",
-    supportSubject: "Deeggarsa Sheger",
+    supportSubject: "Deeggarsa ABORA",
     viewOnWebsite: "Marsariitii irratti ilaali",
   },
   tabs: {
@@ -72,8 +72,8 @@ export const om = {
     noAccount: "Akkaawuntii hin qabduu? Galmaa'i",
     hasAccount: "Akkaawuntii qabdaa? Seeni",
     createAccountTitle: "Akkaawuntii uumi",
-    joinCustomer: "Sheger waliin makamuun tajaajiloota salphaatti qabadhu",
-    listBusiness: "Daldala kee Sheger irratti galmeessi",
+    joinCustomer: "ABORA waliin makamuun tajaajiloota salphaatti qabadhu",
+    listBusiness: "Daldala kee ABORA irratti galmeessi",
     iAmA: "Ani",
     fullName: "Maqaa guutuu",
     phone: "Bilbila",
@@ -87,7 +87,7 @@ export const om = {
     loginFailed: "Seenuun hin milkoofne",
     signUpFailed: "Galmeen hin milkoofne",
     accountCreated: "Akkaawuntiin uumameera",
-    signInToRegister: "Daldala kee Sheger irratti galmeessuuf seeni.",
+    signInToRegister: "Daldala kee ABORA irratti galmeessuuf seeni.",
     canSignInNow: "Amma seenuu dandeessa.",
     invalidEmailMessage: "Imeelii sirrii galchi.",
     invalidPhoneMessage:
@@ -95,7 +95,7 @@ export const om = {
     forgotPassword: "Jecha iccitii dagattee?",
     forgotPasswordTitle: "Jecha iccitii deebisi",
     forgotPasswordSubtitle: "Imeelii akkaawuntii kee galchi; linkii deebisuu siif erginna.",
-    forgotPasswordEnterEmail: "Imeelii akkaawuntii Sheger kee galchi.",
+    forgotPasswordEnterEmail: "Imeelii akkaawuntii ABORA kee galchi.",
     sendResetLink: "Linkii deebisuu ergi",
     resetEmailSentTitle: "Imeelii kee ilaali",
     resetEmailSentMessage:
@@ -103,7 +103,7 @@ export const om = {
     resetFailed: "Jecha iccitii deebisuu hin dandeenye",
     backToSignIn: "Gara seenutti deebi'i",
     resetPasswordTitle: "Jecha iccitii haaraa filadhu",
-    resetPasswordSubtitle: "Jecha iccitii haaraa akkaawuntii Sheger keetiif galchi.",
+    resetPasswordSubtitle: "Jecha iccitii haaraa akkaawuntii ABORA keetiif galchi.",
     newPassword: "Jecha iccitii haaraa",
     confirmPassword: "Jecha iccitii mirkaneessi",
     saveNewPassword: "Jecha iccitii haaraa ol kaa'i",
@@ -115,17 +115,17 @@ export const om = {
     resetLinkExpired: "Linkiin deebisuu kun sirrii miti yookiin yeroon isaa darbeera. Haaraa gaafadhu.",
     signInToBook: {
       title: "Beellama qabachuuf seeni",
-      message: "Tajaajila kana Sheger irratti qabachuuf akkaawuntii uumi yookiin seeni.",
+      message: "Tajaajila kana ABORA irratti qabachuuf akkaawuntii uumi yookiin seeni.",
       notNow: "Amma miti",
     },
     accountBlocked: {
       title: "Akkaawuntii dhaabbateera",
-      subtitleNamed: "{{name}}, akkaawuntii Sheger kee dhaabbateera.",
-      subtitleGeneric: "Akkaawuntii Sheger kee dhaabbateera.",
+      subtitleNamed: "{{name}}, akkaawuntii ABORA kee dhaabbateera.",
+      subtitleGeneric: "Akkaawuntii ABORA kee dhaabbateera.",
       cardTitle: "Kun maali jechuudha",
       cardText:
         "Hanga bulchaan deebisuutti beellama qabachuu yookiin daldala bulchuu hin dandeessu. Akka keessummaatti ilaaluu dandeessa.",
-      footer: "Dogoggora ta'uu isaa yoo yaadde deeggarsa Sheger qunnami.",
+      footer: "Dogoggora ta'uu isaa yoo yaadde deeggarsa ABORA qunnami.",
     },
   },
   home: {
@@ -144,7 +144,7 @@ export const om = {
   },
   profile: {
     guestHint: "Ibsa kee fi beellamoota kee bulchuuf seeni",
-    defaultName: "Fayyadamaa Sheger",
+    defaultName: "Fayyadamaa ABORA",
     phone: "Bilbila",
     accountType: "Gosa akkaawuntii",
     memberSince: "Miseensa ta'e erga",
@@ -160,13 +160,13 @@ export const om = {
     privacy: "Imaammata Dhuunfaa",
     cancellation: "Haqi fi deebisuu",
     contactSupport: "Deeggarsa qunnami",
-    supportSubject: "Gaaffii deeggarsa Sheger",
+    supportSubject: "Gaaffii deeggarsa ABORA",
     deleteAccount: {
       title: "Akkaawuntii haqi",
       warning:
-        "Kun akkaawuntii Sheger kee fi daataa dhuunfaa kee dhaabbataatti haqa. Beellamoonni dhufan haqamu. Deebisuu hin danda'amu.",
+        "Kun akkaawuntii ABORA kee fi daataa dhuunfaa kee dhaabbataatti haqa. Beellamoonni dhufan haqamu. Deebisuu hin danda'amu.",
       ownerWarning:
-        "Kun akkaawuntii kee haqa fi tarree daldalaa kee Sheger irraa haqa. Beellamoonni dhufan haqamu. Deebisuu hin danda'amu.",
+        "Kun akkaawuntii kee haqa fi tarree daldalaa kee ABORA irraa haqa. Beellamoonni dhufan haqamu. Deebisuu hin danda'amu.",
       continue: "Itti fufi",
       confirmTitle: "Akkaawuntii dhaabbataatti haquu?",
       confirmMessage: "Akkaawuntii kee deebisuu hin dandeessu. Mirkanessuuf Haqi tuqi.",
@@ -175,7 +175,7 @@ export const om = {
       confirmAction: "Haqi",
       deleting: "Akkaawuntii haqaa jira…",
       doneTitle: "Akkaawuntii haqameera",
-      doneMessage: "Akkaawuntii Sheger kee haqameera.",
+      doneMessage: "Akkaawuntii ABORA kee haqameera.",
       failedTitle: "Akkaawuntii haquun hin danda'amne",
     },
   },
@@ -379,7 +379,7 @@ export const om = {
     titleFallback: "Daldaloota",
     subtitle: "Bakka naannoo kee fili",
     emptyTitle: "Daldalli ammatti hin jiru",
-    emptyText: "Daldalli mirkanaa'e asitti mul'ata. Tajaajila kennituu Sheger waliin makamuu isaa gaafadhu.",
+    emptyText: "Daldalli mirkanaa'e asitti mul'ata. Tajaajila kennituu ABORA waliin makamuu isaa gaafadhu.",
     defaultCity: "Finfinnee",
   },
   notifications: {
@@ -391,7 +391,7 @@ export const om = {
     emptyText: "Mirkaneessa beellamaa, yaadachiisa, fi haquu asitti argita.",
   },
   customer: {
-    defaultCustomer: "Maamila Sheger",
+    defaultCustomer: "Maamila ABORA",
     starRating: {
       new: "Haaraa",
       formatted: "{{average}} ({{count}})",

@@ -3,10 +3,14 @@ import {
   buildChapaCallbackUrl,
   buildChapaReturnUrl,
   chapaCancel,
+  chapaDirectCharge,
+  chapaInitialize,
   chapaMode,
   sanitizeChapaText,
   splitFullName,
   supabaseFunctionsBaseUrl,
+  type ChapaDirectChargeResult,
+  type ChapaDirectChargeType,
   type ChapaSplitSubaccount,
 } from "./chapa.ts";
 
@@ -116,6 +120,119 @@ export function buildBookingChapaSubaccountSplit(
     split_type: "percentage",
     split_value: split.commission_rate,
   };
+}
+
+/** Chapa processing fee estimate used for split viability (6% with 6 ETB floor). */
+export function estimateChapaProcessingFeeEtb(amountEtb: number): number {
+  const amount = Math.max(Number(amountEtb) || 0, 0);
+  return Math.max(6, Math.ceil(amount * 0.06 * 100) / 100);
+}
+
+export function isAutoSplitViable(amountEtb: number, commissionRate: number): boolean {
+  const amount = Math.max(Number(amountEtb) || 0, 0);
+  const rate = Number(commissionRate);
+  if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(rate) || rate < 0) {
+    return false;
+  }
+  const commission = Math.round(amount * rate * 100) / 100;
+  return commission >= estimateChapaProcessingFeeEtb(amount);
+}
+
+function isChapaSplitRejection(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("split_value") ||
+    lower.includes("subaccounts") ||
+    lower.includes("transaction fee") ||
+    lower.includes("split payment") ||
+    lower.includes("merchant fee") ||
+    lower.includes("merchant's share")
+  );
+}
+
+type BookingInitializePayload = Omit<Parameters<typeof chapaInitialize>[0], "subaccounts">;
+
+/**
+ * Initialize hosted checkout with Chapa split payment. If Chapa rejects the
+ * split (platform commission too small to cover their fee on this amount), fall
+ * back to subaccount defaults then merchant-only settlement so checkout opens.
+ * @see https://developer.chapa.co/integrations/split-payment
+ */
+export async function chapaInitializeBookingWithSplit(
+  payload: BookingInitializePayload,
+  split: BookingSplit,
+  chapaSubaccountId: string,
+): Promise<{ checkout_url: string; split_mode: string }> {
+  const attempts: Array<{ mode: string; subaccounts?: ChapaSplitSubaccount }> = [
+    {
+      mode: "percentage_override",
+      subaccounts: buildBookingChapaSubaccountSplit(split, chapaSubaccountId),
+    },
+    { mode: "subaccount_default", subaccounts: { id: chapaSubaccountId } },
+    { mode: "merchant_only" },
+  ];
+
+  let lastError: Error | null = null;
+
+  for (const attempt of attempts) {
+    try {
+      const initPayload = attempt.subaccounts
+        ? { ...payload, subaccounts: attempt.subaccounts }
+        : payload;
+      const result = await chapaInitialize(initPayload);
+      return { checkout_url: result.checkout_url, split_mode: attempt.mode };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (!isChapaSplitRejection(lastError.message)) {
+        throw lastError;
+      }
+      console.warn("chapaInitializeBookingWithSplit:", attempt.mode, lastError.message);
+    }
+  }
+
+  throw lastError ?? new Error("Chapa initialize failed");
+}
+
+type BookingDirectChargePayload = Omit<
+  Parameters<typeof chapaDirectCharge>[1],
+  "subaccounts"
+>;
+
+/** Same split fallback chain as hosted checkout, for direct wallet charges. */
+export async function chapaDirectChargeBookingWithSplit(
+  chargeType: ChapaDirectChargeType,
+  payload: BookingDirectChargePayload,
+  split: BookingSplit,
+  chapaSubaccountId: string,
+): Promise<{ result: ChapaDirectChargeResult; split_mode: string }> {
+  const attempts: Array<{ mode: string; subaccounts?: ChapaSplitSubaccount }> = [
+    {
+      mode: "percentage_override",
+      subaccounts: buildBookingChapaSubaccountSplit(split, chapaSubaccountId),
+    },
+    { mode: "subaccount_default", subaccounts: { id: chapaSubaccountId } },
+    { mode: "merchant_only" },
+  ];
+
+  let lastError: Error | null = null;
+
+  for (const attempt of attempts) {
+    try {
+      const chargePayload = attempt.subaccounts
+        ? { ...payload, subaccounts: attempt.subaccounts }
+        : payload;
+      const result = await chapaDirectCharge(chargeType, chargePayload);
+      return { result, split_mode: attempt.mode };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (!isChapaSplitRejection(lastError.message)) {
+        throw lastError;
+      }
+      console.warn("chapaDirectChargeBookingWithSplit:", attempt.mode, lastError.message);
+    }
+  }
+
+  throw lastError ?? new Error("Chapa direct charge failed");
 }
 
 export async function prepareBookingChapaPayment(

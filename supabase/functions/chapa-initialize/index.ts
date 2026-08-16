@@ -1,8 +1,8 @@
 import {
   BookingPaymentError,
-  buildBookingChapaSubaccountSplit,
   cancelStaleDraftCheckouts,
   cancelStaleInitializedCheckout,
+  chapaInitializeBookingWithSplit,
   findReusableHostedCheckout,
   insertBookingDraftPaymentTransaction,
   insertBookingPaymentTransaction,
@@ -14,7 +14,6 @@ import {
 } from "../_shared/chapa-booking-payment.ts";
 import {
   buildChapaReturnUrl,
-  chapaInitialize,
   formatChapaAmount,
   normalizeChapaPhone,
   supabaseFunctionsBaseUrl,
@@ -95,41 +94,41 @@ Deno.serve(async (req) => {
       prepared = await prepareBookingChapaPayment(supabase, user.id, bookingId!);
     }
 
-    const initResult = await chapaInitialize({
-      amount: formatChapaAmount(prepared.amount),
-      currency: "ETB",
-      email: prepared.email,
-      first_name: prepared.firstName,
-      last_name: prepared.lastName,
-      tx_ref: prepared.txRef,
-      phone_number: normalizeChapaPhone(prepared.phone),
-      callback_url: prepared.callbackUrl,
-      return_url: prepared.returnUrl,
-      customization: {
-        title: "Sheger",
-        description: `${prepared.serviceLabel} at ${prepared.businessLabel}`,
-      },
-      meta: {
-        booking_id: isDraft ? null : (prepared as PreparedBookingPayment).bookingId,
-        customer_id: prepared.customerId,
-        purpose: "booking",
-        payment_reason: `Sheger booking — ${prepared.serviceLabel}`,
-        invoices: [
-          { key: prepared.serviceLabel, value: "1 appointment" },
-          { key: prepared.businessLabel, value: formatChapaAmount(prepared.amount) + " ETB" },
-        ],
-        split: {
-          commission_rate: prepared.split.commission_rate,
-          commission_amount_etb: prepared.split.commission_amount_etb,
-          owner_net_etb: prepared.split.owner_net_etb,
-          chapa_subaccount_id: prepared.chapaSubaccountId,
+    const initResult = await chapaInitializeBookingWithSplit(
+      {
+        amount: formatChapaAmount(prepared.amount),
+        currency: "ETB",
+        email: prepared.email,
+        first_name: prepared.firstName,
+        last_name: prepared.lastName,
+        tx_ref: prepared.txRef,
+        phone_number: normalizeChapaPhone(prepared.phone),
+        callback_url: prepared.callbackUrl,
+        return_url: prepared.returnUrl,
+        customization: {
+          title: "ABORA",
+          description: `${prepared.serviceLabel} at ${prepared.businessLabel}`,
+        },
+        meta: {
+          booking_id: isDraft ? null : (prepared as PreparedBookingPayment).bookingId,
+          customer_id: prepared.customerId,
+          purpose: "booking",
+          payment_reason: `ABORA booking — ${prepared.serviceLabel}`,
+          invoices: [
+            { key: prepared.serviceLabel, value: "1 appointment" },
+            { key: prepared.businessLabel, value: formatChapaAmount(prepared.amount) + " ETB" },
+          ],
+          split: {
+            commission_rate: prepared.split.commission_rate,
+            commission_amount_etb: prepared.split.commission_amount_etb,
+            owner_net_etb: prepared.split.owner_net_etb,
+            chapa_subaccount_id: prepared.chapaSubaccountId,
+          },
         },
       },
-      subaccounts: buildBookingChapaSubaccountSplit(
-        prepared.split,
-        prepared.chapaSubaccountId,
-      ),
-    });
+      prepared.split,
+      prepared.chapaSubaccountId,
+    );
 
     if (isDraft) {
       const draftResult = await insertBookingDraftPaymentTransaction(
@@ -138,6 +137,7 @@ Deno.serve(async (req) => {
         {
           checkout_url: initResult.checkout_url,
           payment_flow: "hosted_checkout",
+          split_mode: initResult.split_mode,
         },
       );
 
@@ -156,6 +156,7 @@ Deno.serve(async (req) => {
       {
         checkout_url: initResult.checkout_url,
         payment_flow: "hosted_checkout",
+        split_mode: initResult.split_mode,
       },
     );
 

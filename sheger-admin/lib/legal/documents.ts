@@ -16,11 +16,11 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
   terms: {
     id: "terms",
     title: "Terms of Service",
-    description: "Terms governing use of the Sheger mobile app and marketplace.",
+    description: "Terms governing use of the ABORA mobile app and marketplace.",
     sections: [
       {
-        heading: "1. About Sheger",
-        body: "Sheger is a marketplace that connects customers with local service businesses in Ethiopia (such as salons, barbershops, clinics, and similar providers). These Terms of Service govern your use of the Sheger mobile application and related services.",
+        heading: "1. About ABORA",
+        body: "ABORA is a marketplace that connects customers with local service businesses in Ethiopia (such as salons, barbershops, clinics, and similar providers). These Terms of Service govern your use of the ABORA mobile application and related services.",
       },
       {
         heading: "2. Accounts",
@@ -28,27 +28,27 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
       },
       {
         heading: "3. Bookings",
-        body: "When you book a service, you enter into an appointment arrangement with the business, facilitated by Sheger. Businesses set their own services, prices, hours, and availability. Sheger does not guarantee that a business will accept, confirm, or complete every booking.",
+        body: "When you book a service, you enter into an appointment arrangement with the business, facilitated by ABORA. Businesses set their own services, prices, hours, and availability. ABORA does not guarantee that a business will accept, confirm, or complete every booking.",
       },
       {
         heading: "4. Payments",
-        body: "Fixed-price and minimum (“from”) amounts may be paid online through Chapa. Flexible-price services may require a minimum payment online, with any remaining balance paid at the business. Online payments are processed by Chapa; Sheger does not store your full card or wallet credentials. Platform commission may be deducted from amounts paid to businesses according to their subscription plan.",
+        body: "Fixed-price and minimum (“from”) amounts may be paid online through Chapa. Flexible-price services may require a minimum payment online, with any remaining balance paid at the business. Online payments are processed by Chapa; ABORA does not store your full card or wallet credentials. Platform commission may be deducted from amounts paid to businesses according to their subscription plan.",
       },
       {
         heading: "5. Cancellations and refunds",
-        body: "Cancellation windows are set by each business and shown before you confirm. Refunds for online payments (including minimum deposits) are handled according to the business’s policy, Sheger’s cancellation rules, and Chapa’s processes. Contact support promptly if you believe a refund is due.",
+        body: "Cancellation windows are set by each business and shown before you confirm. Refunds for online payments (including minimum deposits) are handled according to the business’s policy, ABORA’s cancellation rules, and Chapa’s processes. Contact support promptly if you believe a refund is due.",
       },
       {
         heading: "6. Acceptable use",
-        body: "You may not misuse the app, attempt unauthorized access, post false information, harass others, or use Sheger for unlawful purposes. We may suspend or terminate accounts that violate these Terms. You can report objectionable reviews in the app.",
+        body: "You may not misuse the app, attempt unauthorized access, post false information, harass others, or use ABORA for unlawful purposes. We may suspend or terminate accounts that violate these Terms. You can report objectionable reviews in the app.",
       },
       {
         heading: "7. Limitation of liability",
-        body: "Sheger provides a booking and payment facilitation platform. Service quality, safety, and outcomes are the responsibility of the business you book. To the fullest extent permitted by law, Sheger is not liable for indirect or consequential damages arising from bookings or services provided by third-party businesses.",
+        body: "ABORA provides a booking and payment facilitation platform. Service quality, safety, and outcomes are the responsibility of the business you book. To the fullest extent permitted by law, ABORA is not liable for indirect or consequential damages arising from bookings or services provided by third-party businesses.",
       },
       {
         heading: "8. Changes",
-        body: "We may update these Terms from time to time. Continued use of Sheger after changes means you accept the updated Terms. Material changes may be highlighted in the app.",
+        body: "We may update these Terms from time to time. Continued use of ABORA after changes means you accept the updated Terms. Material changes may be highlighted in the app.",
       },
       {
         heading: "9. Contact",
@@ -60,7 +60,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
     id: "privacy",
     title: "Privacy Policy",
     description:
-      "How Sheger collects, uses, and shares personal information in the mobile app and related services.",
+      "How ABORA collects, uses, and shares personal information in the mobile app and related services.",
     sections: [
       {
         heading: "1. Information we collect",
@@ -68,7 +68,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
       },
       {
         heading: "2. How we use information",
-        body: "We use your information to operate bookings, payments, notifications, customer support, fraud prevention, content moderation, and to improve Sheger. Business owners receive the booking details needed to fulfill appointments.",
+        body: "We use your information to operate bookings, payments, notifications, customer support, fraud prevention, content moderation, and to improve ABORA. Business owners receive the booking details needed to fulfill appointments.",
       },
       {
         heading: "3. Sharing",
@@ -95,11 +95,11 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
   business: {
     id: "business",
     title: "Business Terms",
-    description: "Terms for businesses listing and accepting bookings on Sheger.",
+    description: "Terms for businesses listing and accepting bookings on ABORA.",
     sections: [
       {
         heading: "1. Business accounts",
-        body: "If you register a business on Sheger, you represent that you are authorized to list that business, that your licenses and information are accurate, and that you will keep services, hours, and pricing up to date.",
+        body: "If you register a business on ABORA, you represent that you are authorized to list that business, that your licenses and information are accurate, and that you will keep services, hours, and pricing up to date.",
       },
       {
         heading: "2. Marketplace visibility",
@@ -107,7 +107,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
       },
       {
         heading: "3. Payouts and commission",
-        body: "Online customer payments are processed via Chapa. You must configure a valid payout account. Sheger may retain a platform commission according to your plan. Settlement timing and bank/wallet rules follow Chapa and your payout setup.",
+        body: "Online customer payments are processed via Chapa. You must configure a valid payout account. ABORA may retain a platform commission according to your plan. Settlement timing and bank/wallet rules follow Chapa and your payout setup.",
       },
       {
         heading: "4. Customer experience",
@@ -115,11 +115,11 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
       },
       {
         heading: "5. Prohibited conduct",
-        body: "You may not list illegal services, misrepresent pricing, circumvent platform fees, abuse customer data, or use Sheger in ways that harm customers or the marketplace.",
+        body: "You may not list illegal services, misrepresent pricing, circumvent platform fees, abuse customer data, or use ABORA in ways that harm customers or the marketplace.",
       },
       {
         heading: "6. Suspension",
-        body: "Sheger may suspend or remove listings that violate these Business Terms, fail compliance checks, or create risk for users or the platform. Deleting your owner account also removes your business listing from the marketplace.",
+        body: "ABORA may suspend or remove listings that violate these Business Terms, fail compliance checks, or create risk for users or the platform. Deleting your owner account also removes your business listing from the marketplace.",
       },
       {
         heading: "7. Contact",
@@ -130,7 +130,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
   cancellation: {
     id: "cancellation",
     title: "Cancellation & refunds",
-    description: "How cancellations and refunds work for Sheger bookings.",
+    description: "How cancellations and refunds work for ABORA bookings.",
     sections: [
       {
         heading: "1. Business cancellation windows",

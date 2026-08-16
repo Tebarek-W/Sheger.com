@@ -22,7 +22,7 @@ const CONFIRM_MESSAGES: Partial<
   },
   rejected: {
     title: "Reject this business?",
-    message: "The owner will not be able to operate on Sheger until they reapply or you approve later.",
+    message: "The owner will not be able to operate on ABORA until they reapply or you approve later.",
   },
   suspended: {
     title: "Suspend this business?",

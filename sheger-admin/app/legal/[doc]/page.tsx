@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { APP_NAME } from "@/constants/brand";
 import {
   isLegalDocId,
   LEGAL_DOC_IDS,
@@ -22,11 +23,11 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { doc: docParam } = await params;
   if (!isLegalDocId(docParam)) {
-    return { title: "Legal | Sheger" };
+    return { title: `Legal | ${APP_NAME}` };
   }
   const doc = LEGAL_DOCS[docParam];
   return {
-    title: `${doc.title} | Sheger`,
+    title: `${doc.title} | ${APP_NAME}`,
     description: doc.description,
   };
 }

@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { AuthBrandHeader } from "@/components/brand/AuthBrandHeader";
 import { Button } from "@/components/ui/Button";
 import { BookingHeader } from "@/components/ui/BookingHeader";
 import { Input } from "@/components/ui/Input";
@@ -69,11 +70,7 @@ export default function LoginScreen() {
 
   return (
     <Screen scroll backgroundColor={colors.screenBg}>
-      <View style={styles.header}>
-        <Text style={styles.brand}>sheger</Text>
-        <Text style={styles.title}>{t("auth.welcomeBack")}</Text>
-        <Text style={styles.subtitle}>{t("auth.signInSubtitle")}</Text>
-      </View>
+      <AuthBrandHeader title={t("auth.welcomeBack")} subtitle={t("auth.signInSubtitle")} />
 
       <View style={styles.card}>
         <BookingHeader title={t("auth.signInTitle")} backTo="/" />
@@ -107,21 +104,6 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
-  },
-  brand: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.primary,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: 8,
-  },
-  title: { fontSize: 24, fontWeight: "500", color: colors.text },
-  subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 4, lineHeight: 20 },
   card: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 24,

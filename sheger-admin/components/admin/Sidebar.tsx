@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { APP_NAME } from "@/constants/brand";
 import { createClient } from "@/lib/supabase/client";
 
 const links = [
@@ -30,9 +32,12 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)] p-6">
-      <div className="mb-10">
-        <p className="text-2xl font-extrabold text-[var(--primary-dark)]">Sheger</p>
-        <p className="text-sm text-[var(--muted)]">Admin Panel</p>
+      <div className="mb-10 flex items-center gap-3">
+        <BrandLogo size={36} />
+        <div>
+          <p className="text-2xl font-extrabold text-[var(--primary-dark)]">{APP_NAME}</p>
+          <p className="text-sm text-[var(--muted)]">Admin Panel</p>
+        </div>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1">

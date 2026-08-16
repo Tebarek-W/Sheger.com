@@ -56,8 +56,8 @@ function PaymentScreenContent() {
   const isDeposit = checkoutPrice?.isDeposit ?? false;
 
   const { data: chapaEligibility, isLoading: chapaEligibilityLoading } = useQuery({
-    queryKey: ["chapa-eligibility", business?.id],
-    queryFn: () => checkChapaBookingEligibility(business!.id),
+    queryKey: ["chapa-eligibility", business?.id, chargeableAmount],
+    queryFn: () => checkChapaBookingEligibility(business!.id, chargeableAmount),
     enabled: Boolean(business?.id && requiresOnlinePay),
   });
 
