@@ -164,7 +164,7 @@ export function isLegalDocId(value: string): value is LegalDocId {
 
 export const LEGAL_LAST_UPDATED = "July 2026";
 export const SUPPORT_EMAIL =
-  process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "support@sheger.com";
+  process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "support@abora.com";
 
 export function interpolateLegalBody(body: string, supportEmail = SUPPORT_EMAIL) {
   return body.replaceAll("{{supportEmail}}", supportEmail);
