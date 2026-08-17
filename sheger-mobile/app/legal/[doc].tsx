@@ -5,7 +5,7 @@ import { Header } from "@/components/ui/Header";
 import { Screen } from "@/components/ui/Screen";
 import { colors } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
-import { isLegalDocId, LEGAL_DOCS } from "@/lib/legal/documents";
+import { interpolateLegalBody, isLegalDocId, LEGAL_DOCS } from "@/lib/legal/documents";
 import { getLegalDocUrl } from "@/lib/legal/urls";
 import { getSupportEmail, openSupportEmail } from "@/lib/support";
 
@@ -55,7 +55,7 @@ export default function LegalDocumentScreen() {
       {doc.sections.map((section) => (
         <View key={section.heading} style={styles.section}>
           <Text style={styles.heading}>{section.heading}</Text>
-          <Text style={styles.body}>{section.body}</Text>
+          <Text style={styles.body}>{interpolateLegalBody(section.body, supportEmail)}</Text>
         </View>
       ))}
       <Pressable onPress={onSupport} style={styles.support}>

@@ -1,14 +1,19 @@
+import { QueryError } from "@/components/admin/QueryError";
 import { ReviewReportActions } from "@/components/admin/ReviewReportActions";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ModerationPage() {
   const supabase = await createClient();
-  const { data: reports } = await supabase
+  const { data: reports, error } = await supabase
     .from("review_reports")
     .select("id, reason, status, created_at, review_id, reporter_id")
     .eq("status", "open")
     .order("created_at", { ascending: false })
     .limit(100);
+
+  if (error) {
+    return <QueryError title="Moderation" />;
+  }
 
   const rows = reports ?? [];
   const reviewIds = [...new Set(rows.map((r) => r.review_id))];

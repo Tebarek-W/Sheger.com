@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     if (txRef) {
       txnQuery = txnQuery.eq("tx_ref", txRef);
     } else {
-      txnQuery = txnQuery.eq("booking_id", bookingId!);
+      txnQuery = txnQuery.eq("booking_id", bookingId!).order("created_at", { ascending: false }).limit(1);
     }
 
     const { data: txn, error: txnError } = await txnQuery.maybeSingle();

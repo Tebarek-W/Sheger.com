@@ -90,6 +90,7 @@ export const am: TranslationTree = {
     accountCreated: "መለያ ተፈጥሯል",
     signInToRegister: "ንግድዎን በABORA ላይ ለመመዝገብ ይግቡ።",
     canSignInNow: "አሁን መግባት ይችላሉ።",
+    confirmEmailToSignIn: "መለያዎን ለማረጋገጥ ኢሜይልዎን ይመልከቱ፣ ከዚያ ይግቡ።",
     invalidEmailMessage: "ትክክለኛ ኢሜይል አድራሻ ያስገቡ።",
     invalidPhoneMessage:
       "ትክክለኛ የኢትዮጵያ ሞባይል ቁጥር ያስገቡ ለምሳሌ 09xxxxxxxx፣ 07xxxxxxxx፣ ወይም +2519xxxxxxxx።",
@@ -295,7 +296,7 @@ export const am: TranslationTree = {
     chapa: "ቻፓ",
     chapaDesc: "ኦንላይን ይክፈሉ — ቴሌብር፣ CBE ብር፣ ካርድ እና ሌሎች",
     chapaPayoutNotConfigured:
-      "ይህ ንግድ ኦንላይን ክፍያ ገቢ መቀበያ ገና አልተዋቀረም። ክፍያ እስኪዋቀር ድረስ ኦንላይን ቀጠሮ አይገኝም።",
+      "ይህ ንግድ ኦንላይን ክፍያ ገቢ መቀበያ ገና አልተዋቀረም። አሁንም መያዝ እና በጉብኝት መክፈል ይችላሉ።",
     flexiblePayNote:
       "የመጨረሻ ዋጋ በጉብኝትዎ ጊዜ ይረጋገጣል። ያለ ኦንላይን ክፍያ አሁን መያዝ ይችላሉ።",
     dueNow: "አሁን የሚከፈል",
@@ -303,10 +304,12 @@ export const am: TranslationTree = {
     depositNotice:
       "አሁን በቻፓ {{amount}} ይከፍላሉ። ይህ የመነሻ ዋጋ ነው — የመጨረሻው ዋጋ በጉብኝትዎ ከፍ ያለ ሊሆን ይችላል። የቀረው በንግዱ ይከፈላል።",
     chapaNote:
-      "ወደ ቻፓ ደህንነቱ የተጠበቀ የክፍያ ገጽ ይመራሉ። እያከፈሉ ሳለ የጊዜ ቦታዎ ለ2 ደቂቃ ይያዛል። ቀጠሮዎ የሚፈጠረው ክፍያ ከተረጋገጠ በኋላ ብቻ ነው።",
+      "ወደ ቻፓ ደህንነቱ የተጠበቀ የክፍያ ገጽ ይመራሉ። እያከፈሉ ሳለ የጊዜ ቦታዎ ለ15 ደቂቃ ይያዛል። ቀጠሮዎ የሚፈጠረው ክፍያ ከተረጋገጠ በኋላ ብቻ ነው።",
     chapaDepositNote:
-      "አሁን አነስተኛውን መጠን በቻፓ ይከፍላሉ። እያከፈሉ ሳለ ቦታዎ ለ2 ደቂቃ ይያዛል። የመጨረሻ ዋጋ በጉብኝት ከፍ ሊል ይችላል።",
-    slotHoldNote: "ይህ የጊዜ ቦታ ክፍያ እስክታጠናቅቁ ድረስ ለ2 ደቂቃ ለእርስዎ ተይዟል።",
+      "አሁን አነስተኛውን መጠን በቻፓ ይከፍላሉ። እያከፈሉ ሳለ ቦታዎ ለ15 ደቂቃ ይያዛል። የመጨረሻ ዋጋ በጉብኝት ከፍ ሊል ይችላል።",
+    slotHoldNote: "ይህ የጊዜ ቦታ ክፍያ እስክታጠናቅቁ ድረስ ለ15 ደቂቃ ለእርስዎ ተይዟል።",
+    holdExpiresIn: "ቦታው ለ{{seconds}} ሰከንድ ተይዟል",
+    holdExpired: "የቦታ ማስያዣ ጊዜ አልቋል። ተመልሰው ሰዓት እንደገና ይምረጡ።",
     checkout: {
       title: "ደህንነቱ የተጠበቀ ክፍያ",
       preparing: "ደህንነቱ የተጠበቀ ክፍያ በመዘጋጀት ላይ…",
@@ -815,6 +818,9 @@ export const am: TranslationTree = {
       photos: "ፎቶዎች",
     },
     openToday: "ዛሬ ክፍት",
+    closedToday: "ዛሬ ተዘግቷል",
+    closedNow: "አሁን ተዘግቷል",
+    hoursUnknown: "የስራ ሰዓት አልታወቀም",
     noServices: "ገና አገልግሎት አልተዘረዘረም።",
     defaultCity: "አዲስ",
   },

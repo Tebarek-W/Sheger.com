@@ -1,16 +1,21 @@
+import { QueryError } from "@/components/admin/QueryError";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatBookingPrice } from "@/lib/services/pricing";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function BookingsPage() {
   const supabase = await createClient();
-  const { data: bookings } = await supabase
+  const { data: bookings, error } = await supabase
     .from("bookings")
     .select(
       "*, businesses(name), services(name, price), profiles(full_name)",
     )
     .order("scheduled_at", { ascending: false })
     .limit(100);
+
+  if (error) {
+    return <QueryError title="Bookings" />;
+  }
 
   return (
     <div>

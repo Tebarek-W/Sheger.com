@@ -45,6 +45,7 @@ export function BusinessActions({
 }) {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   const requestAction = (next: BusinessStatus) => {
     const copy = CONFIRM_MESSAGES[next];
@@ -54,9 +55,14 @@ export function BusinessActions({
 
   const runConfirmAction = () => {
     if (!confirmAction) return;
+    setError(null);
     startTransition(async () => {
-      await updateBusinessStatus(businessId, confirmAction.status);
-      setConfirmAction(null);
+      try {
+        await updateBusinessStatus(businessId, confirmAction.status);
+        setConfirmAction(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not update business");
+      }
     });
   };
 
@@ -68,7 +74,10 @@ export function BusinessActions({
           message={confirmAction.message}
           pending={pending}
           onConfirm={runConfirmAction}
-          onCancel={() => setConfirmAction(null)}
+          onCancel={() => {
+            setConfirmAction(null);
+            setError(null);
+          }}
         />
       ) : null}
 
@@ -116,6 +125,7 @@ export function BusinessActions({
       {!canApprove && approveHint ? (
         <p className="text-xs text-amber-800">{approveHint}</p>
       ) : null}
+      {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </div>
   );
 }

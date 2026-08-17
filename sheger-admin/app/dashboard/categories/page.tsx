@@ -1,13 +1,18 @@
 import { CategoryManager } from "@/components/admin/CategoryManager";
+import { QueryError } from "@/components/admin/QueryError";
 import { createClient } from "@/lib/supabase/server";
 import type { Category } from "@/lib/types/database";
 
 export default async function CategoriesPage() {
   const supabase = await createClient();
-  const { data: categories } = await supabase
+  const { data: categories, error } = await supabase
     .from("categories")
     .select("*")
     .order("sort_order", { ascending: true });
+
+  if (error) {
+    return <QueryError title="Categories" />;
+  }
 
   const rows = (categories ?? []) as Category[];
   const visibilitySupported =

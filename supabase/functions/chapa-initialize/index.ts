@@ -1,5 +1,6 @@
 import {
   BookingPaymentError,
+  attachHostedCheckoutToTransaction,
   cancelStaleDraftCheckouts,
   cancelStaleInitializedCheckout,
   chapaInitializeBookingWithSplit,
@@ -8,12 +9,15 @@ import {
   insertBookingPaymentTransaction,
   prepareBookingChapaPayment,
   prepareBookingDraftChapaPayment,
+  rollbackUnattachedCheckout,
+  SLOT_HOLD_TTL_SECONDS,
   type BookingDraftInput,
   type PreparedBookingDraftPayment,
   type PreparedBookingPayment,
 } from "../_shared/chapa-booking-payment.ts";
 import {
   buildChapaReturnUrl,
+  chapaCancel,
   formatChapaAmount,
   normalizeChapaPhone,
   supabaseFunctionsBaseUrl,
@@ -94,76 +98,86 @@ Deno.serve(async (req) => {
       prepared = await prepareBookingChapaPayment(supabase, user.id, bookingId!);
     }
 
-    const initResult = await chapaInitializeBookingWithSplit(
-      {
-        amount: formatChapaAmount(prepared.amount),
-        currency: "ETB",
-        email: prepared.email,
-        first_name: prepared.firstName,
-        last_name: prepared.lastName,
-        tx_ref: prepared.txRef,
-        phone_number: normalizeChapaPhone(prepared.phone),
-        callback_url: prepared.callbackUrl,
-        return_url: prepared.returnUrl,
-        customization: {
-          title: "ABORA",
-          description: `${prepared.serviceLabel} at ${prepared.businessLabel}`,
-        },
-        meta: {
-          booking_id: isDraft ? null : (prepared as PreparedBookingPayment).bookingId,
-          customer_id: prepared.customerId,
-          purpose: "booking",
-          payment_reason: `ABORA booking — ${prepared.serviceLabel}`,
-          invoices: [
-            { key: prepared.serviceLabel, value: "1 appointment" },
-            { key: prepared.businessLabel, value: formatChapaAmount(prepared.amount) + " ETB" },
-          ],
-          split: {
-            commission_rate: prepared.split.commission_rate,
-            commission_amount_etb: prepared.split.commission_amount_etb,
-            owner_net_etb: prepared.split.owner_net_etb,
-            chapa_subaccount_id: prepared.chapaSubaccountId,
-          },
-        },
-      },
-      prepared.split,
-      prepared.chapaSubaccountId,
-    );
-
+    let holdExpiresAt: string | null = null;
     if (isDraft) {
       const draftResult = await insertBookingDraftPaymentTransaction(
         supabase,
         prepared as PreparedBookingDraftPayment,
-        {
-          checkout_url: initResult.checkout_url,
-          payment_flow: "hosted_checkout",
-          split_mode: initResult.split_mode,
-        },
+        { payment_flow: "hosted_checkout" },
       );
-
-      return jsonResponse({
-        checkout_url: initResult.checkout_url,
-        tx_ref: prepared.txRef,
-        return_url: prepared.returnUrl,
-        hold_expires_at: draftResult.holdExpiresAt,
-        hold_ttl_seconds: 120,
-      });
+      holdExpiresAt = draftResult.holdExpiresAt;
+    } else {
+      await insertBookingPaymentTransaction(
+        supabase,
+        prepared as PreparedBookingPayment,
+        { payment_flow: "hosted_checkout" },
+      );
     }
 
-    await insertBookingPaymentTransaction(
-      supabase,
-      prepared as PreparedBookingPayment,
-      {
-        checkout_url: initResult.checkout_url,
-        payment_flow: "hosted_checkout",
-        split_mode: initResult.split_mode,
-      },
-    );
+    let initResult: { checkout_url: string; split_mode: string };
+    try {
+      initResult = await chapaInitializeBookingWithSplit(
+        {
+          amount: formatChapaAmount(prepared.amount),
+          currency: "ETB",
+          email: prepared.email,
+          first_name: prepared.firstName,
+          last_name: prepared.lastName,
+          tx_ref: prepared.txRef,
+          phone_number: normalizeChapaPhone(prepared.phone),
+          callback_url: prepared.callbackUrl,
+          return_url: prepared.returnUrl,
+          customization: {
+            title: "ABORA",
+            description: `${prepared.serviceLabel} at ${prepared.businessLabel}`,
+          },
+          meta: {
+            booking_id: isDraft ? null : (prepared as PreparedBookingPayment).bookingId,
+            customer_id: prepared.customerId,
+            purpose: "booking",
+            payment_reason: `ABORA booking — ${prepared.serviceLabel}`,
+            invoices: [
+              { key: prepared.serviceLabel, value: "1 appointment" },
+              { key: prepared.businessLabel, value: formatChapaAmount(prepared.amount) + " ETB" },
+            ],
+            split: {
+              commission_rate: prepared.split.commission_rate,
+              commission_amount_etb: prepared.split.commission_amount_etb,
+              owner_net_etb: prepared.split.owner_net_etb,
+              chapa_subaccount_id: prepared.chapaSubaccountId,
+            },
+          },
+        },
+        prepared.split,
+        prepared.chapaSubaccountId,
+      );
+    } catch (initError) {
+      await rollbackUnattachedCheckout(supabase, prepared.txRef);
+      throw initError;
+    }
+
+    try {
+      await attachHostedCheckoutToTransaction(supabase, prepared, initResult);
+    } catch (attachError) {
+      await rollbackUnattachedCheckout(supabase, prepared.txRef);
+      try {
+        await chapaCancel(prepared.txRef);
+      } catch (cancelError) {
+        console.warn("chapa-initialize attach rollback:", prepared.txRef, cancelError);
+      }
+      throw attachError;
+    }
 
     return jsonResponse({
       checkout_url: initResult.checkout_url,
       tx_ref: prepared.txRef,
       return_url: prepared.returnUrl,
+      ...(isDraft
+        ? {
+            hold_expires_at: holdExpiresAt,
+            hold_ttl_seconds: SLOT_HOLD_TTL_SECONDS,
+          }
+        : {}),
     });
   } catch (error) {
     if (error instanceof BookingPaymentError) {

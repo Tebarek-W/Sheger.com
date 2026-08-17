@@ -331,7 +331,7 @@ export async function fetchMyBookings(businessId: string) {
 
   if (__DEV__ && error) {
     console.warn(
-      "[Sheger] list_business_booking_cards_page failed, using direct query:",
+      "[ABORA] list_business_booking_cards_page failed, using direct query:",
       error.message ?? error,
     );
   }
@@ -493,7 +493,7 @@ export async function fetchOwnerStats(businessId: string): Promise<OwnerStats> {
 
   if (__DEV__ && error) {
     console.warn(
-      "[Sheger] get_owner_booking_stats failed, using direct query:",
+      "[ABORA] get_owner_booking_stats failed, using direct query:",
       error instanceof Error ? error.message : error,
     );
   }

@@ -60,6 +60,20 @@ function normalizeMarketplaceRow(row: MarketplaceRow): MarketplaceBusiness {
   };
 }
 
+function marketplaceFallbackIsSafe(filters: MarketplaceFilters): boolean {
+  return (
+    !filters.cursor &&
+    !filters.query?.trim() &&
+    !filters.city?.trim() &&
+    filters.minRating == null &&
+    filters.priceMin == null &&
+    filters.priceMax == null &&
+    filters.latitude == null &&
+    filters.longitude == null &&
+    filters.radiusKm == null
+  );
+}
+
 async function fetchMarketplaceFallback(
   filters: MarketplaceFilters,
 ): Promise<MarketplacePage> {
@@ -133,9 +147,12 @@ export async function fetchMarketplaceBusinessesPage(
   });
 
   if (error) {
+    if (!marketplaceFallbackIsSafe(filters)) {
+      throw error;
+    }
     if (__DEV__) {
       console.warn(
-        "[Sheger] list_marketplace_businesses_page failed, using fallback:",
+        "[ABORA] list_marketplace_businesses_page failed, using fallback:",
         error.message ?? error,
       );
     }
@@ -143,6 +160,9 @@ export async function fetchMarketplaceBusinessesPage(
   }
 
   if (!data || !Array.isArray(data.rows)) {
+    if (!marketplaceFallbackIsSafe(filters)) {
+      throw new Error("Marketplace results are unavailable");
+    }
     return fetchMarketplaceFallback(filters);
   }
 

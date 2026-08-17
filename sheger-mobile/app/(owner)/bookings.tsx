@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -65,6 +66,10 @@ export default function OwnerBookingsScreen() {
   const { t } = useI18n();
   const { business } = useOwnerBusiness();
   const queryClient = useQueryClient();
+  const params = useLocalSearchParams<{ bookingId?: string | string[] }>();
+  const highlightBookingId = Array.isArray(params.bookingId)
+    ? params.bookingId[0]
+    : params.bookingId;
   const [completingBooking, setCompletingBooking] = useState<OwnerBooking | null>(null);
   const [finalPrice, setFinalPrice] = useState("");
   const [actualDuration, setActualDuration] = useState("");
@@ -184,7 +189,7 @@ export default function OwnerBookingsScreen() {
           const statusColor = isPassed ? colors.textMuted : STATUS_COLORS[booking.status];
 
           return (
-            <View style={styles.card}>
+            <View style={[styles.card, highlightBookingId === booking.id && styles.cardHighlight]}>
               <View style={[styles.accentBar, { backgroundColor: statusColor }]} />
               <View style={styles.cardTop}>
                 <View style={styles.customerBlock}>
@@ -295,6 +300,10 @@ const styles = StyleSheet.create({
     gap: ownerLayout.blockGap / 2,
     overflow: "hidden",
     ...shadows.sm,
+  },
+  cardHighlight: {
+    borderWidth: 1.5,
+    borderColor: colors.primary,
   },
   accentBar: {
     position: "absolute",

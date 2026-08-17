@@ -16,6 +16,7 @@ export {
   formatEtb,
   normalizeDashboardAnalytics,
   periodTotals,
+  readNumber,
 } from "./analytics-shared";
 
 export async function fetchDashboardAnalytics(): Promise<DashboardAnalytics | null> {

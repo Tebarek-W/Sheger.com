@@ -8,7 +8,8 @@ export function adminClient() {
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-internal-secret, x-cron-secret",
 };
 
 export function jsonResponse(body: unknown, status = 200) {

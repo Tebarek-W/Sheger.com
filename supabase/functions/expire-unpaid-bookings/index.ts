@@ -1,4 +1,5 @@
 import { chapaCancel } from "../_shared/chapa.ts";
+import { requireInternalSecret } from "../_shared/internal-auth.ts";
 import { adminClient, handleCors, jsonResponse } from "../_shared/supabase.ts";
 
 /**
@@ -9,6 +10,9 @@ import { adminClient, handleCors, jsonResponse } from "../_shared/supabase.ts";
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
+
+  const unauthorized = requireInternalSecret(req);
+  if (unauthorized) return unauthorized;
 
   try {
     const supabase = adminClient();
@@ -59,17 +63,16 @@ Deno.serve(async (req) => {
 
     // Deferred bookings never created a row, so they don't appear above. Their
     // abandoned checkout transactions still hold live Chapa links — expire them.
-    // Slot holds already expire after 2 minutes; draft payment rows linger longer
-    // so a slow Chapa page can still finalize (may become paid_unfulfilled).
+    // Slot holds last 15 minutes, matching this draft checkout cutoff.
     const draftCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     let draftsCancelled = 0;
 
     const { data: staleDrafts } = await supabase
       .from("payment_transactions")
       .select("id, tx_ref")
-      .eq("purpose", "booking")
-      .is("booking_id", null)
+      .in("purpose", ["booking", "subscription"])
       .eq("status", "initialized")
+      .or("booking_id.is.null,purpose.eq.subscription")
       .lt("created_at", draftCutoff);
 
     for (const draft of staleDrafts ?? []) {

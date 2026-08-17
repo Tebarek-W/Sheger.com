@@ -45,7 +45,7 @@ export type DashboardAnalytics = {
   topBusinesses: TopBusinessRow[];
 };
 
-function readNumber(value: unknown, fallback = 0): number {
+export function readNumber(value: unknown, fallback = 0): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }

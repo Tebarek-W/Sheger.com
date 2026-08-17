@@ -29,7 +29,7 @@ export function AuthDeepLinkHandler() {
         }
       } catch (error) {
         if (__DEV__) {
-          console.warn("[Sheger] password recovery deep link failed:", error);
+          console.warn("[ABORA] password recovery deep link failed:", error);
         }
         router.replace("/(auth)/forgot-password");
       } finally {

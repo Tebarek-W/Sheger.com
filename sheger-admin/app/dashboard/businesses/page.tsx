@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BusinessActions } from "@/components/admin/BusinessActions";
+import { QueryError } from "@/components/admin/QueryError";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { summarizeDocumentApproval } from "@/lib/documents/approval";
 import { createClient } from "@/lib/supabase/server";
@@ -8,10 +9,14 @@ import type { BusinessDocument } from "@/lib/types/database";
 
 export default async function BusinessesPage() {
   const supabase = await createClient();
-  const { data: businesses } = await supabase
+  const { data: businesses, error } = await supabase
     .from("businesses")
     .select("*, categories(name, slug), business_documents(document_type, status)")
     .order("created_at", { ascending: false });
+
+  if (error) {
+    return <QueryError title="Business approval" />;
+  }
 
   return (
     <div>

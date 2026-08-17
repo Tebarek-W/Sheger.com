@@ -9,13 +9,15 @@ import { BusinessReviewsTab } from "@/components/customer/BusinessReviewsTab";
 import { BusinessStaffTab } from "@/components/customer/BusinessStaffTab";
 import { ServiceCard } from "@/components/customer/ServiceCard";
 import { formatRating, StarRating } from "@/components/customer/StarRating";
-import { getCategoryIcon, getCategoryTheme } from "@/constants/categories";
+import { getCategoryIcon, getCategoryThemeBySlug } from "@/constants/categories";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
+import { fetchWorkingHours } from "@/lib/api/bookings";
 import { fetchBusinessById, fetchBusinessServices } from "@/lib/api/businesses";
 import { fetchBusinessReviewSummary } from "@/lib/api/reviews";
 import { promptLoginToBook, setBookingDraft } from "@/lib/auth-booking";
+import { addisToday, dayOfWeekInAddis, isOpenNow } from "@/lib/calendar/timezone";
 import { CUSTOMER_HOME, goBackSafely } from "@/lib/routing";
 
 const TAB_KEYS = ["services", "staff", "reviews", "photos"] as const;
@@ -73,6 +75,13 @@ export default function BusinessProfileScreen() {
     enabled: Boolean(id),
   });
 
+  const today = addisToday();
+  const { data: hours, isLoading: hoursLoading } = useQuery({
+    queryKey: ["working-hours", id, dayOfWeekInAddis(today)],
+    queryFn: () => fetchWorkingHours(id!, dayOfWeekInAddis(today)),
+    enabled: Boolean(id),
+  });
+
   const onBook = (serviceId: string) => {
     const service = services?.find((s) => s.id === serviceId);
     if (!business || !service) return;
@@ -105,8 +114,19 @@ export default function BusinessProfileScreen() {
 
   const slug = business.categories?.slug;
   const icon = getCategoryIcon(slug);
-  const theme = getCategoryTheme(0);
+  const theme = getCategoryThemeBySlug(slug);
   const ratingLabel = formatRating(reviewSummary?.average ?? null, reviewSummary?.count ?? 0, t);
+  const openState = isOpenNow(hours ?? null);
+  const hoursLabel = hoursLoading
+    ? null
+    : hours?.is_closed
+      ? t("business.closedToday")
+      : openState === true
+        ? t("business.openToday")
+        : openState === false
+          ? t("business.closedNow")
+          : t("business.hoursUnknown");
+  const hoursOpen = openState === true && !hours?.is_closed;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -124,9 +144,6 @@ export default function BusinessProfileScreen() {
           <Pressable onPress={() => goBackSafely(CUSTOMER_HOME)} style={[styles.heroBtn, styles.heroBtnLeft]}>
             <Text style={styles.heroBtnText}>←</Text>
           </Pressable>
-          <Pressable style={[styles.heroBtn, styles.heroBtnRight]}>
-            <Text style={styles.heroBtnText}>♡</Text>
-          </Pressable>
         </View>
 
         <View style={styles.card}>
@@ -141,9 +158,11 @@ export default function BusinessProfileScreen() {
             <Text style={styles.stat}>
               📍 {business.address ?? business.city ?? t("business.defaultCity")}
             </Text>
-            <View style={styles.openBadge}>
-              <Text style={styles.openText}>{t("business.openToday")}</Text>
-            </View>
+            {hoursLabel ? (
+              <View style={[styles.openBadge, !hoursOpen && styles.closedBadge]}>
+                <Text style={[styles.openText, !hoursOpen && styles.closedText]}>{hoursLabel}</Text>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.tabs}>
@@ -220,7 +239,6 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   heroBtnLeft: { left: 12 },
-  heroBtnRight: { right: 12 },
   heroBtnText: { color: colors.white, fontSize: 16 },
   backFab: {
     position: "absolute",
@@ -261,6 +279,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   openText: { fontSize: 11, fontWeight: "500", color: colors.primaryDark },
+  closedBadge: {
+    backgroundColor: colors.errorBg,
+  },
+  closedText: { color: colors.error },
   tabs: {
     flexDirection: "row",
     borderBottomWidth: StyleSheet.hairlineWidth,

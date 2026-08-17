@@ -9,6 +9,7 @@ import {
   LEGAL_DOCS,
   LEGAL_LAST_UPDATED,
   SUPPORT_EMAIL,
+  interpolateLegalBody,
   type LegalDocId,
 } from "@/lib/legal/documents";
 
@@ -50,7 +51,9 @@ export default async function LegalDocumentPage({ params }: PageProps) {
         {doc.sections.map((section) => (
           <section key={section.heading}>
             <h2 className="text-lg font-semibold text-[var(--primary-dark)]">{section.heading}</h2>
-            <p className="mt-2 text-[15px] leading-7 text-[var(--muted)]">{section.body}</p>
+            <p className="mt-2 text-[15px] leading-7 text-[var(--muted)]">
+              {interpolateLegalBody(section.body)}
+            </p>
           </section>
         ))}
       </div>

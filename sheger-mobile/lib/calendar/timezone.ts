@@ -28,6 +28,12 @@ export function addisToday(): Date {
   );
 }
 
+/** Minutes since midnight in Addis Ababa (UTC+3). */
+export function addisMinutesNow(): number {
+  const shifted = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  return shifted.getUTCHours() * 60 + shifted.getUTCMinutes();
+}
+
 /** Day-of-week (0=Sun) for a calendar day in Addis Ababa. */
 export function dayOfWeekInAddis(date: Date): number {
   const { year, month, day } = calendarDayParts(date);
@@ -71,6 +77,24 @@ export function parseTime24(hhmm: string): { hours: number; minutes: number } | 
   const minutes = Number(match[2]);
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
   return { hours, minutes };
+}
+
+/** Whether the business is open at this instant in Addis. `null` if hours are unusable. */
+export function isOpenNow(hours: {
+  is_closed: boolean;
+  open_time: string;
+  close_time: string;
+} | null): boolean | null {
+  if (!hours) return null;
+  if (hours.is_closed) return false;
+  const open = parseTime24(formatTimeFromDb(hours.open_time));
+  const close = parseTime24(formatTimeFromDb(hours.close_time));
+  if (!open || !close) return null;
+  const now = addisMinutesNow();
+  const openM = open.hours * 60 + open.minutes;
+  const closeM = close.hours * 60 + close.minutes;
+  if (closeM <= openM) return now >= openM || now < closeM;
+  return now >= openM && now < closeM;
 }
 
 export function normalizeTime24(hhmm: string): string | null {

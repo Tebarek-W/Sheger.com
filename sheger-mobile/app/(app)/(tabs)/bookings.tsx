@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -44,6 +44,10 @@ export default function BookingsScreen() {
   const { session, user } = useAuth();
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const params = useLocalSearchParams<{ bookingId?: string | string[] }>();
+  const highlightBookingId = Array.isArray(params.bookingId)
+    ? params.bookingId[0]
+    : params.bookingId;
   const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
 
   const { data: bookings, isLoading, error, refetch, isRefetching } = useQuery({
@@ -134,7 +138,7 @@ export default function BookingsScreen() {
         const showingReview = reviewBookingId === booking.id;
 
         return (
-          <View style={styles.card}>
+          <View style={[styles.card, highlightBookingId === booking.id && styles.cardHighlight]}>
             <View style={[styles.accentBar, { backgroundColor: statusStyle.accent }]} />
             <View style={styles.cardContent}>
             <View style={styles.cardTop}>
@@ -225,6 +229,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     overflow: "hidden",
     ...shadows.sm,
+  },
+  cardHighlight: {
+    borderWidth: 1.5,
+    borderColor: colors.primary,
   },
   accentBar: {
     width: 4,

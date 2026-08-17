@@ -5,7 +5,7 @@ import type { Coordinates } from "@/lib/location";
 // Usage policy: identify the app, keep requests light, max ~1 req/sec.
 // https://operations.osmfoundation.org/policies/nominatim/
 const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
-const APP_IDENTIFIER = "ShegerBooking/1.0 (https://sheger.app)";
+const APP_IDENTIFIER = "ABORA/1.0 (https://sheger.app)";
 
 // Bias results toward Ethiopia / Addis Ababa.
 const ETHIOPIA_VIEWBOX = "33,15,48,3"; // left,top,right,bottom

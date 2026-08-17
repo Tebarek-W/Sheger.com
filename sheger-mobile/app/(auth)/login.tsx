@@ -9,11 +9,9 @@ import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { colors } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
-import { getPendingBookingRoute } from "@/lib/auth-booking";
+import { redirectAfterAuth } from "@/lib/auth-booking";
 import { getErrorMessage } from "@/lib/errors";
-import { getHomeRouteForRole } from "@/lib/routing";
 import { supabase } from "@/lib/supabase";
-import type { UserRole } from "@/lib/types/database";
 import { isValidEmail, normalizeEmail } from "@/lib/validation/contact";
 
 export default function LoginScreen() {
@@ -44,28 +42,7 @@ export default function LoginScreen() {
       Alert.alert(t("auth.loginFailed"), getErrorMessage(error));
       return;
     }
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, is_blocked, full_name")
-      .eq("id", data.user.id)
-      .maybeSingle();
-    const role = profile?.role as UserRole | undefined;
-    if (profile?.is_blocked) {
-      await supabase.auth.signOut();
-      router.replace("/(auth)/account-blocked");
-      return;
-    }
-    if (role === "admin") {
-      await supabase.auth.signOut();
-      router.replace("/(auth)/admin-blocked");
-      return;
-    }
-    const pendingBook = getPendingBookingRoute();
-    if (pendingBook && role === "customer") {
-      router.replace(pendingBook);
-    } else {
-      router.replace(getHomeRouteForRole(role, profile));
-    }
+    await redirectAfterAuth(data.user.id);
   };
 
   return (

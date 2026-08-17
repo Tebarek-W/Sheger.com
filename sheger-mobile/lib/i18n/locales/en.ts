@@ -88,6 +88,8 @@ export const en = {
     accountCreated: "Account created",
     signInToRegister: "Sign in to register your business on ABORA.",
     canSignInNow: "You can now sign in.",
+    confirmEmailToSignIn:
+      "Check your email to confirm your account, then sign in.",
     invalidEmailMessage: "Enter a valid email address.",
     invalidPhoneMessage:
       "Enter a valid Ethiopian mobile number like 09xxxxxxxx, 07xxxxxxxx, or +2519xxxxxxxx.",
@@ -294,7 +296,7 @@ export const en = {
     chapa: "Chapa",
     chapaDesc: "Pay online — Telebirr, CBE Birr, cards & more",
     chapaPayoutNotConfigured:
-      "This business has not set up online payouts yet. Online booking is unavailable until payouts are configured.",
+      "This business has not set up online payouts yet. You can still book and pay at the visit.",
     flexiblePayNote:
       "Final price will be confirmed at your visit. You can book now without paying online.",
     dueNow: "Due now",
@@ -302,10 +304,12 @@ export const en = {
     depositNotice:
       "You will pay {{amount}} now via Chapa. This is the starting price — the final cost may be higher at your visit. Any remaining balance is paid at the business.",
     chapaNote:
-      "You will be redirected to Chapa's secure checkout. Your time slot is reserved for 2 minutes while you pay. The booking is created only after payment is confirmed.",
+      "You will be redirected to Chapa's secure checkout. Your time slot is reserved for 15 minutes while you pay. The booking is created only after payment is confirmed.",
     chapaDepositNote:
-      "You will pay the minimum amount on Chapa now. Your slot is reserved for 2 minutes while you pay. Final price may be higher at your visit.",
-    slotHoldNote: "This time slot is reserved for you for 2 minutes while you complete payment.",
+      "You will pay the minimum amount on Chapa now. Your slot is reserved for 15 minutes while you pay. Final price may be higher at your visit.",
+    slotHoldNote: "This time slot is reserved for you for 15 minutes while you complete payment.",
+    holdExpiresIn: "Slot reserved for {{seconds}}s",
+    holdExpired: "Your slot reservation expired. Go back and pick a time again.",
     checkout: {
       title: "Secure checkout",
       preparing: "Preparing secure checkout…",
@@ -825,6 +829,9 @@ export const en = {
       photos: "Photos",
     },
     openToday: "Open today",
+    closedToday: "Closed today",
+    closedNow: "Closed now",
+    hoursUnknown: "Hours unavailable",
     noServices: "No services listed yet.",
     defaultCity: "Addis",
   },

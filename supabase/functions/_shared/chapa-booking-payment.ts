@@ -72,6 +72,26 @@ export class BookingPaymentError extends Error {
   }
 }
 
+/** Matches Chapa hosted-checkout lifetime and expire-unpaid-bookings cutoff. */
+export const SLOT_HOLD_TTL_SECONDS = 15 * 60;
+
+/** Recorded settlement when Chapa could not run an automatic subaccount split. */
+export function settlementForSplitMode(
+  split: BookingSplit,
+  amountEtb: number,
+  splitMode: string,
+): BookingSplit {
+  if (splitMode === "merchant_only") {
+    const amount = Math.round(amountEtb * 100) / 100;
+    return {
+      commission_rate: 1,
+      commission_amount_etb: amount,
+      owner_net_etb: 0,
+    };
+  }
+  return split;
+}
+
 export function makeBookingTxRef(bookingId: string): string {
   const stamp = Date.now().toString(36);
   const shortId = bookingId.replace(/-/g, "").slice(0, 8);
@@ -494,6 +514,63 @@ export async function insertBookingDraftPaymentTransaction(
     paymentTxId: inserted.id,
     holdExpiresAt: holdRecord?.expires_at ?? null,
   };
+}
+
+export async function attachHostedCheckoutToTransaction(
+  supabase: SupabaseClient,
+  prepared: PreparedBookingPayment | PreparedBookingDraftPayment,
+  initResult: { checkout_url: string; split_mode: string },
+) {
+  const settled = settlementForSplitMode(
+    prepared.split,
+    prepared.amount,
+    initResult.split_mode,
+  );
+
+  const { data: existing, error: readError } = await supabase
+    .from("payment_transactions")
+    .select("id, metadata")
+    .eq("tx_ref", prepared.txRef)
+    .eq("status", "initialized")
+    .maybeSingle();
+
+  if (readError) throw readError;
+  if (!existing?.id) {
+    throw new Error("Payment transaction missing after checkout initialize");
+  }
+
+  const previous = (existing.metadata as Record<string, unknown> | null) ?? {};
+
+  const { error: updateError } = await supabase
+    .from("payment_transactions")
+    .update({
+      commission_rate: settled.commission_rate,
+      commission_amount_etb: settled.commission_amount_etb,
+      owner_net_etb: settled.owner_net_etb,
+      metadata: {
+        ...previous,
+        checkout_url: initResult.checkout_url,
+        payment_flow: "hosted_checkout",
+        split_mode: initResult.split_mode,
+        split: settled,
+        planned_split: prepared.split,
+      },
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", existing.id);
+
+  if (updateError) throw updateError;
+}
+
+export async function rollbackUnattachedCheckout(
+  supabase: SupabaseClient,
+  txRef: string,
+) {
+  await supabase
+    .from("payment_transactions")
+    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+    .eq("tx_ref", txRef)
+    .eq("status", "initialized");
 }
 
 /**

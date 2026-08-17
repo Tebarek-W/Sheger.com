@@ -1,4 +1,5 @@
 import { adminClient, handleCors, jsonResponse } from "../_shared/supabase.ts";
+import { requireInternalSecret } from "../_shared/internal-auth.ts";
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
@@ -16,6 +17,9 @@ type DeliveryRow = {
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
+
+  const unauthorized = requireInternalSecret(req);
+  if (unauthorized) return unauthorized;
 
   try {
     const supabase = adminClient();

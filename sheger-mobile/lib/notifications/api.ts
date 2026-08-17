@@ -40,12 +40,17 @@ export async function markAllNotificationsRead(): Promise<void> {
   if (error) throw error;
 }
 
+export function notificationBookingId(data: Record<string, unknown> | null | undefined): string | null {
+  const raw = data?.booking_id;
+  return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+}
+
 export function notificationRouteForType(
-  type: NotificationType,
+  _type: NotificationType,
   role: "customer" | "business_owner" | "admin" | null | undefined,
+  bookingId?: string | null,
 ): string {
-  if (role === "business_owner") {
-    return "/(owner)/bookings";
-  }
-  return "/(app)/(tabs)/bookings";
+  const base = role === "business_owner" ? "/(owner)/bookings" : "/(app)/(tabs)/bookings";
+  if (!bookingId) return base;
+  return `${base}?bookingId=${encodeURIComponent(bookingId)}`;
 }

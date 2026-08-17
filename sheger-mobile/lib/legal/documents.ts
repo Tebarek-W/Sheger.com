@@ -49,7 +49,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
       },
       {
         heading: "9. Contact",
-        body: "For questions about these Terms, email support@sheger.com (or the support address shown in the app under Legal).",
+        body: "For questions about these Terms, email {{supportEmail}} (or the support address shown in the app under Legal).",
       },
     ],
   },
@@ -83,7 +83,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
       },
       {
         heading: "7. Contact",
-        body: "For privacy requests, email support@sheger.com (or the support address shown in the app under Legal).",
+        body: "For privacy requests, email {{supportEmail}} (or the support address shown in the app under Legal).",
       },
     ],
   },
@@ -117,7 +117,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
       },
       {
         heading: "7. Contact",
-        body: "Questions about Business Terms can be emailed to support@sheger.com (or the support address shown in the app).",
+        body: "Questions about Business Terms can be emailed to {{supportEmail}} (or the support address shown in the app).",
       },
     ],
   },
@@ -143,11 +143,15 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDocMeta> = {
       },
       {
         heading: "5. Contact",
-        body: "For help with a specific booking, use My bookings or email support@sheger.com with your booking reference.",
+        body: "For help with a specific booking, use My bookings or email {{supportEmail}} with your booking reference.",
       },
     ],
   },
 };
+
+export function interpolateLegalBody(body: string, supportEmail: string) {
+  return body.replaceAll("{{supportEmail}}", supportEmail);
+}
 
 export function isLegalDocId(value: string): value is LegalDocId {
   return value in LEGAL_DOCS;

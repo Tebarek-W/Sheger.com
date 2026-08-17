@@ -89,6 +89,7 @@ export const om = {
     accountCreated: "Akkaawuntiin uumameera",
     signInToRegister: "Daldala kee ABORA irratti galmeessuuf seeni.",
     canSignInNow: "Amma seenuu dandeessa.",
+    confirmEmailToSignIn: "Akkaawuntii kee mirkaneessuuf imeelii kee ilaali, sana booda seeni.",
     invalidEmailMessage: "Imeelii sirrii galchi.",
     invalidPhoneMessage:
       "Lakkoofsa bilbilaa Itoophiyaa sirrii galchi akka 09xxxxxxxx, 07xxxxxxxx, yookiin +2519xxxxxxxx.",
@@ -276,9 +277,9 @@ export const om = {
       "Beellamni kee ammaaf eegaa jiru yoo ta'e, sa'aatii {{hours}} dura haquu dandeessa. Daldalli mirkaneesseen booda app irratti haquun hin jiru.",
     chapaDesc: "Toora interneetii irratti kaffali — Telebirr, CBE Birr, kaardii fi kkf.",
     chapaNote:
-      "Fuula kaffaltii Chapa irratti xumuri. Yeroo kaffaltii kee keessatti bakki yeroo kee daqiiqaa 2f siif qabama. Beellamni kaffaltiin mirkanaa'uun booda uumama.",
+      "Fuula kaffaltii Chapa irratti xumuri. Yeroo kaffaltii kee keessatti bakki yeroo kee daqiiqaa 15f siif qabama. Beellamni kaffaltiin mirkanaa'uun booda uumama.",
     chapaPayoutNotConfigured:
-      "Kaffaltiin toora interneetii daldala kanaaf hin jiru. Kaffaltiin qindaayutti beellamni toora interneetii hin jiru.",
+      "Kaffaltiin toora interneetii daldala kanaaf hin jiru. Beellama qabadhuu fi yeroo daawwannaa kaffaluu dandeessa.",
     flexiblePayNote:
       "Gatiin xumuraa yeroo daawwannaa kee mirkanaa'a. Kaffaltii toora interneetii malee amma qabadhuu dandeessa.",
     dueNow: "Amma kaffalamu",
@@ -286,8 +287,10 @@ export const om = {
     depositNotice:
       "Amma Chapa irratti {{amount}} kaffalta. Kun gatii jalqabaati — gatiin xumuraa yeroo daawwannaa ol ka'uu danda'a. Hafeen daldala irratti kaffalama.",
     chapaDepositNote:
-      "Amma gatii xiqqaa Chapa irratti kaffalta. Bakki yeroo kee daqiiqaa 2f qabama. Gatiin xumuraa yeroo daawwannaa ol ka'uu danda'a.",
-    slotHoldNote: "Bakki yeroo kun kaffaltii xumurtutti daqiiqaa 2f siif qabama.",
+      "Amma gatii xiqqaa Chapa irratti kaffalta. Bakki yeroo kee daqiiqaa 15f qabama. Gatiin xumuraa yeroo daawwannaa ol ka'uu danda'a.",
+    slotHoldNote: "Bakki yeroo kun kaffaltii xumurtutti daqiiqaa 15f siif qabama.",
+    holdExpiresIn: "Bakki yeroo {{seconds}}s f qabama",
+    holdExpired: "Qabannaan bakka yeroo kee dhumera. Deebi'ii yeroo biraa filadhu.",
     continueToPayment: "Gara kaffaltii itti fufi",
     confirmBooking: "Beellama mirkaneessi",
     bookingFailed: "Beellamni hin milkoofne",
@@ -372,6 +375,9 @@ export const om = {
       photos: "Suuraalee",
     },
     openToday: "Har'a banaa",
+    closedToday: "Har'a cufaadha",
+    closedNow: "Amma cufaadha",
+    hoursUnknown: "Sa'aatiin hin beekamu",
     noServices: "Tajaajiloonni ammatti hin tarreeffamne.",
     defaultCity: "Finfinnee",
   },

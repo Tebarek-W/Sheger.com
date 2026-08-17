@@ -17,7 +17,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
   const redirectTo = getPasswordResetRedirectUrl();
   if (__DEV__) {
     console.log(
-      "[Sheger] Password reset redirectTo (add this exact URL in Supabase → Auth → Redirect URLs):",
+      "[ABORA] Password reset redirectTo (add this exact URL in Supabase → Auth → Redirect URLs):",
       redirectTo,
     );
   }

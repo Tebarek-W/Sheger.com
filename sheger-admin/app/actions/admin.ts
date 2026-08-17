@@ -137,9 +137,20 @@ export async function resolveReviewReport(
   revalidatePath("/dashboard/moderation");
 }
 
-export async function getBusinessLicenseSignedUrl(storagePath: string) {
+export async function getBusinessLicenseSignedUrl(storagePath: string, businessId: string) {
   await requireAdmin();
   const supabase = createAdminClient();
+  const { data: doc, error: lookupError } = await supabase
+    .from("business_documents")
+    .select("id")
+    .eq("storage_path", storagePath)
+    .eq("business_id", businessId)
+    .maybeSingle();
+
+  if (lookupError || !doc) {
+    throw new Error("Document not found");
+  }
+
   const { data, error } = await supabase.storage
     .from("business-licenses")
     .createSignedUrl(storagePath, 60 * 15);

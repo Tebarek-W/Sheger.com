@@ -38,11 +38,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const prevUserIdRef = useRef<string | undefined>(undefined);
 
   const loadProfile = async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .maybeSingle();
+    if (error) {
+      if (__DEV__) {
+        console.warn("[ABORA] Failed to load profile:", error.message);
+      }
+      return undefined;
+    }
     setProfile(data);
     return data;
   };

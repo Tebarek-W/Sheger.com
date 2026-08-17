@@ -12,6 +12,7 @@ import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  notificationBookingId,
   notificationRouteForType,
 } from "@/lib/notifications/api";
 import { notificationKeys } from "@/lib/notifications/query-keys";
@@ -58,7 +59,11 @@ export function NotificationInbox({ title, showBack = true }: NotificationInboxP
     if (!item.read_at) {
       markReadMutation.mutate(item.id);
     }
-    const route = notificationRouteForType(item.type, profile?.role);
+    const route = notificationRouteForType(
+      item.type,
+      profile?.role,
+      notificationBookingId(item.data),
+    );
     router.push(route);
   };
 
