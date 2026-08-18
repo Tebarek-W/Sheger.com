@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sheger Admin",
-  description: "Admin dashboard for Sheger booking platform",
+  title: "ABORA Admin",
+  description: "Admin dashboard for ABORA booking platform",
 };
 
 export default function RootLayout({

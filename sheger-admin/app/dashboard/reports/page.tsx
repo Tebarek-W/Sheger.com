@@ -1,3 +1,5 @@
+import { QueryError } from "@/components/admin/QueryError";
+import { readNumber } from "@/lib/dashboard/analytics-shared";
 import { createClient } from "@/lib/supabase/server";
 
 type ReportSnapshot = {
@@ -10,11 +12,6 @@ type ReportSnapshot = {
   last30DaysCommission: number;
   top: { name: string; count: number }[];
 };
-
-function readNumber(value: unknown, fallback = 0): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
 
 function normalizeReportSnapshot(raw: unknown): ReportSnapshot {
   const row = (raw ?? {}) as Record<string, unknown>;
@@ -43,7 +40,12 @@ async function getReportData(): Promise<ReportSnapshot> {
 }
 
 export default async function ReportsPage() {
-  const report = await getReportData();
+  let report: ReportSnapshot;
+  try {
+    report = await getReportData();
+  } catch {
+    return <QueryError title="Reports" />;
+  }
   const maxStatus = Math.max(...Object.values(report.statusCounts), 1);
   const maxTop = Math.max(...report.top.map((t) => t.count), 1);
 

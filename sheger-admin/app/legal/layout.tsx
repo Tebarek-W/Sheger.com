@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { APP_NAME } from "@/constants/brand";
 import { SUPPORT_EMAIL } from "@/lib/legal/documents";
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
@@ -8,7 +9,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
       <header className="border-b border-[var(--border)] bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <Link href="/legal" className="text-xl font-extrabold text-[var(--primary-dark)]">
-            Sheger
+            {APP_NAME}
           </Link>
           <nav className="flex flex-wrap gap-3 text-sm font-medium text-[var(--muted)]">
             <Link href="/legal/privacy" className="hover:text-[var(--primary)]">

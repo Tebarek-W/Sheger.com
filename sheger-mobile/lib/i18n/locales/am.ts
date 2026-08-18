@@ -45,7 +45,7 @@ export const am: TranslationTree = {
     mustAgree: "ለመቀጠል የአገልግሎት ውሎችን እና የግላዊነት ፖሊሲን ይቀበሉ።",
     sectionTitle: "ህጋዊ",
     supportTitle: "ድጋፍ ያግኙ",
-    supportSubject: "የሸገር ድጋፍ",
+    supportSubject: "የABORA ድጋፍ",
     viewOnWebsite: "በድረ-ገጽ ይመልከቱ",
   },
   tabs: {
@@ -73,8 +73,8 @@ export const am: TranslationTree = {
     noAccount: "መለያ የለዎትም? ይመዝገቡ",
     hasAccount: "መለያ አለዎት? ይግቡ",
     createAccountTitle: "መለያ ፍጠር",
-    joinCustomer: "ሸገርን ይቀላቀሉ እና አገልግሎቶችን በቀላሉ ይያዙ",
-    listBusiness: "ንግድዎን በሸገር ላይ ይዘርዝሩ",
+    joinCustomer: "ABORAን ይቀላቀሉ እና አገልግሎቶችን በቀላሉ ይያዙ",
+    listBusiness: "ንግድዎን በABORA ላይ ይዘርዝሩ",
     iAmA: "እኔ",
     fullName: "ሙሉ ስም",
     phone: "ስልክ",
@@ -88,15 +88,16 @@ export const am: TranslationTree = {
     loginFailed: "መግባት አልተሳካም",
     signUpFailed: "ምዝገባ አልተሳካም",
     accountCreated: "መለያ ተፈጥሯል",
-    signInToRegister: "ንግድዎን በሸገር ላይ ለመመዝገብ ይግቡ።",
+    signInToRegister: "ንግድዎን በABORA ላይ ለመመዝገብ ይግቡ።",
     canSignInNow: "አሁን መግባት ይችላሉ።",
+    confirmEmailToSignIn: "መለያዎን ለማረጋገጥ ኢሜይልዎን ይመልከቱ፣ ከዚያ ይግቡ።",
     invalidEmailMessage: "ትክክለኛ ኢሜይል አድራሻ ያስገቡ።",
     invalidPhoneMessage:
       "ትክክለኛ የኢትዮጵያ ሞባይል ቁጥር ያስገቡ ለምሳሌ 09xxxxxxxx፣ 07xxxxxxxx፣ ወይም +2519xxxxxxxx።",
     forgotPassword: "የይለፍ ቃል ረሱ?",
     forgotPasswordTitle: "የይለፍ ቃል እንደገና ያዘጋጁ",
     forgotPasswordSubtitle: "የመለያዎን ኢሜይል ያስገቡ፤ የማስተካከያ ሊንክ እንልክልዎታለን።",
-    forgotPasswordEnterEmail: "የሸገር መለያዎን ኢሜይል ያስገቡ።",
+    forgotPasswordEnterEmail: "የABORA መለያዎን ኢሜይል ያስገቡ።",
     sendResetLink: "የማስተካከያ ሊንክ ላክ",
     resetEmailSentTitle: "ኢሜይልዎን ይመልከቱ",
     resetEmailSentMessage:
@@ -104,7 +105,7 @@ export const am: TranslationTree = {
     resetFailed: "የይለፍ ቃል ማስተካከል አልተቻለም",
     backToSignIn: "ወደ መግቢያ ተመለስ",
     resetPasswordTitle: "አዲስ የይለፍ ቃል ይምረጡ",
-    resetPasswordSubtitle: "ለሸገር መለያዎ አዲስ የይለፍ ቃል ያስገቡ።",
+    resetPasswordSubtitle: "ለABORA መለያዎ አዲስ የይለፍ ቃል ያስገቡ።",
     newPassword: "አዲስ የይለፍ ቃል",
     confirmPassword: "የይለፍ ቃል አረጋግጥ",
     saveNewPassword: "አዲስ የይለፍ ቃል አስቀምጥ",
@@ -116,27 +117,27 @@ export const am: TranslationTree = {
     resetLinkExpired: "ይህ የማስተካከያ ሊንክ ልክ አይደለም ወይም ጊዜው አልፏል። አዲስ ይጠይቁ።",
     signInToBook: {
       title: "ለመያዝ ይግቡ",
-      message: "ይህን አገልግሎት በሸገር ለመያዝ ነፃ መለያ ይፍጠሩ ወይም ይግቡ።",
+      message: "ይህን አገልግሎት በABORA ለመያዝ ነፃ መለያ ይፍጠሩ ወይም ይግቡ።",
       notNow: "አሁን አይደለም",
     },
     adminBlocked: {
       title: "የአስተዳዳሪ መለያ",
-      subtitleNamed: "{{name}}፣ ይህ መለያ የመድረክ አስተዳዳሪ ፈቃድ አለው እና በሸገር ሞባይል መተግበሪያ ላይ መጠቀም አይችልም።",
-      subtitleGeneric: "ይህ መለያ የመድረክ አስተዳዳሪ ፈቃድ አለው እና በሸገር ሞባይል መተግበሪያ ላይ መጠቀም አይችልም።",
+      subtitleNamed: "{{name}}፣ ይህ መለያ የመድረክ አስተዳዳሪ ፈቃድ አለው እና በABORA ሞባይል መተግበሪያ ላይ መጠቀም አይችልም።",
+      subtitleGeneric: "ይህ መለያ የመድረክ አስተዳዳሪ ፈቃድ አለው እና በABORA ሞባይል መተግበሪያ ላይ መጠቀም አይችልም።",
       cardTitle: "የተለዩ መለያዎችን ይጠቀሙ",
-      cardAdmin: "• አስተዳዳሪ ፓነል — በሸገር አስተዳዳሪ ድረ-ገጽ በአስተዳዳሪ ኢሜይልዎ ይግቡ።",
+      cardAdmin: "• አስተዳዳሪ ፓነል — በABORA አስተዳዳሪ ድረ-ገጽ በአስተዳዳሪ ኢሜይልዎ ይግቡ።",
       cardMobile: "• ሞባይል መተግበሪያ — እንደ ደንበኛ ወይም የንግድ ባለቤት የተመዘገበ ሌላ ኢሜይል ይጠቀሙ።",
       footer:
         "አገልግሎቶችን ለመያዝ፣ አስተዳዳሪዎ የግል ኢሜይልዎን ወደ ደንበኛ ሚና እንዲያስተካክል ይጠይቁ፣ ወይም አዲስ ሞባይል መለያ ይፍጠሩ።",
     },
     accountBlocked: {
       title: "መለያ ታግዷል",
-      subtitleNamed: "{{name}}፣ የሸገር መለያዎ ታግዷል።",
-      subtitleGeneric: "የሸገር መለያዎ ታግዷል።",
+      subtitleNamed: "{{name}}፣ የABORA መለያዎ ታግዷል።",
+      subtitleGeneric: "የABORA መለያዎ ታግዷል።",
       cardTitle: "ይህ ምን ማለት ነው",
       cardText:
         "አስተዳዳሪ እስኪመልስ ድረስ ቀጠሮ መያዝ ወይም ንግድ ማስተዳደር አይችሉም። እንደ እንግዳ ማሰስ ይችላሉ።",
-      footer: "ስህተት ነው ብለው ካመኑ የሸገር ድጋፍን ያግኙ።",
+      footer: "ስህተት ነው ብለው ካመኑ የABORA ድጋፍን ያግኙ።",
     },
   },
   home: {
@@ -155,7 +156,7 @@ export const am: TranslationTree = {
   },
   profile: {
     guestHint: "መገለጫዎን እና ቀጠሮዎችዎን ለማስተዳደር ይግቡ",
-    defaultName: "የሸገር ተጠቃሚ",
+    defaultName: "የABORA ተጠቃሚ",
     phone: "ስልክ",
     accountType: "የመለያ አይነት",
     memberSince: "አባል ከ",
@@ -172,13 +173,13 @@ export const am: TranslationTree = {
     privacy: "የግላዊነት ፖሊሲ",
     cancellation: "መሰረዝ እና ተመላሽ",
     contactSupport: "ድጋፍ ያግኙ",
-    supportSubject: "የሸገር ድጋፍ ጥያቄ",
+    supportSubject: "የABORA ድጋፍ ጥያቄ",
     deleteAccount: {
       title: "መለያ ሰርዝ",
       warning:
-        "ይህ የሸገር መለያዎን እና የግል መረጃዎን እስከመጨረሻ ያስወግዳል። የሚመጡ ቀጠሮዎች ይሰረዛሉ። መመለስ አይቻልም።",
+        "ይህ የABORA መለያዎን እና የግል መረጃዎን እስከመጨረሻ ያስወግዳል። የሚመጡ ቀጠሮዎች ይሰረዛሉ። መመለስ አይቻልም።",
       ownerWarning:
-        "ይህ መለያዎን ያስወግዳል እና የንግድ ዝርዝርዎን ከሸገር ያስወግዳል። የሚመጡ ቀጠሮዎች ይሰረዛሉ። መመለስ አይቻልም።",
+        "ይህ መለያዎን ያስወግዳል እና የንግድ ዝርዝርዎን ከABORA ያስወግዳል። የሚመጡ ቀጠሮዎች ይሰረዛሉ። መመለስ አይቻልም።",
       continue: "ቀጥል",
       confirmTitle: "መለያውን እስከመጨረሻ ልሰርዝ?",
       confirmMessage: "መለያዎን መመለስ አይቻልም። ለማረጋገጥ ሰርዝን ይጫኑ።",
@@ -186,7 +187,7 @@ export const am: TranslationTree = {
       confirmAction: "ሰርዝ",
       deleting: "መለያ በመሰረዝ ላይ…",
       doneTitle: "መለያ ተሰርዟል",
-      doneMessage: "የሸገር መለያዎ ተሰርዟል።",
+      doneMessage: "የABORA መለያዎ ተሰርዟል።",
       failedTitle: "መለያ መሰረዝ አልተሳካም",
     },
   },
@@ -295,7 +296,7 @@ export const am: TranslationTree = {
     chapa: "ቻፓ",
     chapaDesc: "ኦንላይን ይክፈሉ — ቴሌብር፣ CBE ብር፣ ካርድ እና ሌሎች",
     chapaPayoutNotConfigured:
-      "ይህ ንግድ ኦንላይን ክፍያ ገቢ መቀበያ ገና አልተዋቀረም። ክፍያ እስኪዋቀር ድረስ ኦንላይን ቀጠሮ አይገኝም።",
+      "ይህ ንግድ ኦንላይን ክፍያ ገቢ መቀበያ ገና አልተዋቀረም። አሁንም መያዝ እና በጉብኝት መክፈል ይችላሉ።",
     flexiblePayNote:
       "የመጨረሻ ዋጋ በጉብኝትዎ ጊዜ ይረጋገጣል። ያለ ኦንላይን ክፍያ አሁን መያዝ ይችላሉ።",
     dueNow: "አሁን የሚከፈል",
@@ -303,10 +304,12 @@ export const am: TranslationTree = {
     depositNotice:
       "አሁን በቻፓ {{amount}} ይከፍላሉ። ይህ የመነሻ ዋጋ ነው — የመጨረሻው ዋጋ በጉብኝትዎ ከፍ ያለ ሊሆን ይችላል። የቀረው በንግዱ ይከፈላል።",
     chapaNote:
-      "ወደ ቻፓ ደህንነቱ የተጠበቀ የክፍያ ገጽ ይመራሉ። እያከፈሉ ሳለ የጊዜ ቦታዎ ለ2 ደቂቃ ይያዛል። ቀጠሮዎ የሚፈጠረው ክፍያ ከተረጋገጠ በኋላ ብቻ ነው።",
+      "ወደ ቻፓ ደህንነቱ የተጠበቀ የክፍያ ገጽ ይመራሉ። እያከፈሉ ሳለ የጊዜ ቦታዎ ለ15 ደቂቃ ይያዛል። ቀጠሮዎ የሚፈጠረው ክፍያ ከተረጋገጠ በኋላ ብቻ ነው።",
     chapaDepositNote:
-      "አሁን አነስተኛውን መጠን በቻፓ ይከፍላሉ። እያከፈሉ ሳለ ቦታዎ ለ2 ደቂቃ ይያዛል። የመጨረሻ ዋጋ በጉብኝት ከፍ ሊል ይችላል።",
-    slotHoldNote: "ይህ የጊዜ ቦታ ክፍያ እስክታጠናቅቁ ድረስ ለ2 ደቂቃ ለእርስዎ ተይዟል።",
+      "አሁን አነስተኛውን መጠን በቻፓ ይከፍላሉ። እያከፈሉ ሳለ ቦታዎ ለ15 ደቂቃ ይያዛል። የመጨረሻ ዋጋ በጉብኝት ከፍ ሊል ይችላል።",
+    slotHoldNote: "ይህ የጊዜ ቦታ ክፍያ እስክታጠናቅቁ ድረስ ለ15 ደቂቃ ለእርስዎ ተይዟል።",
+    holdExpiresIn: "ቦታው ለ{{seconds}} ሰከንድ ተይዟል",
+    holdExpired: "የቦታ ማስያዣ ጊዜ አልቋል። ተመልሰው ሰዓት እንደገና ይምረጡ።",
     checkout: {
       title: "ደህንነቱ የተጠበቀ ክፍያ",
       preparing: "ደህንነቱ የተጠበቀ ክፍያ በመዘጋጀት ላይ…",
@@ -315,7 +318,7 @@ export const am: TranslationTree = {
       confirmHint: "በቻፓ ክፍያ ካጠናቀቁ ክፍያ አረጋግጥ ይንኩ።",
       hostedTitle: "የቻፓ ደህንነቱ የተጠበቀ ክፍያ",
       hostedText:
-        "የክፍያ ገጹን ቻፓ ያስተናግዳል። ቦርሳ ወይም ባንክ እዚያ ይምረጣሉ — ሸገር ያንን ማያ ግድም አይፈጥርም።",
+        "የክፍያ ገጹን ቻፓ ያስተናግዳል። ቦርሳ ወይም ባንክ እዚያ ይምረጣሉ — ABORA ያንን ማያ ግድም አይፈጥርም።",
       testModeNote:
         "በቻፓ የሙከራ ሁነታ ገጹ Pay with Test Mode ሊያሳይ ይችላል። ለእውነተኛ ክፍያ ወደ ቀጥታ ሁነታ ይቀይሩ።",
       openChapa: "የቻፓ ክፍያ ገጽ ክፈት",
@@ -393,7 +396,7 @@ export const am: TranslationTree = {
   owner: {
     title: "የንግድ ባለቤት",
     hello: "ሰላም {{name}}",
-    manageSubtitle: "ንግድዎን በሸገር ላይ ያስተዳድሩ",
+    manageSubtitle: "ንግድዎን በABORA ላይ ያስተዳድሩ",
     registerTitle: "ንግድዎን ይመዝገቡ",
     registerText:
       "ሳሎን፣ አሳዳጊ ቤት፣ ክሊኒክ ወይም ስቱዲዮ ይጨምሩ። ከአስተዳዳሪ ፈቃድ በኋላ ደንበኞች ያገኙዎታል።",
@@ -444,7 +447,7 @@ export const am: TranslationTree = {
       subtitle: "ደንበኞች በመስመር ላይ ሲከፍሉ በራስ-ሰር ይቀበሉ",
       howItWorksTitle: "ራስ-ሰር የተከፋፈለ ክፍያ",
       howItWorksText:
-        "ደንበኛ በቻፓ ሲከፍል ሸገር የመድረክ ኮሚሽን ይወስዳል እና ያለፈው ወደ ባንክ መለያዎ በራስ-ሰር ይላካል።",
+        "ደንበኛ በቻፓ ሲከፍል ABORA የመድረክ ኮሚሽን ይወስዳል እና ያለፈው ወደ ባንክ መለያዎ በራስ-ሰር ይላካል።",
       legalNote: "ክፍያዎች ለንግድ ውሎች እና የቻፓ የሰፈራ ደንቦች ተገዢ ናቸው።",
       commissionRate: "የአሁኑ ኮሚሽን መጠን፦ {{rate}}",
       activeTitle: "የክፍያ መለያ ተገናኝቷል",
@@ -638,7 +641,7 @@ export const am: TranslationTree = {
         refresh: "↻ ተገኝነት አድስ",
         loading: "ቀጠሮዎችን በመጫን ላይ…",
         empty: "ገና ቀጠሮ የለም።",
-        defaultCustomer: "የሸገር ደንበኛ",
+        defaultCustomer: "የABORA ደንበኛ",
         defaultService: "አገልግሎት",
         confirm: "አረጋግጥ",
         cancel: "ሰርዝ",
@@ -815,6 +818,9 @@ export const am: TranslationTree = {
       photos: "ፎቶዎች",
     },
     openToday: "ዛሬ ክፍት",
+    closedToday: "ዛሬ ተዘግቷል",
+    closedNow: "አሁን ተዘግቷል",
+    hoursUnknown: "የስራ ሰዓት አልታወቀም",
     noServices: "ገና አገልግሎት አልተዘረዘረም።",
     defaultCity: "አዲስ",
   },
@@ -822,7 +828,7 @@ export const am: TranslationTree = {
     titleFallback: "ንግዶች",
     subtitle: "በቅርብ ቦታ ይምረጡ",
     emptyTitle: "ገና ንግድ የለም",
-    emptyText: "የተፈቀዱ ንግዶች እዚህ ይታያሉ። አቅራቢዎ በሸገር እንዲቀላቀል ይጠይቁ።",
+    emptyText: "የተፈቀዱ ንግዶች እዚህ ይታያሉ። አቅራቢዎ በABORA እንዲቀላቀል ይጠይቁ።",
     defaultCity: "አዲስ አበባ",
   },
   notifications: {
@@ -834,7 +840,7 @@ export const am: TranslationTree = {
     emptyText: "የቀጠሮ ማረጋገጫዎች፣ ማስታወሻዎች እና መሰረዝ እዚህ ይታያሉ።",
   },
   customer: {
-    defaultCustomer: "የሸገር ደንበኛ",
+    defaultCustomer: "የABORA ደንበኛ",
     starRating: {
       new: "አዲስ",
       formatted: "{{average}} ({{count}})",

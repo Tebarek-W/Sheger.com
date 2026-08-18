@@ -1,3 +1,4 @@
+import { QueryError } from "@/components/admin/QueryError";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { UserActions } from "@/components/admin/UserActions";
 import { UserRoleBadge } from "@/components/admin/UserRoleBadge";
@@ -20,10 +21,14 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const activeFilter = parseUserRoleFilter(roleParam);
 
   const supabase = await createClient();
-  const { data: users } = await supabase
+  const { data: users, error } = await supabase
     .from("profiles")
     .select("*")
     .order("created_at", { ascending: false });
+
+  if (error) {
+    return <QueryError title="Users" />;
+  }
 
   const allUsers = users ?? [];
   const counts = countUsersByRole(allUsers);

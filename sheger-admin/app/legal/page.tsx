@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { APP_NAME } from "@/constants/brand";
 import { LEGAL_DOC_IDS, LEGAL_DOCS } from "@/lib/legal/documents";
 
 export const metadata: Metadata = {
-  title: "Legal | Sheger",
-  description: "Sheger Terms, Privacy Policy, Business Terms, and Cancellation policy.",
+  title: `Legal | ${APP_NAME}`,
+  description: `${APP_NAME} Terms, Privacy Policy, Business Terms, and Cancellation policy.`,
 };
 
 export default function LegalIndexPage() {
@@ -13,7 +14,7 @@ export default function LegalIndexPage() {
     <div>
       <h1 className="text-3xl font-bold text-[var(--primary-dark)]">Legal</h1>
       <p className="mt-2 text-[var(--muted)]">
-        Public policies for the Sheger mobile app. Use these URLs in Play Store and App Store
+        Public policies for the {APP_NAME} mobile app. Use these URLs in Play Store and App Store
         listings.
       </p>
       <ul className="mt-8 space-y-3">

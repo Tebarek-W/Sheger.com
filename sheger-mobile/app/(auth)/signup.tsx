@@ -2,12 +2,14 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { AuthBrandHeader } from "@/components/brand/AuthBrandHeader";
 import { Button } from "@/components/ui/Button";
 import { BookingHeader } from "@/components/ui/BookingHeader";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
+import { redirectAfterAuth } from "@/lib/auth-booking";
 import { getErrorMessage } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 import type { UserRole } from "@/lib/types/database";
@@ -59,7 +61,7 @@ export default function SignupScreen() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password,
       options: {
@@ -75,10 +77,14 @@ export default function SignupScreen() {
       Alert.alert(t("auth.signUpFailed"), getErrorMessage(error));
       return;
     }
+    if (data.session?.user.id) {
+      await redirectAfterAuth(data.session.user.id);
+      return;
+    }
     const message =
       accountType === "business_owner"
         ? t("auth.signInToRegister")
-        : t("auth.canSignInNow");
+        : t("auth.confirmEmailToSignIn");
     Alert.alert(t("auth.accountCreated"), message, [
       { text: t("common.ok"), onPress: () => router.replace("/(auth)/login") },
     ]);
@@ -86,15 +92,14 @@ export default function SignupScreen() {
 
   return (
     <Screen scroll backgroundColor={colors.screenBg}>
-      <View style={styles.header}>
-        <Text style={styles.brand}>sheger</Text>
-        <Text style={styles.title}>{t("auth.createAccountTitle")}</Text>
-        <Text style={styles.subtitle}>
-          {accountType === "business_owner"
+      <AuthBrandHeader
+        title={t("auth.createAccountTitle")}
+        subtitle={
+          accountType === "business_owner"
             ? t("auth.listBusiness")
-            : t("auth.joinCustomer")}
-        </Text>
-      </View>
+            : t("auth.joinCustomer")
+        }
+      />
 
       <View style={styles.card}>
         <BookingHeader title={t("common.signUp")} backTo="/" />
@@ -193,21 +198,6 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
-  },
-  brand: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.primary,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: 8,
-  },
-  title: { fontSize: 24, fontWeight: "500", color: colors.text },
-  subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 4, lineHeight: 20 },
   card: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 24,

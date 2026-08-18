@@ -43,9 +43,11 @@ function PaymentCheckoutContent() {
   const params = useLocalSearchParams<{
     txRef?: string | string[];
     checkoutUrl?: string | string[];
+    holdExpiresAt?: string | string[];
   }>();
   const txRef = resolveParam(params.txRef);
   const checkoutUrl = resolveParam(params.checkoutUrl);
+  const holdExpiresAt = resolveParam(params.holdExpiresAt);
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const business = useBookingStore((s) => s.business);
@@ -54,6 +56,7 @@ function PaymentCheckoutContent() {
 
   const [status, setStatus] = useState<CheckoutStatus>("preparing");
   const [message, setMessage] = useState(() => t("payment.checkout.preparing"));
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const startedRef = useRef(false);
 
   // Verifies the payment and, on success, the booking now exists server-side
@@ -154,10 +157,32 @@ function PaymentCheckoutContent() {
   }, []);
 
   useEffect(() => {
+    if (!holdExpiresAt) {
+      setSecondsLeft(null);
+      return;
+    }
+    const tick = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((new Date(holdExpiresAt).getTime() - Date.now()) / 1000),
+      );
+      setSecondsLeft(remaining);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [holdExpiresAt]);
+
+  useEffect(() => {
     if (!txRef || !checkoutUrl || startedRef.current) return;
+    if (holdExpiresAt && new Date(holdExpiresAt).getTime() <= Date.now()) {
+      setStatus("error");
+      setMessage(t("payment.holdExpired"));
+      return;
+    }
     startedRef.current = true;
     void openChapaCheckout(checkoutUrl, txRef);
-  }, [txRef, checkoutUrl, openChapaCheckout]);
+  }, [txRef, checkoutUrl, holdExpiresAt, openChapaCheckout, t]);
 
   const onCancel = () => {
     Alert.alert(
@@ -213,6 +238,13 @@ function PaymentCheckoutContent() {
           <Text style={styles.infoTitle}>{t("payment.checkout.hostedTitle")}</Text>
           <Text style={styles.infoText}>{t("payment.checkout.hostedText")}</Text>
           <Text style={styles.holdNote}>{t("payment.slotHoldNote")}</Text>
+          {secondsLeft != null ? (
+            <Text style={secondsLeft === 0 ? styles.holdExpired : styles.holdCountdown}>
+              {secondsLeft === 0
+                ? t("payment.holdExpired")
+                : t("payment.holdExpiresIn", { seconds: secondsLeft })}
+            </Text>
+          ) : null}
           <Text style={styles.infoNote}>{t("payment.checkout.testModeNote")}</Text>
         </View>
 
@@ -276,6 +308,8 @@ const styles = StyleSheet.create({
   infoTitle: { fontSize: 15, fontWeight: "700", color: colors.primaryDarker },
   infoText: { fontSize: 14, color: colors.textMuted, lineHeight: 21 },
   holdNote: { fontSize: 13, fontWeight: "600", color: colors.primaryDark, lineHeight: 19 },
+  holdCountdown: { fontSize: 13, fontWeight: "700", color: colors.primaryDark, lineHeight: 19 },
+  holdExpired: { fontSize: 13, fontWeight: "700", color: colors.error, lineHeight: 19 },
   infoNote: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
   center: {
     flex: 1,

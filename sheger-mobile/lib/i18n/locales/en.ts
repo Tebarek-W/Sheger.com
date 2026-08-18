@@ -43,7 +43,7 @@ export const en = {
     mustAgree: "Please agree to the Terms of Service and Privacy Policy to continue.",
     sectionTitle: "Legal",
     supportTitle: "Contact support",
-    supportSubject: "Sheger support",
+    supportSubject: "ABORA support",
     viewOnWebsite: "View on website",
   },
   tabs: {
@@ -71,8 +71,8 @@ export const en = {
     noAccount: "Don't have an account? Sign up",
     hasAccount: "Already have an account? Sign in",
     createAccountTitle: "Create account",
-    joinCustomer: "Join Sheger and book services easily",
-    listBusiness: "List your business on Sheger",
+    joinCustomer: "Join ABORA and book services easily",
+    listBusiness: "List your business on ABORA",
     iAmA: "I am a",
     fullName: "Full name",
     phone: "Phone",
@@ -86,15 +86,17 @@ export const en = {
     loginFailed: "Login failed",
     signUpFailed: "Sign up failed",
     accountCreated: "Account created",
-    signInToRegister: "Sign in to register your business on Sheger.",
+    signInToRegister: "Sign in to register your business on ABORA.",
     canSignInNow: "You can now sign in.",
+    confirmEmailToSignIn:
+      "Check your email to confirm your account, then sign in.",
     invalidEmailMessage: "Enter a valid email address.",
     invalidPhoneMessage:
       "Enter a valid Ethiopian mobile number like 09xxxxxxxx, 07xxxxxxxx, or +2519xxxxxxxx.",
     forgotPassword: "Forgot password?",
     forgotPasswordTitle: "Reset password",
     forgotPasswordSubtitle: "Enter your account email and we'll send you a reset link.",
-    forgotPasswordEnterEmail: "Enter the email for your Sheger account.",
+    forgotPasswordEnterEmail: "Enter the email for your ABORA account.",
     sendResetLink: "Send reset link",
     resetEmailSentTitle: "Check your email",
     resetEmailSentMessage:
@@ -102,7 +104,7 @@ export const en = {
     resetFailed: "Could not reset password",
     backToSignIn: "Back to sign in",
     resetPasswordTitle: "Choose a new password",
-    resetPasswordSubtitle: "Enter a new password for your Sheger account.",
+    resetPasswordSubtitle: "Enter a new password for your ABORA account.",
     newPassword: "New password",
     confirmPassword: "Confirm password",
     saveNewPassword: "Save new password",
@@ -114,27 +116,27 @@ export const en = {
     resetLinkExpired: "This reset link is invalid or has expired. Request a new one.",
     signInToBook: {
       title: "Sign in to book",
-      message: "Create a free account or sign in to book this service on Sheger.",
+      message: "Create a free account or sign in to book this service on ABORA.",
       notNow: "Not now",
     },
     adminBlocked: {
       title: "Admin account",
-      subtitleNamed: "{{name}}, this account has platform admin access and cannot be used in the Sheger mobile app.",
-      subtitleGeneric: "This account has platform admin access and cannot be used in the Sheger mobile app.",
+      subtitleNamed: "{{name}}, this account has platform admin access and cannot be used in the ABORA mobile app.",
+      subtitleGeneric: "This account has platform admin access and cannot be used in the ABORA mobile app.",
       cardTitle: "Use separate accounts",
-      cardAdmin: "• Admin panel — sign in on the Sheger admin website with your admin email.",
+      cardAdmin: "• Admin panel — sign in on the ABORA admin website with your admin email.",
       cardMobile: "• Mobile app — use a different email registered as customer or business owner.",
       footer:
         "If you need to book services, ask your administrator to set your personal email to customer role, or create a new mobile account.",
     },
     accountBlocked: {
       title: "Account suspended",
-      subtitleNamed: "{{name}}, your Sheger account has been suspended.",
-      subtitleGeneric: "Your Sheger account has been suspended.",
+      subtitleNamed: "{{name}}, your ABORA account has been suspended.",
+      subtitleGeneric: "Your ABORA account has been suspended.",
       cardTitle: "What this means",
       cardText:
         "You cannot book appointments or manage a business with this account until an administrator restores access. You can still browse as a guest.",
-      footer: "If you believe this is a mistake, contact Sheger support.",
+      footer: "If you believe this is a mistake, contact ABORA support.",
     },
   },
   home: {
@@ -153,7 +155,7 @@ export const en = {
   },
   profile: {
     guestHint: "Sign in to manage your profile and bookings",
-    defaultName: "Sheger user",
+    defaultName: "ABORA user",
     phone: "Phone",
     accountType: "Account type",
     memberSince: "Member since",
@@ -170,13 +172,13 @@ export const en = {
     privacy: "Privacy Policy",
     cancellation: "Cancellation & refunds",
     contactSupport: "Contact support",
-    supportSubject: "Sheger support request",
+    supportSubject: "ABORA support request",
     deleteAccount: {
       title: "Delete account",
       warning:
-        "This permanently deletes your Sheger account and personal data. Upcoming bookings will be cancelled. This cannot be undone.",
+        "This permanently deletes your ABORA account and personal data. Upcoming bookings will be cancelled. This cannot be undone.",
       ownerWarning:
-        "This permanently deletes your account and removes your business listing from Sheger. Upcoming bookings will be cancelled. This cannot be undone.",
+        "This permanently deletes your account and removes your business listing from ABORA. Upcoming bookings will be cancelled. This cannot be undone.",
       continue: "Continue",
       confirmTitle: "Delete account permanently?",
       confirmMessage: "Type confirmation by tapping Delete. Your account cannot be recovered.",
@@ -185,7 +187,7 @@ export const en = {
       confirmAction: "Delete",
       deleting: "Deleting account…",
       doneTitle: "Account deleted",
-      doneMessage: "Your Sheger account has been deleted.",
+      doneMessage: "Your ABORA account has been deleted.",
       failedTitle: "Could not delete account",
     },
   },
@@ -294,7 +296,7 @@ export const en = {
     chapa: "Chapa",
     chapaDesc: "Pay online — Telebirr, CBE Birr, cards & more",
     chapaPayoutNotConfigured:
-      "This business has not set up online payouts yet. Online booking is unavailable until payouts are configured.",
+      "This business has not set up online payouts yet. You can still book and pay at the visit.",
     flexiblePayNote:
       "Final price will be confirmed at your visit. You can book now without paying online.",
     dueNow: "Due now",
@@ -302,10 +304,12 @@ export const en = {
     depositNotice:
       "You will pay {{amount}} now via Chapa. This is the starting price — the final cost may be higher at your visit. Any remaining balance is paid at the business.",
     chapaNote:
-      "You will be redirected to Chapa's secure checkout. Your time slot is reserved for 2 minutes while you pay. The booking is created only after payment is confirmed.",
+      "You will be redirected to Chapa's secure checkout. Your time slot is reserved for 15 minutes while you pay. The booking is created only after payment is confirmed.",
     chapaDepositNote:
-      "You will pay the minimum amount on Chapa now. Your slot is reserved for 2 minutes while you pay. Final price may be higher at your visit.",
-    slotHoldNote: "This time slot is reserved for you for 2 minutes while you complete payment.",
+      "You will pay the minimum amount on Chapa now. Your slot is reserved for 15 minutes while you pay. Final price may be higher at your visit.",
+    slotHoldNote: "This time slot is reserved for you for 15 minutes while you complete payment.",
+    holdExpiresIn: "Slot reserved for {{seconds}}s",
+    holdExpired: "Your slot reservation expired. Go back and pick a time again.",
     checkout: {
       title: "Secure checkout",
       preparing: "Preparing secure checkout…",
@@ -315,7 +319,7 @@ export const en = {
         "Browser closed. If you finished paying on Chapa, tap Confirm payment to check status.",
       hostedTitle: "Chapa secure checkout",
       hostedText:
-        "Chapa hosts the payment page. You will choose your wallet or bank there — Sheger does not recreate that screen.",
+        "Chapa hosts the payment page. You will choose your wallet or bank there — ABORA does not recreate that screen.",
       testModeNote:
         "In Chapa test mode the hosted page may show Pay with Test Mode instead of the full live method list. Switch to live mode for real payments.",
       openChapa: "Open Chapa checkout",
@@ -393,10 +397,10 @@ export const en = {
   owner: {
     title: "Business Owner",
     hello: "Hello, {{name}}",
-    manageSubtitle: "Manage your business on Sheger",
+    manageSubtitle: "Manage your business on ABORA",
     registerTitle: "Register your business",
     registerText:
-      "Add your salon, barbershop, clinic, or studio. After admin approval, customers can find and book you on Sheger.",
+      "Add your salon, barbershop, clinic, or studio. After admin approval, customers can find and book you on ABORA.",
     registerAgreeNote:
       "By registering a business you also agree to the Business Terms covering listings, payouts, and commissions.",
     businessTermsLink: "Business Terms",
@@ -446,7 +450,7 @@ export const en = {
       subtitle: "Get paid automatically when customers pay online",
       howItWorksTitle: "Automatic split payments",
       howItWorksText:
-        "When a customer pays with Chapa, Sheger keeps a platform commission and the rest is sent to your bank account automatically.",
+        "When a customer pays with Chapa, ABORA keeps a platform commission and the rest is sent to your bank account automatically.",
       legalNote:
         "Payouts are subject to the Business Terms and Chapa’s settlement rules.",
       commissionRate: "Your current commission rate: {{rate}}",
@@ -644,7 +648,7 @@ export const en = {
         refresh: "↻ Refresh availability",
         loading: "Loading bookings...",
         empty: "No bookings yet.",
-        defaultCustomer: "Sheger customer",
+        defaultCustomer: "ABORA customer",
         defaultService: "Service",
         confirm: "Confirm",
         cancel: "Cancel",
@@ -825,6 +829,9 @@ export const en = {
       photos: "Photos",
     },
     openToday: "Open today",
+    closedToday: "Closed today",
+    closedNow: "Closed now",
+    hoursUnknown: "Hours unavailable",
     noServices: "No services listed yet.",
     defaultCity: "Addis",
   },
@@ -832,7 +839,7 @@ export const en = {
     titleFallback: "Businesses",
     subtitle: "Choose a place near you",
     emptyTitle: "No businesses yet",
-    emptyText: "Approved businesses will appear here. Ask your provider to join Sheger.",
+    emptyText: "Approved businesses will appear here. Ask your provider to join ABORA.",
     defaultCity: "Addis Ababa",
   },
   notifications: {
@@ -844,7 +851,7 @@ export const en = {
     emptyText: "You will see booking confirmations, reminders, and cancellations here.",
   },
   customer: {
-    defaultCustomer: "Sheger customer",
+    defaultCustomer: "ABORA customer",
     starRating: {
       new: "New",
       formatted: "{{average}} ({{count}})",

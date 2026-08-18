@@ -1,8 +1,14 @@
 import { DashboardCharts } from "@/components/admin/DashboardCharts";
+import { QueryError } from "@/components/admin/QueryError";
 import { fetchDashboardAnalytics } from "@/lib/dashboard/analytics";
 
 export default async function DashboardPage() {
-  const analytics = await fetchDashboardAnalytics();
+  let analytics;
+  try {
+    analytics = await fetchDashboardAnalytics();
+  } catch {
+    return <QueryError title="Dashboard" />;
+  }
 
   if (!analytics) {
     return (

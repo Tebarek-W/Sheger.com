@@ -39,3 +39,18 @@ export function getCategoryIcon(slug?: string | null) {
 export function getCategoryTheme(index: number): CategoryTheme {
   return CATEGORY_THEMES[index % CATEGORY_THEMES.length];
 }
+
+const CATEGORY_SLUG_THEME_INDEX: Record<string, number> = Object.fromEntries(
+  Object.keys(CATEGORY_ICONS).map((slug, index) => [slug, index]),
+);
+
+export function getCategoryThemeBySlug(slug?: string | null): CategoryTheme {
+  if (!slug) return CATEGORY_THEMES[0];
+  const mapped = CATEGORY_SLUG_THEME_INDEX[slug];
+  if (mapped != null) return getCategoryTheme(mapped);
+  let hash = 0;
+  for (let i = 0; i < slug.length; i += 1) {
+    hash = (hash + slug.charCodeAt(i)) % CATEGORY_THEMES.length;
+  }
+  return getCategoryTheme(hash);
+}

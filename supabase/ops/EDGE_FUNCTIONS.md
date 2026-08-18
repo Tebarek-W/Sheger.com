@@ -36,6 +36,7 @@ Or deploy individually as needed.
 supabase secrets set CHAPA_SECRET_KEY=CHASECK_TEST-...
 supabase secrets set CHAPA_WEBHOOK_SECRET=your-webhook-hash
 supabase secrets set CHAPA_MODE=test
+supabase secrets set INTERNAL_FUNCTION_SECRET=a-long-random-string
 ```
 
 ## JWT verification (`supabase/config.toml`)
@@ -46,11 +47,11 @@ supabase secrets set CHAPA_MODE=test
 | `chapa-banks`, `chapa-subaccount` | default (true) | Owner JWT for payout setup |
 | `delete-account` | default (true) | Authenticated user deletes their own account |
 | `chapa-charge`, `chapa-authorize` | default (true) | Legacy Direct Charge (optional; not used by apps) |
-| `booking-notifications` | false | Database webhook |
-| `send-booking-reminders` | false | Cron |
-| `check-subscription-expiry` | false | Cron |
-| `send-push-queue` | false | Cron/worker |
-| `expire-unpaid-bookings` | false | Cron |
+| `booking-notifications` | false | Database webhook — send `x-internal-secret` |
+| `send-booking-reminders` | false | Cron — send `x-internal-secret` |
+| `check-subscription-expiry` | false | Cron — send `x-internal-secret` |
+| `send-push-queue` | false | Cron/worker — send `x-internal-secret` |
+| `expire-unpaid-bookings` | false | Cron — send `x-internal-secret` |
 | `chapa-webhook` | false | Chapa dashboard webhook (POST + HMAC) |
 | `chapa-callback` | false | Chapa initialize `callback_url` (GET + server verify) |
 | `chapa-return` | false | Browser redirect after payment (GET) |
@@ -68,6 +69,7 @@ Dashboard deploy: use `--no-verify-jwt` for functions marked false above.
 | Events | `INSERT`, `UPDATE` |
 | Type | Supabase Edge Function |
 | Function | `booking-notifications` |
+| HTTP headers | `x-internal-secret: <INTERNAL_FUNCTION_SECRET>` |
 
 ## Cron schedules
 
@@ -78,7 +80,15 @@ Dashboard deploy: use `--no-verify-jwt` for functions marked false above.
 | `send-booking-reminders` | `*/15 * * * *` | 24h and 1h booking reminders |
 | `check-subscription-expiry` | `0 */6 * * *` | Mark expired subscriptions `past_due` |
 | `send-push-queue` | `* * * * *` | Flush queued Expo push deliveries |
-| `expire-unpaid-bookings` | `*/5 * * * *` | Cancel unpaid Chapa checkouts; expire 2-minute slot holds |
+| `expire-unpaid-bookings` | `*/5 * * * *` | Cancel unpaid Chapa checkouts; expire 15-minute slot holds |
+
+Cron and the bookings webhook **must** send the internal secret:
+
+```
+x-internal-secret: <INTERNAL_FUNCTION_SECRET>
+```
+
+or `Authorization: Bearer <INTERNAL_FUNCTION_SECRET>`.
 
 ### HTTP invoke URL (for external cron)
 
@@ -89,7 +99,7 @@ POST https://YOUR_PROJECT_REF.supabase.co/functions/v1/send-push-queue
 POST https://YOUR_PROJECT_REF.supabase.co/functions/v1/expire-unpaid-bookings
 ```
 
-No `Authorization` header required when `verify_jwt` is false.
+Include `x-internal-secret` (or Bearer token) matching `INTERNAL_FUNCTION_SECRET`. Calls without it return 401.
 
 ## Chapa
 
@@ -123,9 +133,9 @@ Webhook secret in the Chapa dashboard must match `CHAPA_WEBHOOK_SECRET`.
 
 Online Chapa checkout is blocked (`payout_not_configured`) until the business has an active payout account.
 
-### Slot holds (2 minutes)
+### Slot holds (15 minutes)
 
-When `chapa-initialize` creates a deferred booking checkout, it also inserts a row in `booking_slot_holds` (`expires_at = now() + 2 minutes`). Active holds count toward slot capacity in `get_slot_booking_counts` and `assert_booking_slot_available`. Holds are released when the payment transaction becomes `success`, `cancelled`, `failed`, or `paid_unfulfilled`, or via `expire_booking_slot_holds` in the unpaid-expiry cron.
+When `chapa-initialize` creates a deferred booking checkout, it inserts a `payment_transactions` row and a `booking_slot_holds` row **before** calling Chapa (`expires_at = now() + 15 minutes`). Active holds count toward slot capacity. Holds are released when the payment becomes `success`, `cancelled`, `failed`, or `paid_unfulfilled`, or via `expire_booking_slot_holds` in the unpaid-expiry cron. If Chapa initialize fails, the local transaction is cancelled so the hold is released.
 
 ### Accept Payment (hosted checkout — customer mobile)
 
@@ -160,7 +170,7 @@ Paid business subscription plans use the same hosted checkout rails as bookings,
 ## Checklist (new environment)
 
 - [ ] `supabase db push` (all migrations)
-- [ ] Edge function secrets set
+- [ ] Edge function secrets set (`CHAPA_*` and `INTERNAL_FUNCTION_SECRET`)
 - [ ] All functions deployed
 - [ ] Database webhook on `bookings`
 - [ ] Cron schedules for reminders, push queue, subscription expiry, unpaid bookings

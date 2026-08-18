@@ -56,8 +56,8 @@ function PaymentScreenContent() {
   const isDeposit = checkoutPrice?.isDeposit ?? false;
 
   const { data: chapaEligibility, isLoading: chapaEligibilityLoading } = useQuery({
-    queryKey: ["chapa-eligibility", business?.id],
-    queryFn: () => checkChapaBookingEligibility(business!.id),
+    queryKey: ["chapa-eligibility", business?.id, chargeableAmount],
+    queryFn: () => checkChapaBookingEligibility(business!.id, chargeableAmount),
     enabled: Boolean(business?.id && requiresOnlinePay),
   });
 
@@ -65,9 +65,9 @@ function PaymentScreenContent() {
     requiresOnlinePay && (chapaEligibility?.eligible ?? false);
   const onlineBlocked =
     requiresOnlinePay && !chapaEligibilityLoading && !onlinePayAvailable;
-  /** Variable with no min: book without Chapa (pay at visit). */
   const payAtVisitOnly = !requiresOnlinePay;
-  const canConfirm = onlinePayAvailable || payAtVisitOnly;
+  const payAtVisitFallback = onlineBlocked;
+  const canConfirm = onlinePayAvailable || payAtVisitOnly || payAtVisitFallback;
 
   const confirm = async () => {
     if (!user || !business || !service || !scheduledAt) return;
@@ -242,7 +242,7 @@ function PaymentScreenContent() {
           <Text style={styles.chapaNote}>{t("payment.flexiblePayNote")}</Text>
         ) : null}
 
-        {onlineBlocked ? (
+        {payAtVisitFallback ? (
           <Text style={styles.blockedNote}>
             {t("payment.chapaPayoutNotConfigured")}
           </Text>

@@ -3,18 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { APP_NAME } from "@/constants/brand";
 import { createClient } from "@/lib/supabase/client";
-
-function ShegerMark() {
-  return (
-    <div
-      aria-hidden
-      className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25"
-    >
-      <span className="text-2xl font-extrabold tracking-tight text-white">S</span>
-    </div>
-  );
-}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,9 +46,11 @@ export default function LoginPage() {
 
         <div className="relative">
           <div className="flex items-center gap-4">
-            <ShegerMark />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+              <BrandLogo size={40} priority />
+            </div>
             <div>
-              <p className="text-lg font-bold tracking-tight">Sheger</p>
+              <p className="text-lg font-bold tracking-tight">{APP_NAME}</p>
               <p className="text-sm text-white/80">Admin Console</p>
             </div>
           </div>
@@ -89,7 +82,7 @@ export default function LoginPage() {
         </div>
 
         <p className="relative mt-10 text-xs text-white/60 lg:mt-0">
-          Sheger Booking Platform &middot; Ethiopia
+          {APP_NAME} Booking Platform &middot; Ethiopia
         </p>
       </section>
 

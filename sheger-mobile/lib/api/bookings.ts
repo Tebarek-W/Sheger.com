@@ -97,7 +97,7 @@ export async function fetchCustomerBookings(customerId: string) {
 
   if (__DEV__ && error) {
     console.warn(
-      "[Sheger] list_customer_booking_cards_page failed, using direct query:",
+      "[ABORA] list_customer_booking_cards_page failed, using direct query:",
       error.message ?? error,
     );
   }

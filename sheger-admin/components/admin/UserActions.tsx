@@ -45,7 +45,7 @@ export function UserActions({
           message={
             nextBlocked
               ? "They will be signed out of the mobile app and cannot book or manage a business until you unblock them."
-              : "They will be able to sign in and use Sheger again."
+              : "They will be able to sign in and use ABORA again."
           }
           pending={pending}
           onConfirm={run}

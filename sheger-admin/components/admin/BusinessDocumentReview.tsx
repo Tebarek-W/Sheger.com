@@ -30,7 +30,7 @@ export function BusinessDocumentReview({
   const openDocument = (storagePath: string) => {
     startTransition(async () => {
       try {
-        const url = await getBusinessLicenseSignedUrl(storagePath);
+        const url = await getBusinessLicenseSignedUrl(storagePath, businessId);
         window.open(url, "_blank", "noopener,noreferrer");
       } catch (error) {
         setMessage(error instanceof Error ? error.message : "Could not open document");
@@ -177,8 +177,6 @@ export function BusinessDocumentReview({
           );
         })}
       </div>
-
-      <p className="text-xs text-[var(--muted)]">Business ID: {businessId}</p>
     </div>
   );
 }

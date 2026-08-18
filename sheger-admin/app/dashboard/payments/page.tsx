@@ -1,4 +1,5 @@
 import { formatCommissionPercent } from "@/lib/commission";
+import { readNumber } from "@/lib/dashboard/analytics-shared";
 import { paymentMethodLabel } from "@/lib/payment/methods";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -29,11 +30,6 @@ type PaymentsSnapshot = {
   ownerNetRevenue: number;
   last30DaysCommission: number;
 };
-
-function readNumber(value: unknown, fallback = 0): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
 
 function normalizePaymentsSnapshot(raw: unknown): PaymentsSnapshot {
   const row = (raw ?? {}) as Record<string, unknown>;

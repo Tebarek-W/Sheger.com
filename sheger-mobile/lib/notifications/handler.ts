@@ -23,7 +23,11 @@ export async function setupNotificationHandlers(
       booking_id?: string;
     };
 
-    const route = notificationRouteForType(data.type ?? "booking_confirmed", role);
+    const route = notificationRouteForType(
+      data.type ?? "booking_confirmed",
+      role,
+      data.booking_id,
+    );
     router.push(route);
   };
 

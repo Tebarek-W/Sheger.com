@@ -11,19 +11,19 @@ const supabaseAnonKey =
 
 if (!supabaseUrl || supabaseUrl.includes("your-project")) {
   console.warn(
-    "[Sheger] EXPO_PUBLIC_SUPABASE_URL is missing or still a placeholder in .env",
+    "[ABORA] EXPO_PUBLIC_SUPABASE_URL is missing or still a placeholder in .env",
   );
 }
 
 if (!supabaseAnonKey || supabaseAnonKey.includes("your-")) {
   console.warn(
-    "[Sheger] Supabase API key is missing or still a placeholder in .env",
+    "[ABORA] Supabase API key is missing or still a placeholder in .env",
   );
 }
 
 /** @type {import('expo/config').ExpoConfig} */
 module.exports = {
-  name: "Sheger",
+  name: "ABORA",
   slug: "sheger-mobile",
   scheme: "sheger",
   version: "1.0.0",
@@ -35,7 +35,7 @@ module.exports = {
     bundleIdentifier: "com.sheger.app",
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
-        "Sheger uses your location to show nearby businesses.",
+        "ABORA uses your location to show nearby businesses.",
     },
   },
   android: {
@@ -61,14 +61,14 @@ module.exports = {
       "expo-location",
       {
         locationWhenInUsePermission:
-          "Sheger uses your location to show nearby businesses.",
+          "ABORA uses your location to show nearby businesses.",
       },
     ],
     [
       "expo-image-picker",
       {
         photosPermission:
-          "Sheger needs access to your photos so you can add a business profile picture.",
+          "ABORA needs access to your photos so you can add a business profile picture.",
       },
     ],
     [
@@ -83,7 +83,7 @@ module.exports = {
   extra: {
     supabaseUrl,
     supabaseAnonKey,
-    supportEmail: process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? "support@sheger.com",
+    supportEmail: process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? "support@abora.com",
     legalBaseUrl: process.env.EXPO_PUBLIC_LEGAL_BASE_URL ?? "",
   },
 };

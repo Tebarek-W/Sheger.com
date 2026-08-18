@@ -70,10 +70,10 @@ Deno.serve(async (req) => {
       callback_url: prepared.callbackUrl,
       return_url: prepared.returnUrl,
       customization: {
-        title: "Sheger",
+        title: "ABORA",
         description: sanitizeChapaText(
           `${prepared.planName} subscription ${prepared.billingInterval}`,
-          "Sheger subscription",
+          "ABORA subscription",
           120,
         ),
       },
@@ -84,8 +84,8 @@ Deno.serve(async (req) => {
         billing_interval: prepared.billingInterval,
         purpose: "subscription",
         payment_reason: sanitizeChapaText(
-          `Sheger subscription ${prepared.planName}`,
-          "Sheger subscription",
+          `ABORA subscription ${prepared.planName}`,
+          "ABORA subscription",
           120,
         ),
       },

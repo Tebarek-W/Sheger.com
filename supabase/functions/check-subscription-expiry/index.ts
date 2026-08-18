@@ -1,8 +1,12 @@
 import { adminClient, handleCors, jsonResponse } from "../_shared/supabase.ts";
+import { requireInternalSecret } from "../_shared/internal-auth.ts";
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
+
+  const unauthorized = requireInternalSecret(req);
+  if (unauthorized) return unauthorized;
 
   try {
     const supabase = adminClient();

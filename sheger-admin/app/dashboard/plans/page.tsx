@@ -1,10 +1,11 @@
 import { PlanManager } from "@/components/admin/PlanManager";
+import { QueryError } from "@/components/admin/QueryError";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SubscriptionPlan } from "@/lib/types/database";
 
 export default async function PlansPage() {
   const supabase = createAdminClient();
-  const [{ data, error }, { data: settings }] = await Promise.all([
+  const [{ data, error }, { data: settings, error: settingsError }] = await Promise.all([
     supabase.from("subscription_plans").select("*").order("sort_order", { ascending: true }),
     supabase
       .from("platform_settings")
@@ -24,6 +25,10 @@ export default async function PlansPage() {
         </p>
       </div>
     );
+  }
+
+  if (settingsError) {
+    return <QueryError title="Subscription plans" />;
   }
 
   const defaultCommissionRate = Number(settings?.default_booking_commission_rate ?? 0.1);

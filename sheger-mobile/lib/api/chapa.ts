@@ -113,7 +113,7 @@ export type ChapaBookingDraft = {
 
 /**
  * Starts a Chapa checkout for a booking that has NOT been created yet.
- * Server creates a 2-minute soft slot hold so others cannot take the seat
+ * Server creates a 15-minute soft slot hold so others cannot take the seat
  * while this customer pays. The booking row is inserted only after verify.
  */
 export async function initializeChapaBookingPayment(draft: ChapaBookingDraft) {

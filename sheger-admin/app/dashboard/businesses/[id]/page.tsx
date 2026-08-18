@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { BusinessActions } from "@/components/admin/BusinessActions";
 import { BusinessDocumentReview } from "@/components/admin/BusinessDocumentReview";
+import { QueryError } from "@/components/admin/QueryError";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { summarizeDocumentApproval } from "@/lib/documents/approval";
 import { getRequiredDocumentTypes } from "@/lib/documents/license";
@@ -24,7 +25,7 @@ export default async function BusinessDetailPage({
     .maybeSingle();
 
   if (businessError) {
-    throw new Error(businessError.message);
+    return <QueryError title="Business" />;
   }
 
   if (!business) notFound();
@@ -36,7 +37,7 @@ export default async function BusinessDetailPage({
     .order("created_at");
 
   if (documentsError) {
-    throw new Error(documentsError.message);
+    return <QueryError title="Business" />;
   }
 
   const categorySlug = (business.categories as { slug: string } | null)?.slug ?? null;

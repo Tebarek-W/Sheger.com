@@ -1,12 +1,11 @@
 import {
   BookingPaymentError,
-  buildBookingChapaSubaccountSplit,
+  chapaDirectChargeBookingWithSplit,
   findInitializedBookingTxn,
   insertBookingPaymentTransaction,
   prepareBookingChapaPayment,
 } from "../_shared/chapa-booking-payment.ts";
 import {
-  chapaDirectCharge,
   formatChapaAmount,
   isChapaDirectChargeType,
   normalizeChapaPhone,
@@ -73,25 +72,28 @@ Deno.serve(async (req) => {
       mobileOverride: mobile,
     });
 
-    const chargeResult = await chapaDirectCharge(chargeType, {
-      amount: formatChapaAmount(prepared.amount),
-      currency: "ETB",
-      email: prepared.email,
-      first_name: prepared.firstName,
-      last_name: prepared.lastName,
-      tx_ref: prepared.txRef,
-      mobile,
-      subaccounts: buildBookingChapaSubaccountSplit(
-        prepared.split,
-        prepared.chapaSubaccountId,
-      ),
-    });
+    const chargeOutcome = await chapaDirectChargeBookingWithSplit(
+      chargeType,
+      {
+        amount: formatChapaAmount(prepared.amount),
+        currency: "ETB",
+        email: prepared.email,
+        first_name: prepared.firstName,
+        last_name: prepared.lastName,
+        tx_ref: prepared.txRef,
+        mobile,
+      },
+      prepared.split,
+      prepared.chapaSubaccountId,
+    );
+    const chargeResult = chargeOutcome.result;
 
     await insertBookingPaymentTransaction(supabase, prepared, {
       charge_type: chargeType,
       chapa_reference: chargeResult.reference,
       mobile,
       payment_flow: "direct_charge",
+      split_mode: chargeOutcome.split_mode,
     });
 
     return jsonResponse({

@@ -1,7 +1,7 @@
 import { Linking } from "react-native";
 import Constants from "expo-constants";
 
-const DEFAULT_SUPPORT_EMAIL = "support@sheger.com";
+const DEFAULT_SUPPORT_EMAIL = "support@abora.com";
 
 type SupportExtra = {
   supportEmail?: string;

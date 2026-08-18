@@ -145,7 +145,7 @@ export function PlanManager({ plans, defaultCommissionRate }: PlanManagerProps) 
       planId: plan.id,
       title: `Delete "${plan.name}"?`,
       message:
-        "Businesses on this plan will fall back to the default commission rate. This cannot be undone.",
+        "Deletion is blocked if any business currently uses this plan. Hide it instead if you only want to stop new sign-ups.",
     });
   };
 

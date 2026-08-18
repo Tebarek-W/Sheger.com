@@ -2,17 +2,16 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { AuthBrandHeader } from "@/components/brand/AuthBrandHeader";
 import { Button } from "@/components/ui/Button";
 import { BookingHeader } from "@/components/ui/BookingHeader";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { colors } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
-import { getPendingBookingRoute } from "@/lib/auth-booking";
+import { redirectAfterAuth } from "@/lib/auth-booking";
 import { getErrorMessage } from "@/lib/errors";
-import { getHomeRouteForRole } from "@/lib/routing";
 import { supabase } from "@/lib/supabase";
-import type { UserRole } from "@/lib/types/database";
 import { isValidEmail, normalizeEmail } from "@/lib/validation/contact";
 
 export default function LoginScreen() {
@@ -43,37 +42,12 @@ export default function LoginScreen() {
       Alert.alert(t("auth.loginFailed"), getErrorMessage(error));
       return;
     }
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, is_blocked, full_name")
-      .eq("id", data.user.id)
-      .maybeSingle();
-    const role = profile?.role as UserRole | undefined;
-    if (profile?.is_blocked) {
-      await supabase.auth.signOut();
-      router.replace("/(auth)/account-blocked");
-      return;
-    }
-    if (role === "admin") {
-      await supabase.auth.signOut();
-      router.replace("/(auth)/admin-blocked");
-      return;
-    }
-    const pendingBook = getPendingBookingRoute();
-    if (pendingBook && role === "customer") {
-      router.replace(pendingBook);
-    } else {
-      router.replace(getHomeRouteForRole(role, profile));
-    }
+    await redirectAfterAuth(data.user.id);
   };
 
   return (
     <Screen scroll backgroundColor={colors.screenBg}>
-      <View style={styles.header}>
-        <Text style={styles.brand}>sheger</Text>
-        <Text style={styles.title}>{t("auth.welcomeBack")}</Text>
-        <Text style={styles.subtitle}>{t("auth.signInSubtitle")}</Text>
-      </View>
+      <AuthBrandHeader title={t("auth.welcomeBack")} subtitle={t("auth.signInSubtitle")} />
 
       <View style={styles.card}>
         <BookingHeader title={t("auth.signInTitle")} backTo="/" />
@@ -107,21 +81,6 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
-  },
-  brand: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.primary,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: 8,
-  },
-  title: { fontSize: 24, fontWeight: "500", color: colors.text },
-  subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 4, lineHeight: 20 },
   card: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 24,
