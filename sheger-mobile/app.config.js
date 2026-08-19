@@ -49,7 +49,7 @@ module.exports = {
     softwareKeyboardLayoutMode: "resize",
     adaptiveIcon: {
       backgroundColor: "#0d4d0d",
-      foregroundImage: "./assets/icon.png",
+      foregroundImage: "./assets/android-icon-foreground.png",
     },
     predictiveBackGestureEnabled: false,
   },
