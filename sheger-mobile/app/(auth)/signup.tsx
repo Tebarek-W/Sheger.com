@@ -10,6 +10,7 @@ import { Screen } from "@/components/ui/Screen";
 import { colors, radius } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { redirectAfterAuth } from "@/lib/auth-booking";
+import { isSupabaseConfigured } from "@/lib/env";
 import { getErrorMessage } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 import type { UserRole } from "@/lib/types/database";
@@ -60,34 +61,44 @@ export default function SignupScreen() {
       return;
     }
 
+    if (!isSupabaseConfigured()) {
+      Alert.alert(t("auth.signUpFailed"), t("auth.supabaseNotConfigured"));
+      return;
+    }
+
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: normalizedEmail,
-      password,
-      options: {
-        data: {
-          full_name: fullName.trim(),
-          phone: normalizedPhone,
-          role: accountType satisfies UserRole,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            phone: normalizedPhone,
+            role: accountType satisfies UserRole,
+          },
         },
-      },
-    });
-    setLoading(false);
-    if (error) {
+      });
+      if (error) {
+        Alert.alert(t("auth.signUpFailed"), getErrorMessage(error));
+        return;
+      }
+      if (data.session?.user.id) {
+        await redirectAfterAuth(data.session.user.id);
+        return;
+      }
+      const message =
+        accountType === "business_owner"
+          ? t("auth.signInToRegister")
+          : t("auth.confirmEmailToSignIn");
+      Alert.alert(t("auth.accountCreated"), message, [
+        { text: t("common.ok"), onPress: () => router.replace("/(auth)/login") },
+      ]);
+    } catch (error) {
       Alert.alert(t("auth.signUpFailed"), getErrorMessage(error));
-      return;
+    } finally {
+      setLoading(false);
     }
-    if (data.session?.user.id) {
-      await redirectAfterAuth(data.session.user.id);
-      return;
-    }
-    const message =
-      accountType === "business_owner"
-        ? t("auth.signInToRegister")
-        : t("auth.confirmEmailToSignIn");
-    Alert.alert(t("auth.accountCreated"), message, [
-      { text: t("common.ok"), onPress: () => router.replace("/(auth)/login") },
-    ]);
   };
 
   return (

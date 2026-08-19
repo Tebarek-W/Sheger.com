@@ -7,11 +7,11 @@
     "@supabase/supabase-js": "^2.108.1",
     "@tanstack/react-query": "^5.101.0",
     "axios": "^1.17.0",
-    "expo": "~54.0.36",
-    "expo-constants": "~18.0.13",
+    "expo": "~54.0.37",
+    "expo-constants": "~18.0.14",
     "expo-device": "~8.0.10",
     "expo-document-picker": "~14.0.8",
-    "expo-file-system": "~19.0.23",
+    "expo-file-system": "~19.0.24",
     "expo-image": "~3.0.11",
     "expo-image-picker": "~17.0.11",
     "expo-linear-gradient": "~15.0.8",
@@ -21,6 +21,7 @@
     "expo-notifications": "~0.32.17",
     "expo-router": "~6.0.24",
     "expo-secure-store": "~15.0.8",
+    "expo-updates": "~29.0.20",
     "expo-web-browser": "~15.0.11",
     "react": "19.1.0",
     "react-native": "0.81.5",
@@ -32,10 +33,12 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/react": "~19.1.0",
     "typescript": "~5.9.2"
   },
   "scripts": {
+    "icons:export": "node scripts/export-logo-icon.mjs",
     "start": "expo start --lan",
     "start:tunnel": "expo start --tunnel",
     "start:clear": "expo start --lan --clear",

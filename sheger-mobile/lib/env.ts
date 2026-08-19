@@ -1,7 +1,16 @@
 import Constants from "expo-constants";
 
 function trimEnv(value: string | undefined): string | undefined {
-  const trimmed = value?.trim();
+  let trimmed = value?.trim();
+  if (!trimmed) return undefined;
+
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    trimmed = trimmed.slice(1, -1).trim();
+  }
+
   return trimmed || undefined;
 }
 

@@ -10,6 +10,7 @@ import { Screen } from "@/components/ui/Screen";
 import { colors } from "@/constants/theme";
 import { useI18n } from "@/hooks/useI18n";
 import { redirectAfterAuth } from "@/lib/auth-booking";
+import { isSupabaseConfigured } from "@/lib/env";
 import { getErrorMessage } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 import { isValidEmail, normalizeEmail } from "@/lib/validation/contact";
@@ -32,17 +33,31 @@ export default function LoginScreen() {
       return;
     }
 
-    setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
-    setLoading(false);
-    if (error) {
-      Alert.alert(t("auth.loginFailed"), getErrorMessage(error));
+    if (!isSupabaseConfigured()) {
+      Alert.alert(t("auth.loginFailed"), t("auth.supabaseNotConfigured"));
       return;
     }
-    await redirectAfterAuth(data.user.id);
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+      if (error) {
+        Alert.alert(t("auth.loginFailed"), getErrorMessage(error));
+        return;
+      }
+      if (!data.user?.id) {
+        Alert.alert(t("auth.loginFailed"), t("auth.requestTimedOut"));
+        return;
+      }
+      await redirectAfterAuth(data.user.id);
+    } catch (error) {
+      Alert.alert(t("auth.loginFailed"), getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

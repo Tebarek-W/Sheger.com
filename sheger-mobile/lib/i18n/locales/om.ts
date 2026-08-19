@@ -85,6 +85,10 @@ export const om = {
     enterEmailPassword: "Imeelii fi jecha iccitii kee galchi.",
     fillNameEmailPassword: "Maqaa, imeelii, fi jecha iccitii guuti.",
     loginFailed: "Seenuun hin milkoofne",
+    supabaseNotConfigured:
+      "Appiin kun qindaa'inoota Supabase hin qabu. expo.dev (preview) irratti EXPO_PUBLIC_SUPABASE_URL fi EXPO_PUBLIC_SUPABASE_ANON_KEY dabalaa irra deebi'aa ijaaraa.",
+    requestTimedOut:
+      "Gaaffiin yeroon isaa darbee. Quunnamtii interneetii kee mirkaneessiitii irra deebi'ii yaali.",
     signUpFailed: "Galmeen hin milkoofne",
     accountCreated: "Akkaawuntiin uumameera",
     signInToRegister: "Daldala kee ABORA irratti galmeessuuf seeni.",

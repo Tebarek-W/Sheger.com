@@ -86,6 +86,10 @@ export const am: TranslationTree = {
     enterEmailPassword: "ኢሜይል እና የይለፍ ቃልዎን ያስገቡ።",
     fillNameEmailPassword: "ስም፣ ኢሜይል እና የይለፍ ቃል ይሙሉ።",
     loginFailed: "መግባት አልተሳካም",
+    supabaseNotConfigured:
+      "ይህ መተግበሪያ Supabase መረጃ አልተዋቀረለትም። በ expo.dev (preview) ላይ EXPO_PUBLIC_SUPABASE_URL እና EXPO_PUBLIC_SUPABASE_ANON_KEY ያክሉና እንደገና ይገንቡ።",
+    requestTimedOut:
+      "ጥያቄው ጊዜው አልፎበታል። የበይነመረብ ግንኙነትዎን ይፈትሹና እንደገና ይሞክሩ።",
     signUpFailed: "ምዝገባ አልተሳካም",
     accountCreated: "መለያ ተፈጥሯል",
     signInToRegister: "ንግድዎን በABORA ላይ ለመመዝገብ ይግቡ።",
