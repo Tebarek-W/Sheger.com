@@ -30,6 +30,12 @@ module.exports = {
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
+  updates: {
+    url: "https://u.expo.dev/09878695-987f-4aa0-9ea8-1009a6a558da",
+  },
+  runtimeVersion: {
+    policy: "appVersion",
+  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.sheger.app",
@@ -43,9 +49,7 @@ module.exports = {
     softwareKeyboardLayoutMode: "resize",
     adaptiveIcon: {
       backgroundColor: "#0d4d0d",
-      foregroundImage: "./assets/android-icon-foreground.png",
-      backgroundImage: "./assets/android-icon-background.png",
-      monochromeImage: "./assets/android-icon-monochrome.png",
+      foregroundImage: "./assets/icon.png",
     },
     predictiveBackGestureEnabled: false,
   },
@@ -85,5 +89,8 @@ module.exports = {
     supabaseAnonKey,
     supportEmail: process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? "support@abora.com",
     legalBaseUrl: process.env.EXPO_PUBLIC_LEGAL_BASE_URL ?? "",
+    eas: {
+      projectId: "09878695-987f-4aa0-9ea8-1009a6a558da",
+    },
   },
 };

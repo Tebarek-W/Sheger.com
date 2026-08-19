@@ -1,6 +1,8 @@
 import axios from "axios";
 import { Platform } from "react-native";
 
+const DEFAULT_TIMEOUT_MS = 30_000;
+
 function headersToRecord(headers?: HeadersInit): Record<string, string> {
   const record: Record<string, string> = {};
 
@@ -40,18 +42,38 @@ async function axiosFetch(
         ? input.toString()
         : input.url;
 
-  const result = await axios({
-    url,
-    method: (init?.method ?? "GET").toUpperCase(),
-    headers: headersToRecord(init?.headers),
-    data: init?.body,
-    // Honour caller-provided AbortSignal (timeouts/cancellation) instead of
-    // silently dropping it as the previous shim did.
-    signal: init?.signal ?? undefined,
-    validateStatus: () => true,
-    responseType: "text",
-    transformResponse: [(data) => data],
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
+  const callerSignal = init?.signal;
+  if (callerSignal) {
+    if (callerSignal.aborted) {
+      controller.abort();
+    } else {
+      callerSignal.addEventListener("abort", () => controller.abort(), { once: true });
+    }
+  }
+
+  let result;
+  try {
+    result = await axios({
+      url,
+      method: (init?.method ?? "GET").toUpperCase(),
+      headers: headersToRecord(init?.headers),
+      data: init?.body,
+      signal: controller.signal,
+      validateStatus: () => true,
+      responseType: "text",
+      transformResponse: [(data) => data],
+    });
+  } catch (error) {
+    if (axios.isAxiosError(error) && (error.code === "ERR_CANCELED" || controller.signal.aborted)) {
+      throw new TypeError("Network request timed out. Check your connection and try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const responseHeaders = new Headers();
   Object.entries(result.headers).forEach(([key, value]) => {

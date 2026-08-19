@@ -84,6 +84,10 @@ export const en = {
     enterEmailPassword: "Enter your email and password.",
     fillNameEmailPassword: "Fill in name, email, and password.",
     loginFailed: "Login failed",
+    supabaseNotConfigured:
+      "This build is missing Supabase settings. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY on expo.dev (preview environment), then rebuild.",
+    requestTimedOut:
+      "The request timed out. Check your internet connection and try again.",
     signUpFailed: "Sign up failed",
     accountCreated: "Account created",
     signInToRegister: "Sign in to register your business on ABORA.",

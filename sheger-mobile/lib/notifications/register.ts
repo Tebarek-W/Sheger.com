@@ -59,7 +59,12 @@ export async function registerForPushNotifications(userId: string): Promise<stri
   }
 
   const projectId = getExpoProjectId()!;
-  const tokenResponse = await Notifications.getExpoPushTokenAsync({ projectId });
+  const tokenResponse = await Promise.race([
+    Notifications.getExpoPushTokenAsync({ projectId }),
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("Push token request timed out")), 15_000);
+    }),
+  ]);
   const expoPushToken = tokenResponse.data;
   const platform: PushPlatform = Platform.OS === "ios" ? "ios" : "android";
 

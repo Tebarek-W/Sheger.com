@@ -61,19 +61,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const [{ setupNotificationHandlers }, { registerForPushNotifications, watchPushTokenRefresh }] =
-      await Promise.all([
-        import("@/lib/notifications/handler"),
-        import("@/lib/notifications/register"),
-      ]);
+    try {
+      const [{ setupNotificationHandlers }, { registerForPushNotifications, watchPushTokenRefresh }] =
+        await Promise.all([
+          import("@/lib/notifications/handler"),
+          import("@/lib/notifications/register"),
+        ]);
 
-    const handlerCleanup = await setupNotificationHandlers(role);
-    const tokenCleanup = await watchPushTokenRefresh(userId);
-    notificationCleanupRef.current = () => {
-      handlerCleanup();
-      tokenCleanup();
-    };
-    await registerForPushNotifications(userId);
+      const handlerCleanup = await setupNotificationHandlers(role);
+      const tokenCleanup = await watchPushTokenRefresh(userId);
+      notificationCleanupRef.current = () => {
+        handlerCleanup();
+        tokenCleanup();
+      };
+      await registerForPushNotifications(userId);
+    } catch (error) {
+      if (__DEV__) {
+        console.warn("[ABORA] Push setup failed:", error);
+      }
+    }
+  };
+
+  const startPushSetup = (userId: string, role: Profile["role"] | undefined) => {
+    void setupPush(userId, role);
   };
 
   const refreshProfile = async () => {
@@ -87,8 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session);
       if (data.session?.user.id) {
         const loaded = await loadProfile(data.session.user.id);
-        await setupPush(data.session.user.id, loaded?.role);
         setLoading(false);
+        startPushSetup(data.session.user.id, loaded?.role);
       } else {
         setLoading(false);
       }
@@ -108,14 +118,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(next);
       if (next?.user.id) {
         const loaded = await loadProfile(next.user.id);
-        await setupPush(next.user.id, loaded?.role);
+        setLoading(false);
+        startPushSetup(next.user.id, loaded?.role);
       } else {
         notificationCleanupRef.current?.();
         notificationCleanupRef.current = null;
         clearNotificationQueries(queryClient);
         setProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
